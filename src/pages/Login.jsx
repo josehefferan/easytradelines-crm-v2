@@ -8,6 +8,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isResetMode, setIsResetMode] = useState(false); // Nueva estado para modo reset
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,7 +57,18 @@ export default function Login() {
     setMessage("");
 
     try {
-      if (isSignUp) {
+      if (isResetMode) {
+        // Manejo de reset de contraseña
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+
+        if (error) {
+          setMessage(`Error: ${error.message}`);
+        } else {
+          setMessage("Password reset email sent! Check your inbox.");
+        }
+      } else if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -121,6 +133,21 @@ export default function Login() {
     </svg>
   );
 
+  // Función para determinar el texto del título
+  const getTitle = () => {
+    if (isResetMode) return "Reset your password";
+    if (isSignUp) return "Create your account";
+    return "Welcome back";
+  };
+
+  // Función para determinar el botón principal
+  const getButtonText = () => {
+    if (loading) return "Processing...";
+    if (isResetMode) return "Send Reset Email";
+    if (isSignUp) return "Create Account";
+    return "Sign In to CRM";
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -157,7 +184,7 @@ export default function Login() {
             margin: '0 0 8px 0',
             fontSize: '16px'
           }}>
-            {isSignUp ? "Create your account" : "Welcome back"}
+            {getTitle()}
           </p>
           <p style={{
             fontSize: '14px',
@@ -211,46 +238,75 @@ export default function Login() {
             />
           </div>
 
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#374151',
-              marginBottom: '8px'
-            }}>
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '14px 16px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '12px',
-                fontSize: '16px',
-                outline: 'none',
-                transition: 'all 0.2s',
-                boxSizing: 'border-box',
-                backgroundColor: '#fafafa'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#7CB342';
-                e.target.style.backgroundColor = 'white';
-                e.target.style.boxShadow = '0 0 0 3px rgba(124, 179, 66, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#e5e7eb';
-                e.target.style.backgroundColor = '#fafafa';
-                e.target.style.boxShadow = 'none';
-              }}
-              placeholder="Enter your password"
-              minLength={6}
-            />
-          </div>
+          {/* Password field - solo mostrar si no está en modo reset */}
+          {!isResetMode && (
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '8px'
+              }}>
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  outline: 'none',
+                  transition: 'all 0.2s',
+                  boxSizing: 'border-box',
+                  backgroundColor: '#fafafa'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#7CB342';
+                  e.target.style.backgroundColor = 'white';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(124, 179, 66, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#e5e7eb';
+                  e.target.style.backgroundColor = '#fafafa';
+                  e.target.style.boxShadow = 'none';
+                }}
+                placeholder="Enter your password"
+                minLength={6}
+              />
+            </div>
+          )}
+
+          {/* Forgot Password Link - solo mostrar en modo login */}
+          {!isSignUp && !isResetMode && (
+            <div style={{ textAlign: 'right', marginBottom: '20px' }}>
+              <button
+                type="button"
+                onClick={() => setIsResetMode(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#2E7D32',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9f0'}
+                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
 
           <button
             type="submit"
@@ -298,36 +354,62 @@ export default function Login() {
                 Processing...
               </span>
             ) : (
-              isSignUp ? "Create Account" : "Sign In to CRM"
+              getButtonText()
             )}
           </button>
         </form>
 
-        {/* Toggle */}
+        {/* Navigation Links */}
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setMessage("");
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#2E7D32',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              textDecoration: 'none',
-              padding: '8px',
-              borderRadius: '6px',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9f0'}
-            onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
-          </button>
+          {isResetMode ? (
+            <button
+              type="button"
+              onClick={() => {
+                setIsResetMode(false);
+                setMessage("");
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#2E7D32',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                textDecoration: 'none',
+                padding: '8px',
+                borderRadius: '6px',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9f0'}
+              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              ← Back to sign in
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setMessage("");
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#2E7D32',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                textDecoration: 'none',
+                padding: '8px',
+                borderRadius: '6px',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9f0'}
+              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
+            </button>
+          )}
         </div>
 
         {/* Message */}
