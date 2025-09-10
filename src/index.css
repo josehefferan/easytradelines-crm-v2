@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom BitTorrent-style components */
+.bittorrent-table {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 11px;
+}
+
+.bittorrent-row:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.bittorrent-row:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+.bittorrent-row:hover {
+  background-color: #cce5ff !important;
+}
+
+.bittorrent-row.selected {
+  background-color: #cce5ff !important;
+}
+
+.progress-bar-container {
+  background-color: #e9ecef;
+  height: 14px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-downloading {
+  background: linear-gradient(to right, #007bff 0%, #17a2b8 100%);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progress-bar-seeding {
+  background: linear-gradient(to right, #28a745 0%, #20c997 100%);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progress-bar-completed {
+  background: #28a745;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progress-bar-error {
+  background: #dc3545;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.status-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-downloading {
+  background-color: #007bff;
+}
+
+.status-seeding {
+  background-color: #28a745;
+}
+
+.status-completed {
+  background-color: #28a745;
+}
+
+.status-error {
+  background-color: #dc3545;
+}
+
+.status-pending {
+  background-color: #6c757d;
+}
+
+/* Custom scrollbar for BitTorrent style */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 12px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
