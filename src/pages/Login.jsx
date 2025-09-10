@@ -303,31 +303,81 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Toggle */}
+        {/* Toggle Options */}
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setMessage("");
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#2E7D32',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              textDecoration: 'none',
-              padding: '8px',
-              borderRadius: '6px',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9f0'}
-            onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
-          </button>
+          {!showForgotPassword ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setMessage("");
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#2E7D32',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  padding: '8px',
+                  borderRadius: '6px',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9f0'}
+                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
+              </button>
+              
+              {!isSignUp && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(true);
+                    setMessage("");
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#6b7280',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    padding: '4px'
+                  }}
+                >
+                  Forgot your password?
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setShowForgotPassword(false);
+                setMessage("");
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#2E7D32',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                textDecoration: 'none',
+                padding: '8px',
+                borderRadius: '6px',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9f0'}
+              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              ← Back to Sign In
+            </button>
+          )}
         </div>
 
         {/* Message */}
