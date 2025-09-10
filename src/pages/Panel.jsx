@@ -17,6 +17,7 @@ import {
   UserCheck, 
   Building2 
 } from 'lucide-react';
+import { supabase } from "../lib/supabase";
 
 const ModernCRMPanel = () => {
   const [currentUser] = useState({
@@ -88,58 +89,58 @@ const ModernCRMPanel = () => {
   const statusConfig = {
     nuevo_lead: { 
       label: 'New Lead', 
-      color: 'bg-blue-500', 
-      bgColor: 'bg-blue-50', 
-      textColor: 'text-blue-700',
+      color: '#3b82f6', 
+      bgColor: '#eff6ff', 
+      textColor: '#1d4ed8',
       icon: Plus
     },
     contactado: { 
       label: 'Contacted', 
-      color: 'bg-yellow-500', 
-      bgColor: 'bg-yellow-50', 
-      textColor: 'text-yellow-700',
+      color: '#eab308', 
+      bgColor: '#fefce8', 
+      textColor: '#a16207',
       icon: Users
     },
     en_validacion: { 
       label: 'In Validation', 
-      color: 'bg-purple-500', 
-      bgColor: 'bg-purple-50', 
-      textColor: 'text-purple-700',
+      color: '#a855f7', 
+      bgColor: '#faf5ff', 
+      textColor: '#7c3aed',
       icon: Clock
     },
     aprobado: { 
       label: 'Approved', 
-      color: 'bg-green-500', 
-      bgColor: 'bg-green-50', 
-      textColor: 'text-green-700',
+      color: '#22c55e', 
+      bgColor: '#f0fdf4', 
+      textColor: '#15803d',
       icon: CheckCircle
     },
     rechazado: { 
       label: 'Rejected', 
-      color: 'bg-red-500', 
-      bgColor: 'bg-red-50', 
-      textColor: 'text-red-700',
+      color: '#ef4444', 
+      bgColor: '#fef2f2', 
+      textColor: '#dc2626',
       icon: XCircle
     },
     activo: { 
       label: 'Active', 
-      color: 'bg-emerald-500', 
-      bgColor: 'bg-emerald-50', 
-      textColor: 'text-emerald-700',
+      color: '#10b981', 
+      bgColor: '#ecfdf5', 
+      textColor: '#059669',
       icon: TrendingUp
     },
     muerto: { 
       label: 'Dead/Archived', 
-      color: 'bg-gray-500', 
-      bgColor: 'bg-gray-50', 
-      textColor: 'text-gray-700',
+      color: '#6b7280', 
+      bgColor: '#f9fafb', 
+      textColor: '#374151',
       icon: Archive
     },
     blacklist: { 
       label: 'Blacklist', 
-      color: 'bg-black', 
-      bgColor: 'bg-gray-100', 
-      textColor: 'text-gray-900',
+      color: '#000000', 
+      bgColor: '#f3f4f6', 
+      textColor: '#111827',
       icon: Shield
     }
   };
@@ -157,7 +158,7 @@ const ModernCRMPanel = () => {
   const stats = getStats();
 
   const LogoSVG = () => (
-    <svg width="40" height="40" viewBox="0 0 120 60" className="mr-3">
+    <svg width="40" height="40" viewBox="0 0 120 60" style={{ marginRight: '12px' }}>
       <rect x="8" y="35" width="12" height="20" fill="#FF6B35" rx="2"/>
       <rect x="24" y="25" width="12" height="30" fill="#FFB800" rx="2"/>
       <rect x="40" y="15" width="12" height="40" fill="#7CB342" rx="2"/>
@@ -180,103 +181,6 @@ const ModernCRMPanel = () => {
     </svg>
   );
 
-  const PipelineBoard = () => {
-    const pipelineStages = ['nuevo_lead', 'contactado', 'en_validacion', 'aprobado', 'activo'];
-    
-    return (
-      <div className="grid grid-cols-5 gap-4 h-full">
-        {pipelineStages.map(stage => {
-          const stageClients = clients.filter(client => client.status === stage);
-          const config = statusConfig[stage];
-          const IconComponent = config.icon;
-          
-          return (
-            <div key={stage} className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <IconComponent className="w-4 h-4 text-gray-600" />
-                  <h3 className="font-semibold text-gray-800">{config.label}</h3>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded-full ${config.bgColor} ${config.textColor}`}>
-                  {stageClients.length}
-                </span>
-              </div>
-              
-              <div className="space-y-3">
-                {stageClients.map(client => (
-                  <div key={client.id} className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-sm text-gray-900">{client.name}</h4>
-                      <span className="text-xs text-gray-500">${client.amount}</span>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-2">{client.email}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">{client.broker}</span>
-                      <div className="w-12 bg-gray-200 rounded-full h-1">
-                        <div 
-                          className={`h-1 rounded-full ${config.color}`}
-                          style={{ width: `${client.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const DashboardStats = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-blue-100 text-sm">New Leads</p>
-            <p className="text-3xl font-bold">{stats.nuevo_lead}</p>
-          </div>
-          <Plus className="w-8 h-8 text-blue-200" />
-        </div>
-        <div className="mt-4 text-blue-100 text-sm">+12% vs last month</div>
-      </div>
-
-      <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-green-100 text-sm">Active</p>
-            <p className="text-3xl font-bold">{stats.activo}</p>
-          </div>
-          <TrendingUp className="w-8 h-8 text-green-200" />
-        </div>
-        <div className="mt-4 text-green-100 text-sm">+8% vs last month</div>
-      </div>
-
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-purple-100 text-sm">In Validation</p>
-            <p className="text-3xl font-bold">{stats.en_validacion}</p>
-          </div>
-          <Clock className="w-8 h-8 text-purple-200" />
-        </div>
-        <div className="mt-4 text-purple-100 text-sm">Average 3 days</div>
-      </div>
-
-      <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-emerald-100 text-sm">Total Revenue</p>
-            <p className="text-3xl font-bold">${stats.revenue.toLocaleString()}</p>
-          </div>
-          <DollarSign className="w-8 h-8 text-emerald-200" />
-        </div>
-        <div className="mt-4 text-emerald-100 text-sm">+15% vs last month</div>
-      </div>
-    </div>
-  );
-
   const getNavigationItems = () => {
     const baseItems = [
       { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -286,7 +190,6 @@ const ModernCRMPanel = () => {
       { id: 'reports', label: 'Reports', icon: Eye }
     ];
 
-    // Admin-only items
     if (currentUser.role === 'admin') {
       baseItems.push(
         { id: 'brokers', label: 'Brokers', icon: UserCheck },
@@ -300,63 +203,331 @@ const ModernCRMPanel = () => {
 
   const navigationItems = getNavigationItems();
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/login';
+  };
+
+  // Inline Styles
+  const styles = {
+    container: {
+      minHeight: '100vh',
+      backgroundColor: '#f9fafb',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    },
+    sidebar: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '256px',
+      height: '100vh',
+      backgroundColor: 'white',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+      zIndex: 1000
+    },
+    sidebarHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      padding: '24px',
+      borderBottom: '1px solid #e5e7eb'
+    },
+    sidebarTitle: {
+      fontSize: '18px',
+      fontWeight: 'bold',
+      color: '#1f2937',
+      margin: 0
+    },
+    sidebarRole: {
+      fontSize: '12px',
+      color: '#16a34a',
+      fontWeight: '500'
+    },
+    navButton: {
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      padding: '12px 24px',
+      textAlign: 'left',
+      border: 'none',
+      backgroundColor: 'transparent',
+      color: '#6b7280',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      fontSize: '14px'
+    },
+    navButtonActive: {
+      backgroundColor: '#f0fdf4',
+      color: '#15803d',
+      borderRight: '2px solid #16a34a'
+    },
+    navIcon: {
+      width: '20px',
+      height: '20px',
+      marginRight: '12px'
+    },
+    sidebarFooter: {
+      position: 'absolute',
+      bottom: 0,
+      width: '256px',
+      padding: '24px',
+      borderTop: '1px solid #e5e7eb'
+    },
+    userInfo: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: '16px'
+    },
+    userAvatar: {
+      width: '32px',
+      height: '32px',
+      backgroundColor: '#16a34a',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: '12px'
+    },
+    userName: {
+      fontSize: '14px',
+      fontWeight: '500',
+      color: '#1f2937',
+      margin: 0
+    },
+    userEmail: {
+      fontSize: '12px',
+      color: '#6b7280',
+      margin: 0
+    },
+    signOutButton: {
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '8px 16px',
+      border: 'none',
+      backgroundColor: 'transparent',
+      color: '#6b7280',
+      cursor: 'pointer',
+      transition: 'color 0.2s',
+      fontSize: '14px'
+    },
+    mainContent: {
+      marginLeft: '256px',
+      padding: '32px'
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: '32px'
+    },
+    headerTitle: {
+      fontSize: '32px',
+      fontWeight: 'bold',
+      color: '#1f2937',
+      margin: 0
+    },
+    headerSubtitle: {
+      color: '#6b7280',
+      marginTop: '4px',
+      fontSize: '16px'
+    },
+    newClientButton: {
+      backgroundColor: '#16a34a',
+      color: 'white',
+      padding: '8px 16px',
+      borderRadius: '8px',
+      border: 'none',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s',
+      fontSize: '14px',
+      fontWeight: '500'
+    },
+    statsGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+      gap: '24px',
+      marginBottom: '32px'
+    },
+    statCard: {
+      borderRadius: '12px',
+      padding: '24px',
+      color: 'white',
+      position: 'relative',
+      overflow: 'hidden'
+    },
+    statCardContent: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    },
+    statLabel: {
+      fontSize: '14px',
+      opacity: 0.9,
+      margin: 0
+    },
+    statValue: {
+      fontSize: '36px',
+      fontWeight: 'bold',
+      margin: '4px 0 0 0'
+    },
+    statTrend: {
+      fontSize: '14px',
+      marginTop: '16px',
+      opacity: 0.9
+    },
+    contentGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+      gap: '32px'
+    },
+    card: {
+      backgroundColor: 'white',
+      borderRadius: '12px',
+      padding: '24px',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+    },
+    cardTitle: {
+      fontSize: '18px',
+      fontWeight: '600',
+      color: '#1f2937',
+      marginBottom: '16px'
+    },
+    activityItem: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      marginBottom: '16px'
+    },
+    activityIcon: {
+      width: '32px',
+      height: '32px',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    activityName: {
+      fontSize: '14px',
+      fontWeight: '500',
+      color: '#1f2937',
+      margin: 0
+    },
+    activityStatus: {
+      fontSize: '12px',
+      color: '#6b7280',
+      margin: 0
+    },
+    activityTime: {
+      fontSize: '12px',
+      color: '#9ca3af',
+      marginLeft: 'auto'
+    },
+    statusSummaryGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: '16px'
+    },
+    statusCard: {
+      padding: '12px',
+      borderRadius: '8px'
+    },
+    statusHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      marginBottom: '8px'
+    },
+    statusLabel: {
+      fontSize: '14px',
+      fontWeight: '500'
+    },
+    statusCount: {
+      fontSize: '24px',
+      fontWeight: 'bold',
+      margin: 0
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-red-500 p-4">
+    <div style={styles.container}>
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
-        <div className="flex items-center p-6 border-b">
+      <div style={styles.sidebar}>
+        <div style={styles.sidebarHeader}>
           <LogoSVG />
           <div>
-            <h1 className="text-lg font-bold text-gray-800">EasyTradelines</h1>
-            <p className="text-xs text-green-600 font-medium">{currentUser.role.toUpperCase()}</p>
+            <h1 style={styles.sidebarTitle}>EasyTradelines</h1>
+            <p style={styles.sidebarRole}>{currentUser.role.toUpperCase()}</p>
           </div>
         </div>
 
-        <nav className="mt-6">
+        <nav style={{ marginTop: '24px' }}>
           {navigationItems.map(item => {
             const IconComponent = item.icon;
+            const isActive = selectedView === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => setSelectedView(item.id)}
-                className={`w-full flex items-center px-6 py-3 text-left transition-colors ${
-                  selectedView === item.id 
-                    ? 'bg-green-50 text-green-700 border-r-2 border-green-600' 
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                style={{
+                  ...styles.navButton,
+                  ...(isActive ? styles.navButtonActive : {})
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.target.style.backgroundColor = '#f9fafb';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.target.style.backgroundColor = 'transparent';
+                  }
+                }}
               >
-                <IconComponent className="w-5 h-5 mr-3" />
+                <IconComponent style={styles.navIcon} />
                 {item.label}
               </button>
             );
           })}
         </nav>
 
-        <div className="absolute bottom-0 w-64 p-6 border-t">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-medium text-sm">
+        <div style={styles.sidebarFooter}>
+          <div style={styles.userInfo}>
+            <div style={styles.userAvatar}>
+              <span style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>
                 {currentUser.name.split(' ').map(n => n[0]).join('')}
               </span>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
-              <p className="text-xs text-gray-500">{currentUser.email}</p>
+              <p style={styles.userName}>{currentUser.name}</p>
+              <p style={styles.userEmail}>{currentUser.email}</p>
             </div>
           </div>
-          <button className="w-full flex items-center justify-center px-4 py-2 text-gray-600 hover:text-red-600 transition-colors">
-            <LogOut className="w-4 h-4 mr-2" />
+          <button 
+            onClick={handleSignOut}
+            style={styles.signOutButton}
+            onMouseEnter={(e) => {
+              e.target.style.color = '#dc2626';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.color = '#6b7280';
+            }}
+          >
+            <LogOut style={{ width: '16px', height: '16px', marginRight: '8px' }} />
             Sign Out
           </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="ml-64 p-8">
+      <div style={styles.mainContent}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div style={styles.header}>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 style={styles.headerTitle}>
               {selectedView === 'dashboard' && 'Dashboard'}
               {selectedView === 'pipeline' && 'Sales Pipeline'}
               {selectedView === 'clients' && 'Client Management'}
@@ -366,7 +537,7 @@ const ModernCRMPanel = () => {
               {selectedView === 'reports' && 'Reports & Analytics'}
               {selectedView === 'settings' && 'Settings'}
             </h2>
-            <p className="text-gray-600 mt-1">
+            <p style={styles.headerSubtitle}>
               {selectedView === 'dashboard' && 'CRM overview and key metrics'}
               {selectedView === 'pipeline' && 'Kanban view of client pipeline'}
               {selectedView === 'clients' && 'Manage all clients and tradelines'}
@@ -377,56 +548,133 @@ const ModernCRMPanel = () => {
               {selectedView === 'settings' && 'System configuration'}
             </p>
           </div>
-          <div className="flex items-center space-x-4">
-            <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-              <Plus className="w-4 h-4" />
-              <span>New Client</span>
-            </button>
-          </div>
+          <button 
+            style={styles.newClientButton}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#15803d';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#16a34a';
+            }}
+          >
+            <Plus style={{ width: '16px', height: '16px' }} />
+            New Client
+          </button>
         </div>
 
-        {/* Content based on selected view */}
+        {/* Dashboard Content */}
         {selectedView === 'dashboard' && (
           <div>
-            <DashboardStats />
-            
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-                <div className="space-y-4">
-                  {clients.slice(0, 5).map(client => {
-                    const StatusIcon = statusConfig[client.status].icon;
-                    return (
-                      <div key={client.id} className="flex items-center space-x-3">
-                        <div className={`w-8 h-8 rounded-full ${statusConfig[client.status].color} flex items-center justify-center`}>
-                          <StatusIcon className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{client.name}</p>
-                          <p className="text-xs text-gray-500">Changed to {statusConfig[client.status].label}</p>
-                        </div>
-                        <span className="text-xs text-gray-400">{client.lastActivity}</span>
-                      </div>
-                    );
-                  })}
+            {/* Stats Cards */}
+            <div style={styles.statsGrid}>
+              <div style={{
+                ...styles.statCard,
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+              }}>
+                <div style={styles.statCardContent}>
+                  <div>
+                    <p style={styles.statLabel}>New Leads</p>
+                    <p style={styles.statValue}>{stats.nuevo_lead}</p>
+                  </div>
+                  <Plus style={{ width: '32px', height: '32px', opacity: 0.8 }} />
                 </div>
+                <div style={styles.statTrend}>+12% vs last month</div>
               </div>
 
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Summary</h3>
-                <div className="grid grid-cols-2 gap-4">
+              <div style={{
+                ...styles.statCard,
+                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
+              }}>
+                <div style={styles.statCardContent}>
+                  <div>
+                    <p style={styles.statLabel}>Active</p>
+                    <p style={styles.statValue}>{stats.activo}</p>
+                  </div>
+                  <TrendingUp style={{ width: '32px', height: '32px', opacity: 0.8 }} />
+                </div>
+                <div style={styles.statTrend}>+8% vs last month</div>
+              </div>
+
+              <div style={{
+                ...styles.statCard,
+                background: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)'
+              }}>
+                <div style={styles.statCardContent}>
+                  <div>
+                    <p style={styles.statLabel}>In Validation</p>
+                    <p style={styles.statValue}>{stats.en_validacion}</p>
+                  </div>
+                  <Clock style={{ width: '32px', height: '32px', opacity: 0.8 }} />
+                </div>
+                <div style={styles.statTrend}>Average 3 days</div>
+              </div>
+
+              <div style={{
+                ...styles.statCard,
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+              }}>
+                <div style={styles.statCardContent}>
+                  <div>
+                    <p style={styles.statLabel}>Total Revenue</p>
+                    <p style={styles.statValue}>${stats.revenue.toLocaleString()}</p>
+                  </div>
+                  <DollarSign style={{ width: '32px', height: '32px', opacity: 0.8 }} />
+                </div>
+                <div style={styles.statTrend}>+15% vs last month</div>
+              </div>
+            </div>
+
+            {/* Content Cards */}
+            <div style={styles.contentGrid}>
+              <div style={styles.card}>
+                <h3 style={styles.cardTitle}>Recent Activity</h3>
+                {clients.slice(0, 5).map(client => {
+                  const StatusIcon = statusConfig[client.status].icon;
+                  return (
+                    <div key={client.id} style={styles.activityItem}>
+                      <div style={{
+                        ...styles.activityIcon,
+                        backgroundColor: statusConfig[client.status].color
+                      }}>
+                        <StatusIcon style={{ width: '16px', height: '16px', color: 'white' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={styles.activityName}>{client.name}</p>
+                        <p style={styles.activityStatus}>Changed to {statusConfig[client.status].label}</p>
+                      </div>
+                      <span style={styles.activityTime}>{client.lastActivity}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={styles.card}>
+                <h3 style={styles.cardTitle}>Status Summary</h3>
+                <div style={styles.statusSummaryGrid}>
                   {Object.entries(statusConfig).map(([status, config]) => {
                     const StatusIcon = config.icon;
                     return (
-                      <div key={status} className={`p-3 rounded-lg ${config.bgColor}`}>
-                        <div className="flex items-center space-x-2">
-                          <StatusIcon className={`w-4 h-4 ${config.textColor}`} />
-                          <span className={`text-sm font-medium ${config.textColor}`}>
+                      <div key={status} style={{
+                        ...styles.statusCard,
+                        backgroundColor: config.bgColor
+                      }}>
+                        <div style={styles.statusHeader}>
+                          <StatusIcon style={{ 
+                            width: '16px', 
+                            height: '16px', 
+                            color: config.textColor 
+                          }} />
+                          <span style={{
+                            ...styles.statusLabel,
+                            color: config.textColor
+                          }}>
                             {config.label}
                           </span>
                         </div>
-                        <p className={`text-2xl font-bold ${config.textColor} mt-1`}>
+                        <p style={{
+                          ...styles.statusCount,
+                          color: config.textColor
+                        }}>
                           {stats[status] || 0}
                         </p>
                       </div>
@@ -438,70 +686,18 @@ const ModernCRMPanel = () => {
           </div>
         )}
 
-        {selectedView === 'pipeline' && (
-          <div className="h-screen">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <Filter className="w-5 h-5 text-gray-400" />
-                <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                  <option>All Brokers</option>
-                  <option>Maria Garcia</option>
-                  <option>Carlos Rodriguez</option>
-                </select>
-              </div>
-              <div className="text-sm text-gray-600">
-                Total: {clients.length} clients
-              </div>
-            </div>
-            <PipelineBoard />
-          </div>
-        )}
-
-        {selectedView === 'clients' && (
-          <div className="bg-white rounded-xl shadow-sm">
-            <div className="p-6">
-              <p className="text-gray-600">Detailed client view - Enhanced table similar to current but improved</p>
-            </div>
-          </div>
-        )}
-
-        {selectedView === 'archive' && (
-          <div className="bg-white rounded-xl shadow-sm">
-            <div className="p-6">
-              <p className="text-gray-600">Archived and dead clients management</p>
-            </div>
-          </div>
-        )}
-
-        {selectedView === 'brokers' && currentUser.role === 'admin' && (
-          <div className="bg-white rounded-xl shadow-sm">
-            <div className="p-6">
-              <p className="text-gray-600">Broker management and history - Admin only</p>
-            </div>
-          </div>
-        )}
-
-        {selectedView === 'affiliates' && currentUser.role === 'admin' && (
-          <div className="bg-white rounded-xl shadow-sm">
-            <div className="p-6">
-              <p className="text-gray-600">Affiliates and inhouse tradelines management - Admin only</p>
-            </div>
-          </div>
-        )}
-
-        {selectedView === 'reports' && (
-          <div className="bg-white rounded-xl shadow-sm">
-            <div className="p-6">
-              <p className="text-gray-600">Reports and analytics dashboard</p>
-            </div>
-          </div>
-        )}
-
-        {selectedView === 'settings' && (
-          <div className="bg-white rounded-xl shadow-sm">
-            <div className="p-6">
-              <p className="text-gray-600">System settings and configuration</p>
-            </div>
+        {/* Other Views */}
+        {selectedView !== 'dashboard' && (
+          <div style={styles.card}>
+            <p style={{ color: '#6b7280', fontSize: '16px' }}>
+              {selectedView === 'pipeline' && 'Kanban pipeline view - Coming soon'}
+              {selectedView === 'clients' && 'Detailed client management - Coming soon'}
+              {selectedView === 'archive' && 'Archived clients management - Coming soon'}
+              {selectedView === 'brokers' && currentUser.role === 'admin' && 'Broker management and history - Admin only'}
+              {selectedView === 'affiliates' && currentUser.role === 'admin' && 'Affiliates and inhouse tradelines - Admin only'}
+              {selectedView === 'reports' && 'Reports and analytics dashboard - Coming soon'}
+              {selectedView === 'settings' && 'System settings and configuration - Coming soon'}
+            </p>
           </div>
         )}
       </div>
