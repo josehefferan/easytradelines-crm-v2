@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./pages/Login";
-import Panel from "./pages/Panel";
-import MiCuenta from "./pages/MiCuenta";
-import RequireAuth from "./lib/RequireAuth";
+import Login from "./pages/Login.jsx";
+import Panel from "./pages/Panel.jsx";
+import MiCuenta from "./pages/MiCuenta.jsx";
+import RequireAuth from "./lib/RequireAuth.jsx";
 
 export default function App() {
   return (
