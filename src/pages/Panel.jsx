@@ -112,15 +112,62 @@ export default function Panel() {
 
   const getStatusInfo = (client) => {
     const statusConfig = {
-      pending: { color: 'bg-gray-500', textColor: 'text-gray-600', progress: 'progress-bar-downloading' },
-      verifying: { color: 'bg-blue-500', textColor: 'text-blue-600', progress: 'progress-bar-downloading' },
-      documents: { color: 'bg-yellow-500', textColor: 'text-yellow-600', progress: 'progress-bar-downloading' },
-      payment: { color: 'bg-orange-500', textColor: 'text-orange-600', progress: 'progress-bar-downloading' },
-      approved: { color: 'bg-green-500', textColor: 'text-green-600', progress: 'progress-bar-seeding' },
-      active: { color: 'bg-green-600', textColor: 'text-green-600', progress: 'progress-bar-seeding' },
-      completed: { color: 'bg-green-700', textColor: 'text-green-600', progress: 'progress-bar-completed' },
-      rejected: { color: 'bg-red-500', textColor: 'text-red-600', progress: 'progress-bar-error' },
-      dead: { color: 'bg-gray-700', textColor: 'text-gray-600', progress: 'progress-bar-error' }
+      pending: { 
+        color: 'bg-amber-500', 
+        textColor: 'text-amber-700', 
+        bgColor: 'bg-amber-50',
+        borderColor: 'border-amber-200',
+        progress: 'bg-amber-400' 
+      },
+      verifying: { 
+        color: 'bg-blue-500', 
+        textColor: 'text-blue-700', 
+        bgColor: 'bg-blue-50',
+        borderColor: 'border-blue-200',
+        progress: 'bg-blue-500' 
+      },
+      documents: { 
+        color: 'bg-purple-500', 
+        textColor: 'text-purple-700', 
+        bgColor: 'bg-purple-50',
+        borderColor: 'border-purple-200',
+        progress: 'bg-purple-500' 
+      },
+      payment: { 
+        color: 'bg-orange-500', 
+        textColor: 'text-orange-700', 
+        bgColor: 'bg-orange-50',
+        borderColor: 'border-orange-200',
+        progress: 'bg-orange-500' 
+      },
+      approved: { 
+        color: 'bg-green-500', 
+        textColor: 'text-green-700', 
+        bgColor: 'bg-green-50',
+        borderColor: 'border-green-200',
+        progress: 'bg-green-500' 
+      },
+      active: { 
+        color: 'bg-emerald-600', 
+        textColor: 'text-emerald-700', 
+        bgColor: 'bg-emerald-50',
+        borderColor: 'border-emerald-200',
+        progress: 'bg-emerald-600' 
+      },
+      completed: { 
+        color: 'bg-green-700', 
+        textColor: 'text-green-800', 
+        bgColor: 'bg-green-100',
+        borderColor: 'border-green-300',
+        progress: 'bg-green-700' 
+      },
+      rejected: { 
+        color: 'bg-red-500', 
+        textColor: 'text-red-700', 
+        bgColor: 'bg-red-50',
+        borderColor: 'border-red-200',
+        progress: 'bg-red-500' 
+      },
     };
     return statusConfig[client.status] || statusConfig.pending;
   };
@@ -150,10 +197,10 @@ export default function Panel() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-bittorrent-bg">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading CRM...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading CRM...</p>
         </div>
       </div>
     );
@@ -161,13 +208,18 @@ export default function Panel() {
 
   if (!me || me.role !== "admin") {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-bittorrent-bg">
-        <div className="text-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-lg">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
-          <p className="text-gray-600 mb-4">You need admin privileges to access this panel.</p>
+          <p className="text-gray-600 mb-6">You need admin privileges to access this panel.</p>
           <button 
             onClick={handleLogout}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
           >
             Sign Out
           </button>
@@ -177,234 +229,286 @@ export default function Panel() {
   }
 
   return (
-    <div className="min-h-screen bg-bittorrent-bg font-system">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
-      <div className="bg-white border-b-2 border-bittorrent-border px-4 py-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-600 text-white p-1 rounded">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
-              </svg>
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              {/* Logo */}
+              <div className="flex items-center space-x-3">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-6 bg-gradient-to-t from-orange-500 to-orange-400 rounded-sm"></div>
+                  <div className="w-2 h-7 bg-gradient-to-t from-yellow-500 to-yellow-400 rounded-sm"></div>
+                  <div className="w-2 h-8 bg-gradient-to-t from-green-500 to-green-400 rounded-sm"></div>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-800">EasyTradelines</h1>
+                  <p className="text-xs text-green-600 font-medium">Admin Dashboard</p>
+                </div>
+              </div>
             </div>
-            <span className="font-semibold text-gray-800">EasyTradelines CRM v1.0</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-xs text-gray-600">Admin: {me.first_name || me.unique_id}</span>
-            <button 
-              onClick={handleLogout}
-              className="text-xs text-gray-600 hover:text-red-600"
-            >
-              Sign Out
-            </button>
+            
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-800">{me.first_name || 'Admin'}</p>
+                <p className="text-xs text-gray-500">{me.unique_id}</p>
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="text-gray-600 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-gray-100"
+                title="Sign Out"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="bg-bittorrent-toolbar border-b border-bittorrent-border px-4 py-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex space-x-1">
-              <button 
-                onClick={() => handleBulkAction('approved')}
-                disabled={selectedRows.size === 0}
-                className="bg-white border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50 rounded disabled:opacity-50"
-              >
-                ▶ Approve
-              </button>
-              <button 
-                onClick={() => handleBulkAction('rejected')}
-                disabled={selectedRows.size === 0}
-                className="bg-white border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50 rounded disabled:opacity-50"
-              >
-                ✗ Reject
-              </button>
-            </div>
-            <div className="h-4 w-px bg-gray-300"></div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-gray-600">Filter:</span>
-              <select 
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="border border-gray-300 text-xs px-2 py-1 rounded"
-              >
-                <option value="all">All ({stats.total})</option>
-                <option value="pending">Pending ({stats.pending})</option>
-                <option value="approved">Approved ({stats.approved})</option>
-                <option value="completed">Completed ({stats.completed})</option>
-                <option value="rejected">Rejected ({stats.rejected})</option>
-              </select>
+      {/* Stats Cards */}
+      <div className="px-6 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Pending</p>
+                <p className="text-3xl font-bold text-amber-600">{stats.pending}</p>
+              </div>
+              <div className="bg-amber-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
             </div>
           </div>
-          <div className="text-xs text-gray-600">
-            Selected: {selectedRows.size} clients
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Approved</p>
+                <p className="text-3xl font-bold text-green-600">{stats.approved}</p>
+              </div>
+              <div className="bg-green-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-3xl font-bold text-emerald-600">{stats.completed}</p>
+              </div>
+              <div className="bg-emerald-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Clients</p>
+                <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
+              </div>
+              <div className="bg-blue-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Table */}
-      <div className="bg-white border-b border-bittorrent-border">
-        <div className="overflow-x-auto custom-scrollbar" style={{ height: '500px', overflowY: 'auto' }}>
-          <table className="w-full bittorrent-table">
-            <thead className="bg-bittorrent-toolbar sticky top-0" style={{ fontSize: '11px', fontWeight: '600', color: '#495057' }}>
-              <tr>
-                <th className="text-left p-2 border-r border-bittorrent-border w-8">
-                  <input 
-                    type="checkbox" 
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedRows(new Set(filteredClients.map(c => c.id)));
-                      } else {
-                        setSelectedRows(new Set());
-                      }
-                    }}
-                    checked={selectedRows.size === filteredClients.length && filteredClients.length > 0}
-                  />
-                </th>
-                <th className="text-left p-2 border-r border-bittorrent-border w-20">ID</th>
-                <th className="text-left p-2 border-r border-bittorrent-border w-48">Client</th>
-                <th className="text-left p-2 border-r border-bittorrent-border w-24">Status</th>
-                <th className="text-left p-2 border-r border-bittorrent-border w-32">Progress</th>
-                <th className="text-left p-2 border-r border-bittorrent-border w-24">Created</th>
-                <th className="text-left p-2 border-r border-bittorrent-border w-24">Last Activity</th>
-                <th className="text-left p-2 border-r border-bittorrent-border w-16">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredClients.map((client, index) => {
-                const statusInfo = getStatusInfo(client);
-                const isSelected = selectedRows.has(client.id);
-                const rowClass = isSelected 
-                  ? "selected" 
-                  : index % 2 === 0 ? "bittorrent-row" : "bittorrent-row";
-
-                return (
-                  <tr 
-                    key={client.id} 
-                    className={`${rowClass} cursor-pointer border-b border-gray-100`}
-                    onClick={() => toggleRowSelection(client.id)}
+        {/* Main Panel */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          {/* Toolbar */}
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <h3 className="text-lg font-semibold text-gray-800">Client Management</h3>
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={() => handleBulkAction('approved')}
+                    disabled={selectedRows.size === 0}
+                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed flex items-center space-x-2"
                   >
-                    <td className="p-2 border-r border-bittorrent-border">
-                      <input 
-                        type="checkbox" 
-                        checked={isSelected}
-                        onChange={() => toggleRowSelection(client.id)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </td>
-                    <td className="p-2 border-r border-bittorrent-border font-mono text-blue-600">
-                      {client.unique_id}
-                    </td>
-                    <td className="p-2 border-r border-bittorrent-border">
-                      <div className="flex items-center space-x-2">
-                        <div className={`status-icon ${statusInfo.color.replace('bg-', 'status-')}`}></div>
-                        <span className="font-medium text-blue-600 cursor-pointer hover:underline">
-                          {client.first_name} {client.last_name}
-                        </span>
-                      </div>
-                      <div className="text-gray-500 text-xs">{client.email}</div>
-                    </td>
-                    <td className="p-2 border-r border-bittorrent-border">
-                      <span className={`text-xs font-medium ${statusInfo.textColor}`}>
-                        {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="p-2 border-r border-bittorrent-border">
-                      <div className="progress-bar-container mb-1">
-                        <div 
-                          className={statusInfo.progress}
-                          style={{ width: `${client.progress_percentage || 0}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        {client.progress_percentage || 0}% - {client.current_step || 'Pending'}
-                      </span>
-                    </td>
-                    <td className="p-2 border-r border-bittorrent-border">
-                      {new Date(client.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="p-2 border-r border-bittorrent-border">
-                      {timeAgo(client.last_activity)}
-                    </td>
-                    <td className="p-2 border-r border-bittorrent-border">
-                      <div className="flex space-x-1">
-                        {client.status === 'pending' && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateClientStatus(client.id, 'approved');
-                            }}
-                            className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs"
-                          >
-                            ✓
-                          </button>
-                        )}
-                        {['pending', 'verifying'].includes(client.status) && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateClientStatus(client.id, 'rejected');
-                            }}
-                            className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs"
-                          >
-                            ✗
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Approve</span>
+                  </button>
+                  <button 
+                    onClick={() => handleBulkAction('rejected')}
+                    disabled={selectedRows.size === 0}
+                    className="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span>Reject</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <select 
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="border border-gray-300 text-sm px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+                  <option value="all">All ({stats.total})</option>
+                  <option value="pending">Pending ({stats.pending})</option>
+                  <option value="approved">Approved ({stats.approved})</option>
+                  <option value="completed">Completed ({stats.completed})</option>
+                  <option value="rejected">Rejected ({stats.rejected})</option>
+                </select>
+                
+                {selectedRows.size > 0 && (
+                  <span className="text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
+                    {selectedRows.size} selected
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
 
-      {/* Bottom Stats Panel */}
-      <div className="bg-gray-100 border-t border-bittorrent-border px-4 py-2">
-        <div className="grid grid-cols-4 gap-4 text-xs">
-          <div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Active Clients:</span>
-              <span className="font-medium">{stats.total}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Pending:</span>
-              <span className="font-medium text-blue-600">{stats.pending}</span>
-            </div>
-          </div>
-          <div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Approved:</span>
-              <span className="font-medium text-green-600">{stats.approved}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Rejected:</span>
-              <span className="font-medium text-red-600">{stats.rejected}</span>
-            </div>
-          </div>
-          <div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Completed:</span>
-              <span className="font-medium text-green-600">{stats.completed}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Success Rate:</span>
-              <span className="font-medium">
-                {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
-              </span>
-            </div>
-          </div>
-          <div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Processing Speed:</span>
-              <span className="font-medium">2.3 clients/hour</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Avg Time:</span>
-              <span className="font-medium">3.2 days</span>
-            </div>
+          {/* Client Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <input 
+                      type="checkbox" 
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedRows(new Set(filteredClients.map(c => c.id)));
+                        } else {
+                          setSelectedRows(new Set());
+                        }
+                      }}
+                      checked={selectedRows.size === filteredClients.length && filteredClients.length > 0}
+                      className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                    />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredClients.map((client) => {
+                  const statusInfo = getStatusInfo(client);
+                  const isSelected = selectedRows.has(client.id);
+
+                  return (
+                    <tr 
+                      key={client.id} 
+                      className={`hover:bg-gray-50 transition-colors ${isSelected ? 'bg-blue-50' : ''}`}
+                      onClick={() => toggleRowSelection(client.id)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input 
+                          type="checkbox" 
+                          checked={isSelected}
+                          onChange={() => toggleRowSelection(client.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-3 h-3 rounded-full ${statusInfo.color}`}></div>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium text-gray-900">{client.first_name} {client.last_name}</span>
+                              <span className="text-xs text-gray-500 font-mono">{client.unique_id}</span>
+                            </div>
+                            <div className="text-sm text-gray-500">{client.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${statusInfo.bgColor} ${statusInfo.textColor} ${statusInfo.borderColor} border`}>
+                          {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${statusInfo.progress}`}
+                            style={{ width: `${client.progress_percentage || 0}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {client.progress_percentage || 0}% - {client.current_step || 'Pending'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(client.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {timeAgo(client.last_activity)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          {client.status === 'pending' && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateClientStatus(client.id, 'approved');
+                              }}
+                              className="text-green-600 hover:text-green-900 hover:bg-green-50 p-1 rounded transition-colors"
+                              title="Approve"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </button>
+                          )}
+                          {['pending', 'verifying'].includes(client.status) && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateClientStatus(client.id, 'rejected');
+                              }}
+                              className="text-red-600 hover:text-red-900 hover:bg-red-50 p-1 rounded transition-colors"
+                              title="Reject"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {filteredClients.length === 0 && (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No clients found</h3>
+                <p className="mt-1 text-sm text-gray-500">Get started by adding your first client.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
