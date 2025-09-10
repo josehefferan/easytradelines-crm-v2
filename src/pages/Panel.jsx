@@ -1,517 +1,512 @@
-import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import React, { useState } from 'react';
+import { 
+  Users, 
+  TrendingUp, 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  Archive, 
+  Shield, 
+  DollarSign, 
+  Eye, 
+  BarChart3, 
+  Settings, 
+  LogOut, 
+  Plus, 
+  Filter, 
+  UserCheck, 
+  Building2 
+} from 'lucide-react';
 
-export default function Panel() {
-  const [clients, setClients] = useState([]);
-  const [stats, setStats] = useState({});
-  const [me, setMe] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedRows, setSelectedRows] = useState(new Set());
-  const [filter, setFilter] = useState('all');
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      setMe(profile);
-
-      if (profile?.role !== "admin") {
-        setLoading(false);
-        return;
-      }
-
-      const { data: clientsData } = await supabase
-        .from("clients")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      setClients(clientsData || []);
-
-      // Calculate stats
-      const pendingCount = clientsData?.filter(c => ['pending', 'verifying', 'documents', 'payment'].includes(c.status)).length || 0;
-      const approvedCount = clientsData?.filter(c => ['approved', 'active'].includes(c.status)).length || 0;
-      const rejectedCount = clientsData?.filter(c => c.status === 'rejected').length || 0;
-      const completedCount = clientsData?.filter(c => c.status === 'completed').length || 0;
-
-      setStats({
-        pending: pendingCount,
-        approved: approvedCount,
-        rejected: rejectedCount,
-        completed: completedCount,
-        total: clientsData?.length || 0,
-      });
-
-    } catch (error) {
-      console.error("Error loading data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateClientStatus = async (clientId, newStatus) => {
-    try {
-      const updates = { 
-        status: newStatus,
-        last_activity: new Date().toISOString()
-      };
-
-      if (newStatus === 'approved') {
-        updates.progress_percentage = 100;
-        updates.current_step = 'Approved - Ready to Process';
-      } else if (newStatus === 'rejected') {
-        updates.progress_percentage = 0;
-        updates.current_step = 'Rejected';
-      }
-
-      await supabase
-        .from("clients")
-        .update(updates)
-        .eq("id", clientId);
-
-      await loadData();
-    } catch (error) {
-      console.error("Error updating client:", error);
-    }
-  };
-
-  const handleBulkAction = async (action) => {
-    if (selectedRows.size === 0) return;
-
-    const clientIds = Array.from(selectedRows);
-    
-    try {
-      for (const clientId of clientIds) {
-        await updateClientStatus(clientId, action);
-      }
-      setSelectedRows(new Set());
-    } catch (error) {
-      console.error("Error with bulk action:", error);
-    }
-  };
-
-  const toggleRowSelection = (clientId) => {
-    const newSelection = new Set(selectedRows);
-    if (newSelection.has(clientId)) {
-      newSelection.delete(clientId);
-    } else {
-      newSelection.add(clientId);
-    }
-    setSelectedRows(newSelection);
-  };
-
-  const getStatusInfo = (client) => {
-    const statusConfig = {
-      pending: { 
-        color: 'bg-amber-500', 
-        textColor: 'text-amber-700', 
-        bgColor: 'bg-amber-50',
-        borderColor: 'border-amber-200',
-        progress: 'bg-amber-400' 
-      },
-      verifying: { 
-        color: 'bg-blue-500', 
-        textColor: 'text-blue-700', 
-        bgColor: 'bg-blue-50',
-        borderColor: 'border-blue-200',
-        progress: 'bg-blue-500' 
-      },
-      documents: { 
-        color: 'bg-purple-500', 
-        textColor: 'text-purple-700', 
-        bgColor: 'bg-purple-50',
-        borderColor: 'border-purple-200',
-        progress: 'bg-purple-500' 
-      },
-      payment: { 
-        color: 'bg-orange-500', 
-        textColor: 'text-orange-700', 
-        bgColor: 'bg-orange-50',
-        borderColor: 'border-orange-200',
-        progress: 'bg-orange-500' 
-      },
-      approved: { 
-        color: 'bg-green-500', 
-        textColor: 'text-green-700', 
-        bgColor: 'bg-green-50',
-        borderColor: 'border-green-200',
-        progress: 'bg-green-500' 
-      },
-      active: { 
-        color: 'bg-emerald-600', 
-        textColor: 'text-emerald-700', 
-        bgColor: 'bg-emerald-50',
-        borderColor: 'border-emerald-200',
-        progress: 'bg-emerald-600' 
-      },
-      completed: { 
-        color: 'bg-green-700', 
-        textColor: 'text-green-800', 
-        bgColor: 'bg-green-100',
-        borderColor: 'border-green-300',
-        progress: 'bg-green-700' 
-      },
-      rejected: { 
-        color: 'bg-red-500', 
-        textColor: 'text-red-700', 
-        bgColor: 'bg-red-50',
-        borderColor: 'border-red-200',
-        progress: 'bg-red-500' 
-      },
-    };
-    return statusConfig[client.status] || statusConfig.pending;
-  };
-
-  const filteredClients = clients.filter(client => {
-    if (filter === 'all') return true;
-    if (filter === 'pending') return ['pending', 'verifying', 'documents', 'payment'].includes(client.status);
-    return client.status === filter;
+const ModernCRMPanel = () => {
+  const [currentUser] = useState({
+    role: 'admin',
+    name: 'Jose Hefferan',
+    email: 'josehefferan@gmail.com'
   });
 
-  const timeAgo = (date) => {
-    const now = new Date();
-    const past = new Date(date);
-    const diffMs = now - past;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+  const [selectedView, setSelectedView] = useState('dashboard');
 
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
+  const [clients] = useState([
+    {
+      id: 1,
+      name: 'John Smith',
+      email: 'john@example.com',
+      status: 'nuevo_lead',
+      broker: 'Maria Garcia',
+      created: '2024-01-15',
+      lastActivity: '2024-01-20',
+      progress: 20,
+      amount: 2500
+    },
+    {
+      id: 2,
+      name: 'Sarah Johnson',
+      email: 'sarah@example.com',
+      status: 'contactado',
+      broker: 'Carlos Rodriguez',
+      created: '2024-01-18',
+      lastActivity: '2024-01-22',
+      progress: 40,
+      amount: 3200
+    },
+    {
+      id: 3,
+      name: 'Mike Wilson',
+      email: 'mike@example.com',
+      status: 'en_validacion',
+      broker: 'Maria Garcia',
+      created: '2024-01-20',
+      lastActivity: '2024-01-23',
+      progress: 60,
+      amount: 1800
+    },
+    {
+      id: 4,
+      name: 'Lisa Brown',
+      email: 'lisa@example.com',
+      status: 'aprobado',
+      broker: 'Carlos Rodriguez',
+      created: '2024-01-12',
+      lastActivity: '2024-01-24',
+      progress: 80,
+      amount: 4500
+    },
+    {
+      id: 5,
+      name: 'David Lee',
+      email: 'david@example.com',
+      status: 'activo',
+      broker: 'Maria Garcia',
+      created: '2024-01-10',
+      lastActivity: '2024-01-25',
+      progress: 100,
+      amount: 5200
+    }
+  ]);
+
+  const statusConfig = {
+    nuevo_lead: { 
+      label: 'New Lead', 
+      color: 'bg-blue-500', 
+      bgColor: 'bg-blue-50', 
+      textColor: 'text-blue-700',
+      icon: Plus
+    },
+    contactado: { 
+      label: 'Contacted', 
+      color: 'bg-yellow-500', 
+      bgColor: 'bg-yellow-50', 
+      textColor: 'text-yellow-700',
+      icon: Users
+    },
+    en_validacion: { 
+      label: 'In Validation', 
+      color: 'bg-purple-500', 
+      bgColor: 'bg-purple-50', 
+      textColor: 'text-purple-700',
+      icon: Clock
+    },
+    aprobado: { 
+      label: 'Approved', 
+      color: 'bg-green-500', 
+      bgColor: 'bg-green-50', 
+      textColor: 'text-green-700',
+      icon: CheckCircle
+    },
+    rechazado: { 
+      label: 'Rejected', 
+      color: 'bg-red-500', 
+      bgColor: 'bg-red-50', 
+      textColor: 'text-red-700',
+      icon: XCircle
+    },
+    activo: { 
+      label: 'Active', 
+      color: 'bg-emerald-500', 
+      bgColor: 'bg-emerald-50', 
+      textColor: 'text-emerald-700',
+      icon: TrendingUp
+    },
+    muerto: { 
+      label: 'Dead/Archived', 
+      color: 'bg-gray-500', 
+      bgColor: 'bg-gray-50', 
+      textColor: 'text-gray-700',
+      icon: Archive
+    },
+    blacklist: { 
+      label: 'Blacklist', 
+      color: 'bg-black', 
+      bgColor: 'bg-gray-100', 
+      textColor: 'text-gray-900',
+      icon: Shield
+    }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const getStats = () => {
+    const stats = {};
+    Object.keys(statusConfig).forEach(status => {
+      stats[status] = clients.filter(client => client.status === status).length;
+    });
+    stats.total = clients.length;
+    stats.revenue = clients.reduce((sum, client) => sum + client.amount, 0);
+    return stats;
   };
 
-  if (loading) {
+  const stats = getStats();
+
+  const LogoSVG = () => (
+    <svg width="40" height="40" viewBox="0 0 120 60" className="mr-3">
+      <rect x="8" y="35" width="12" height="20" fill="#FF6B35" rx="2"/>
+      <rect x="24" y="25" width="12" height="30" fill="#FFB800" rx="2"/>
+      <rect x="40" y="15" width="12" height="40" fill="#7CB342" rx="2"/>
+      <path d="M45 8 L65 8 L60 3 M65 8 L60 13" 
+            stroke="#2E7D32" 
+            strokeWidth="3" 
+            fill="none" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"/>
+      <text x="75" y="25" 
+            fill="#2E7D32" 
+            fontSize="14" 
+            fontWeight="bold" 
+            fontFamily="Arial, sans-serif">EASY</text>
+      <text x="75" y="42" 
+            fill="#2E7D32" 
+            fontSize="14" 
+            fontWeight="bold" 
+            fontFamily="Arial, sans-serif">TRADELINES</text>
+    </svg>
+  );
+
+  const PipelineBoard = () => {
+    const pipelineStages = ['nuevo_lead', 'contactado', 'en_validacion', 'aprobado', 'activo'];
+    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading CRM...</p>
-        </div>
+      <div className="grid grid-cols-5 gap-4 h-full">
+        {pipelineStages.map(stage => {
+          const stageClients = clients.filter(client => client.status === stage);
+          const config = statusConfig[stage];
+          const IconComponent = config.icon;
+          
+          return (
+            <div key={stage} className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <IconComponent className="w-4 h-4 text-gray-600" />
+                  <h3 className="font-semibold text-gray-800">{config.label}</h3>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full ${config.bgColor} ${config.textColor}`}>
+                  {stageClients.length}
+                </span>
+              </div>
+              
+              <div className="space-y-3">
+                {stageClients.map(client => (
+                  <div key={client.id} className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-sm text-gray-900">{client.name}</h4>
+                      <span className="text-xs text-gray-500">${client.amount}</span>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-2">{client.email}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">{client.broker}</span>
+                      <div className="w-12 bg-gray-200 rounded-full h-1">
+                        <div 
+                          className={`h-1 rounded-full ${config.color}`}
+                          style={{ width: `${client.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
-  }
+  };
 
-  if (!me || me.role !== "admin") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-2xl shadow-lg">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+  const DashboardStats = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-blue-100 text-sm">New Leads</p>
+            <p className="text-3xl font-bold">{stats.nuevo_lead}</p>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
-          <p className="text-gray-600 mb-6">You need admin privileges to access this panel.</p>
-          <button 
-            onClick={handleLogout}
-            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
-          >
+          <Plus className="w-8 h-8 text-blue-200" />
+        </div>
+        <div className="mt-4 text-blue-100 text-sm">+12% vs last month</div>
+      </div>
+
+      <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-green-100 text-sm">Active</p>
+            <p className="text-3xl font-bold">{stats.activo}</p>
+          </div>
+          <TrendingUp className="w-8 h-8 text-green-200" />
+        </div>
+        <div className="mt-4 text-green-100 text-sm">+8% vs last month</div>
+      </div>
+
+      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-purple-100 text-sm">In Validation</p>
+            <p className="text-3xl font-bold">{stats.en_validacion}</p>
+          </div>
+          <Clock className="w-8 h-8 text-purple-200" />
+        </div>
+        <div className="mt-4 text-purple-100 text-sm">Average 3 days</div>
+      </div>
+
+      <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-emerald-100 text-sm">Total Revenue</p>
+            <p className="text-3xl font-bold">${stats.revenue.toLocaleString()}</p>
+          </div>
+          <DollarSign className="w-8 h-8 text-emerald-200" />
+        </div>
+        <div className="mt-4 text-emerald-100 text-sm">+15% vs last month</div>
+      </div>
+    </div>
+  );
+
+  const getNavigationItems = () => {
+    const baseItems = [
+      { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+      { id: 'pipeline', label: 'Pipeline', icon: TrendingUp },
+      { id: 'clients', label: 'Clients', icon: Users },
+      { id: 'archive', label: 'Archive', icon: Archive },
+      { id: 'reports', label: 'Reports', icon: Eye }
+    ];
+
+    // Admin-only items
+    if (currentUser.role === 'admin') {
+      baseItems.push(
+        { id: 'brokers', label: 'Brokers', icon: UserCheck },
+        { id: 'affiliates', label: 'Affiliates & Inhouse', icon: Building2 }
+      );
+    }
+
+    baseItems.push({ id: 'settings', label: 'Settings', icon: Settings });
+    return baseItems;
+  };
+
+  const navigationItems = getNavigationItems();
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
+        <div className="flex items-center p-6 border-b">
+          <LogoSVG />
+          <div>
+            <h1 className="text-lg font-bold text-gray-800">EasyTradelines</h1>
+            <p className="text-xs text-green-600 font-medium">{currentUser.role.toUpperCase()}</p>
+          </div>
+        </div>
+
+        <nav className="mt-6">
+          {navigationItems.map(item => {
+            const IconComponent = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setSelectedView(item.id)}
+                className={`w-full flex items-center px-6 py-3 text-left transition-colors ${
+                  selectedView === item.id 
+                    ? 'bg-green-50 text-green-700 border-r-2 border-green-600' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <IconComponent className="w-5 h-5 mr-3" />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="absolute bottom-0 w-64 p-6 border-t">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-medium text-sm">
+                {currentUser.name.split(' ').map(n => n[0]).join('')}
+              </span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
+              <p className="text-xs text-gray-500">{currentUser.email}</p>
+            </div>
+          </div>
+          <button className="w-full flex items-center justify-center px-4 py-2 text-gray-600 hover:text-red-600 transition-colors">
+            <LogOut className="w-4 h-4 mr-2" />
             Sign Out
           </button>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {/* Logo */}
-              <div className="flex items-center space-x-3">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-6 bg-gradient-to-t from-orange-500 to-orange-400 rounded-sm"></div>
-                  <div className="w-2 h-7 bg-gradient-to-t from-yellow-500 to-yellow-400 rounded-sm"></div>
-                  <div className="w-2 h-8 bg-gradient-to-t from-green-500 to-green-400 rounded-sm"></div>
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-800">EasyTradelines</h1>
-                  <p className="text-xs text-green-600 font-medium">Admin Dashboard</p>
-                </div>
-              </div>
-            </div>
+      {/* Main Content */}
+      <div className="ml-64 p-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {selectedView === 'dashboard' && 'Dashboard'}
+              {selectedView === 'pipeline' && 'Sales Pipeline'}
+              {selectedView === 'clients' && 'Client Management'}
+              {selectedView === 'archive' && 'Archived Clients'}
+              {selectedView === 'brokers' && 'Broker Management'}
+              {selectedView === 'affiliates' && 'Affiliates & Inhouse List'}
+              {selectedView === 'reports' && 'Reports & Analytics'}
+              {selectedView === 'settings' && 'Settings'}
+            </h2>
+            <p className="text-gray-600 mt-1">
+              {selectedView === 'dashboard' && 'CRM overview and key metrics'}
+              {selectedView === 'pipeline' && 'Kanban view of client pipeline'}
+              {selectedView === 'clients' && 'Manage all clients and tradelines'}
+              {selectedView === 'archive' && 'View archived and dead clients'}
+              {selectedView === 'brokers' && 'Manage brokers and their history'}
+              {selectedView === 'affiliates' && 'Manage affiliates and inhouse tradelines'}
+              {selectedView === 'reports' && 'Performance metrics and reports'}
+              {selectedView === 'settings' && 'System configuration'}
+            </p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+              <Plus className="w-4 h-4" />
+              <span>New Client</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Content based on selected view */}
+        {selectedView === 'dashboard' && (
+          <div>
+            <DashboardStats />
             
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-800">{me.first_name || 'Admin'}</p>
-                <p className="text-xs text-gray-500">{me.unique_id}</p>
-              </div>
-              <button 
-                onClick={handleLogout}
-                className="text-gray-600 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-gray-100"
-                title="Sign Out"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="px-6 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-3xl font-bold text-amber-600">{stats.pending}</p>
-              </div>
-              <div className="bg-amber-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Approved</p>
-                <p className="text-3xl font-bold text-green-600">{stats.approved}</p>
-              </div>
-              <div className="bg-green-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-3xl font-bold text-emerald-600">{stats.completed}</p>
-              </div>
-              <div className="bg-emerald-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Clients</p>
-                <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
-              </div>
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Panel */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          {/* Toolbar */}
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <h3 className="text-lg font-semibold text-gray-800">Client Management</h3>
-                <div className="flex space-x-2">
-                  <button 
-                    onClick={() => handleBulkAction('approved')}
-                    disabled={selectedRows.size === 0}
-                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed flex items-center space-x-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Approve</span>
-                  </button>
-                  <button 
-                    onClick={() => handleBulkAction('rejected')}
-                    disabled={selectedRows.size === 0}
-                    className="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed flex items-center space-x-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    <span>Reject</span>
-                  </button>
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+                <div className="space-y-4">
+                  {clients.slice(0, 5).map(client => {
+                    const StatusIcon = statusConfig[client.status].icon;
+                    return (
+                      <div key={client.id} className="flex items-center space-x-3">
+                        <div className={`w-8 h-8 rounded-full ${statusConfig[client.status].color} flex items-center justify-center`}>
+                          <StatusIcon className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">{client.name}</p>
+                          <p className="text-xs text-gray-500">Changed to {statusConfig[client.status].label}</p>
+                        </div>
+                        <span className="text-xs text-gray-400">{client.lastActivity}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-              
-              <div className="flex items-center space-x-4">
-                <select 
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="border border-gray-300 text-sm px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="all">All ({stats.total})</option>
-                  <option value="pending">Pending ({stats.pending})</option>
-                  <option value="approved">Approved ({stats.approved})</option>
-                  <option value="completed">Completed ({stats.completed})</option>
-                  <option value="rejected">Rejected ({stats.rejected})</option>
-                </select>
-                
-                {selectedRows.size > 0 && (
-                  <span className="text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
-                    {selectedRows.size} selected
-                  </span>
-                )}
+
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Summary</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {Object.entries(statusConfig).map(([status, config]) => {
+                    const StatusIcon = config.icon;
+                    return (
+                      <div key={status} className={`p-3 rounded-lg ${config.bgColor}`}>
+                        <div className="flex items-center space-x-2">
+                          <StatusIcon className={`w-4 h-4 ${config.textColor}`} />
+                          <span className={`text-sm font-medium ${config.textColor}`}>
+                            {config.label}
+                          </span>
+                        </div>
+                        <p className={`text-2xl font-bold ${config.textColor} mt-1`}>
+                          {stats[status] || 0}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
+        )}
 
-          {/* Client Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <input 
-                      type="checkbox" 
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedRows(new Set(filteredClients.map(c => c.id)));
-                        } else {
-                          setSelectedRows(new Set());
-                        }
-                      }}
-                      checked={selectedRows.size === filteredClients.length && filteredClients.length > 0}
-                      className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredClients.map((client) => {
-                  const statusInfo = getStatusInfo(client);
-                  const isSelected = selectedRows.has(client.id);
-
-                  return (
-                    <tr 
-                      key={client.id} 
-                      className={`hover:bg-gray-50 transition-colors ${isSelected ? 'bg-blue-50' : ''}`}
-                      onClick={() => toggleRowSelection(client.id)}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input 
-                          type="checkbox" 
-                          checked={isSelected}
-                          onChange={() => toggleRowSelection(client.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-3 h-3 rounded-full ${statusInfo.color}`}></div>
-                          <div>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium text-gray-900">{client.first_name} {client.last_name}</span>
-                              <span className="text-xs text-gray-500 font-mono">{client.unique_id}</span>
-                            </div>
-                            <div className="text-sm text-gray-500">{client.email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${statusInfo.bgColor} ${statusInfo.textColor} ${statusInfo.borderColor} border`}>
-                          {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                          <div 
-                            className={`h-2 rounded-full transition-all duration-300 ${statusInfo.progress}`}
-                            style={{ width: `${client.progress_percentage || 0}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {client.progress_percentage || 0}% - {client.current_step || 'Pending'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(client.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {timeAgo(client.last_activity)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          {client.status === 'pending' && (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateClientStatus(client.id, 'approved');
-                              }}
-                              className="text-green-600 hover:text-green-900 hover:bg-green-50 p-1 rounded transition-colors"
-                              title="Approve"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </button>
-                          )}
-                          {['pending', 'verifying'].includes(client.status) && (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateClientStatus(client.id, 'rejected');
-                              }}
-                              className="text-red-600 hover:text-red-900 hover:bg-red-50 p-1 rounded transition-colors"
-                              title="Reject"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            {filteredClients.length === 0 && (
-              <div className="text-center py-12">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No clients found</h3>
-                <p className="mt-1 text-sm text-gray-500">Get started by adding your first client.</p>
+        {selectedView === 'pipeline' && (
+          <div className="h-screen">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <Filter className="w-5 h-5 text-gray-400" />
+                <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                  <option>All Brokers</option>
+                  <option>Maria Garcia</option>
+                  <option>Carlos Rodriguez</option>
+                </select>
               </div>
-            )}
+              <div className="text-sm text-gray-600">
+                Total: {clients.length} clients
+              </div>
+            </div>
+            <PipelineBoard />
           </div>
-        </div>
+        )}
+
+        {selectedView === 'clients' && (
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6">
+              <p className="text-gray-600">Detailed client view - Enhanced table similar to current but improved</p>
+            </div>
+          </div>
+        )}
+
+        {selectedView === 'archive' && (
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6">
+              <p className="text-gray-600">Archived and dead clients management</p>
+            </div>
+          </div>
+        )}
+
+        {selectedView === 'brokers' && currentUser.role === 'admin' && (
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6">
+              <p className="text-gray-600">Broker management and history - Admin only</p>
+            </div>
+          </div>
+        )}
+
+        {selectedView === 'affiliates' && currentUser.role === 'admin' && (
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6">
+              <p className="text-gray-600">Affiliates and inhouse tradelines management - Admin only</p>
+            </div>
+          </div>
+        )}
+
+        {selectedView === 'reports' && (
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6">
+              <p className="text-gray-600">Reports and analytics dashboard</p>
+            </div>
+          </div>
+        )}
+
+        {selectedView === 'settings' && (
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6">
+              <p className="text-gray-600">System settings and configuration</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
-}
+};
+
+export default ModernCRMPanel;
