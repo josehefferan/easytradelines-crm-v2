@@ -301,7 +301,7 @@ const ModernCRMPanel = () => {
   const navigationItems = getNavigationItems();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-red-500 p-4">
       {/* Sidebar */}
       <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
         <div className="flex items-center p-6 border-b">
