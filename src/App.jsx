@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login.jsx";
 import Panel from "./pages/Panel.jsx";
 import MiCuenta from "./pages/MiCuenta.jsx";
+import ResetPassword from "./pages/ResetPassword.jsx";  // <- AGREGAR ESTA LÍNEA
 import RequireAuth from "./lib/RequireAuth.jsx";
 
 export default function App() {
@@ -10,6 +11,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />  {/* <- AGREGAR ESTA LÍNEA */}
         <Route 
           path="/panel" 
           element={
