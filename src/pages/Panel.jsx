@@ -19,10 +19,6 @@ import {
 } from 'lucide-react';
 import { supabase } from "../lib/supabase";
 import NewClientModal from '../components/NewClientModal';
-// import NewBrokerModal from '../components/NewBrokerModal';
-// import NewAffiliateModal from '../components/NewAffiliateModal';
-import NewBrokerModal from '../components/NewBrokerModal';
-import NewAffiliateModal from '../components/NewAffiliateModal';
 
 const ModernCRMPanel = () => {
   const [currentUser] = useState({
@@ -32,11 +28,7 @@ const ModernCRMPanel = () => {
   });
 
   const [selectedView, setSelectedView] = useState('dashboard');
-  
-  // Estados para los modales
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
-  const [isNewBrokerModalOpen, setIsNewBrokerModalOpen] = useState(false);
-  const [isNewAffiliateModalOpen, setIsNewAffiliateModalOpen] = useState(false);
 
   const [clients] = useState([
     {
@@ -218,44 +210,6 @@ const ModernCRMPanel = () => {
     window.location.href = '/login';
   };
 
-  // Función para determinar qué botones mostrar según la vista actual
-  const getHeaderButtons = () => {
-    const buttons = [];
-    
-    // Botón New Client - siempre visible
-    buttons.push({
-      key: 'client',
-      label: 'New Client',
-      icon: Users,
-      color: '#16a34a',
-      hoverColor: '#15803d',
-      onClick: () => setIsNewClientModalOpen(true)
-    });
-
-    // Botones adicionales solo para admin
-    if (currentUser.role === 'admin') {
-      buttons.push({
-        key: 'broker',
-        label: 'New Broker',
-        icon: UserCheck,
-        color: '#2563eb',
-        hoverColor: '#1d4ed8',
-        onClick: () => setIsNewBrokerModalOpen(true)
-      });
-
-      buttons.push({
-        key: 'affiliate',
-        label: 'New Affiliate',
-        icon: Building2,
-        color: '#7c3aed',
-        hoverColor: '#6d28d9',
-        onClick: () => setIsNewAffiliateModalOpen(true)
-      });
-    }
-
-    return buttons;
-  };
-
   // Inline Styles
   const styles = {
     container: {
@@ -380,13 +334,9 @@ const ModernCRMPanel = () => {
       marginTop: '4px',
       fontSize: '16px'
     },
-    // Nuevo estilo para el contenedor de botones
-    buttonsContainer: {
-      display: 'flex',
-      gap: '12px',
-      alignItems: 'center'
-    },
-    actionButton: {
+    newClientButton: {
+      backgroundColor: '#16a34a',
+      color: 'white',
       padding: '8px 16px',
       borderRadius: '8px',
       border: 'none',
@@ -396,8 +346,7 @@ const ModernCRMPanel = () => {
       cursor: 'pointer',
       transition: 'background-color 0.2s',
       fontSize: '14px',
-      fontWeight: '500',
-      color: 'white'
+      fontWeight: '500'
     },
     statsGrid: {
       display: 'grid',
@@ -577,7 +526,7 @@ const ModernCRMPanel = () => {
 
       {/* Main Content */}
       <div style={styles.mainContent}>
-        {/* Header con múltiples botones */}
+        {/* Header */}
         <div style={styles.header}>
           <div>
             <h2 style={styles.headerTitle}>
@@ -601,32 +550,19 @@ const ModernCRMPanel = () => {
               {selectedView === 'settings' && 'System configuration'}
             </p>
           </div>
-          
-          {/* Container de botones dinámicos */}
-          <div style={styles.buttonsContainer}>
-            {getHeaderButtons().map(button => {
-              const IconComponent = button.icon;
-              return (
-                <button
-                  key={button.key}
-                  onClick={button.onClick}
-                  style={{
-                    ...styles.actionButton,
-                    backgroundColor: button.color
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = button.hoverColor;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = button.color;
-                  }}
-                >
-                  <Plus style={{ width: '16px', height: '16px' }} />
-                  {button.label}
-                </button>
-              );
-            })}
-          </div>
+          <button 
+            onClick={() => setIsNewClientModalOpen(true)}
+            style={styles.newClientButton}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#15803d';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#16a34a';
+            }}
+          >
+            <Plus style={{ width: '16px', height: '16px' }} />
+            New Client
+          </button>
         </div>
 
         {/* Dashboard Content */}
@@ -769,22 +705,10 @@ const ModernCRMPanel = () => {
         )}
       </div>
       
-      {/* Modales */}
+      {/* Solo el modal de New Client */}
       <NewClientModal 
         isOpen={isNewClientModalOpen}
         onClose={() => setIsNewClientModalOpen(false)}
-        currentUser={currentUser}
-      />
-      
-      <NewBrokerModal 
-        isOpen={isNewBrokerModalOpen}
-        onClose={() => setIsNewBrokerModalOpen(false)}
-        currentUser={currentUser}
-      />
-      
-      <NewAffiliateModal 
-        isOpen={isNewAffiliateModalOpen}
-        onClose={() => setIsNewAffiliateModalOpen(false)}
         currentUser={currentUser}
       />
     </div>
