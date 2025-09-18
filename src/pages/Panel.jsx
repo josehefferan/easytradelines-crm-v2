@@ -428,7 +428,7 @@ const ModernCRMPanel = () => {
     statTrend: {
       fontSize: '14px',
       marginTop: '16px',
-      opacity: 0.9'
+      opacity: 0.9
     },
     contentGrid: {
       display: 'grid',
