@@ -1,5 +1,3 @@
-import NewClientModal from '../components/NewClientModal';
-const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
 import React, { useState } from 'react';
 import { 
   Users, 
@@ -20,6 +18,7 @@ import {
   Building2 
 } from 'lucide-react';
 import { supabase } from "../lib/supabase";
+import NewClientModal from '../components/NewClientModal';
 
 const ModernCRMPanel = () => {
   const [currentUser] = useState({
@@ -29,6 +28,7 @@ const ModernCRMPanel = () => {
   });
 
   const [selectedView, setSelectedView] = useState('dashboard');
+  const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
 
   const [clients] = useState([
     {
@@ -334,13 +334,19 @@ const ModernCRMPanel = () => {
       marginTop: '4px',
       fontSize: '16px'
     },
-<button 
-  onClick={() => setIsNewClientModalOpen(true)}
-  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
->
-  <Plus className="w-4 h-4" />
-  <span>New Client</span>
-</button>
+    newClientButton: {
+      backgroundColor: '#16a34a',
+      color: 'white',
+      padding: '8px 16px',
+      borderRadius: '8px',
+      border: 'none',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s',
+      fontSize: '14px',
+      fontWeight: '500'
     },
     statsGrid: {
       display: 'grid',
@@ -545,6 +551,7 @@ const ModernCRMPanel = () => {
             </p>
           </div>
           <button 
+            onClick={() => setIsNewClientModalOpen(true)}
             style={styles.newClientButton}
             onMouseEnter={(e) => {
               e.target.style.backgroundColor = '#15803d';
@@ -694,16 +701,17 @@ const ModernCRMPanel = () => {
               {selectedView === 'reports' && 'Reports and analytics dashboard - Coming soon'}
               {selectedView === 'settings' && 'System settings and configuration - Coming soon'}
             </p>
-        </div>
+          </div>
+        )}
       </div>
       
-      {/* Modal - AGREGAR AQUÍ */}
+      {/* Modal */}
       <NewClientModal 
         isOpen={isNewClientModalOpen}
         onClose={() => setIsNewClientModalOpen(false)}
-        currentUser={me}
+        currentUser={currentUser}
       />
-    </div>  // <- Cierre del div principal
+    </div>
   );
 };
 
