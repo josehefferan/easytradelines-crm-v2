@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { supabase } from "../lib/supabase";
 import NewClientModal from '../components/NewClientModal';
+// import NewBrokerModal from '../components/NewBrokerModal';
+// import NewAffiliateModal from '../components/NewAffiliateModal';
 import NewBrokerModal from '../components/NewBrokerModal';
 import NewAffiliateModal from '../components/NewAffiliateModal';
 
