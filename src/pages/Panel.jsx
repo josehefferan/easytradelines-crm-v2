@@ -1,3 +1,5 @@
+import NewClientModal from '../components/NewClientModal';
+const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
 import React, { useState } from 'react';
 import { 
   Users, 
@@ -332,19 +334,13 @@ const ModernCRMPanel = () => {
       marginTop: '4px',
       fontSize: '16px'
     },
-    newClientButton: {
-      backgroundColor: '#16a34a',
-      color: 'white',
-      padding: '8px 16px',
-      borderRadius: '8px',
-      border: 'none',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      cursor: 'pointer',
-      transition: 'background-color 0.2s',
-      fontSize: '14px',
-      fontWeight: '500'
+<button 
+  onClick={() => setIsNewClientModalOpen(true)}
+  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+>
+  <Plus className="w-4 h-4" />
+  <span>New Client</span>
+</button>
     },
     statsGrid: {
       display: 'grid',
@@ -698,10 +694,16 @@ const ModernCRMPanel = () => {
               {selectedView === 'reports' && 'Reports and analytics dashboard - Coming soon'}
               {selectedView === 'settings' && 'System settings and configuration - Coming soon'}
             </p>
-          </div>
-        )}
+        </div>
       </div>
-    </div>
+      
+      {/* Modal - AGREGAR AQUÍ */}
+      <NewClientModal 
+        isOpen={isNewClientModalOpen}
+        onClose={() => setIsNewClientModalOpen(false)}
+        currentUser={me}
+      />
+    </div>  // <- Cierre del div principal
   );
 };
 
