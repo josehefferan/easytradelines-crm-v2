@@ -200,10 +200,6 @@ const NewAffiliateModal = ({ isOpen, onClose, currentUser, onAffiliateCreated })
       transition: 'border-color 0.2s, box-shadow 0.2s',
       outline: 'none'
     },
-    inputFocus: {
-      borderColor: '#7c3aed',
-      boxShadow: '0 0 0 3px rgba(124, 58, 237, 0.1)'
-    },
     buttonGroup: {
       display: 'flex',
       gap: '12px',
@@ -264,221 +260,235 @@ const NewAffiliateModal = ({ isOpen, onClose, currentUser, onAffiliateCreated })
       padding: '12px',
       fontSize: '13px',
       color: '#6b21a8'
+    },
+    spinner: {
+      width: '16px',
+      height: '16px',
+      animation: 'spin 1s linear infinite'
     }
   };
 
   return (
-    <div style={styles.overlay} onClick={handleClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div style={styles.header}>
-          <div style={styles.headerTitle}>
-            <Building2 style={{ width: '24px', height: '24px', color: '#7c3aed' }} />
-            <div>
-              <h2 style={styles.title}>New Affiliate</h2>
-              <p style={styles.subtitle}>Add a new affiliate partner to the system</p>
+    <>
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+      
+      <div style={styles.overlay} onClick={handleClose}>
+        <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div style={styles.header}>
+            <div style={styles.headerTitle}>
+              <Building2 style={{ width: '24px', height: '24px', color: '#7c3aed' }} />
+              <div>
+                <h2 style={styles.title}>New Affiliate</h2>
+                <p style={styles.subtitle}>Add a new affiliate partner to the system</p>
+              </div>
             </div>
-          </div>
-          <button
-            onClick={handleClose}
-            style={styles.closeButton}
-            disabled={loading}
-            onMouseEnter={(e) => {
-              if (!loading) {
-                e.target.style.backgroundColor = '#f3f4f6';
-                e.target.style.color = '#374151';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'transparent';
-              e.target.style.color = '#6b7280';
-            }}
-          >
-            <X style={{ width: '20px', height: '20px' }} />
-          </button>
-        </div>
-
-        <div style={styles.content}>
-          {error && (
-            <div style={styles.alertError}>
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div style={styles.alertSuccess}>
-              {success}
-            </div>
-          )}
-
-          <div style={styles.infoBox}>
-            💡 Affiliates can refer clients and earn commission on successful sales. 
-            Default commission rate is 8% but can be customized per affiliate.
+            <button
+              onClick={handleClose}
+              style={styles.closeButton}
+              disabled={loading}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.target.style.backgroundColor = '#f3f4f6';
+                  e.target.style.color = '#374151';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = '#6b7280';
+              }}
+            >
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
           </div>
 
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.row}>
+          <div style={styles.content}>
+            {error && (
+              <div style={styles.alertError}>
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div style={styles.alertSuccess}>
+                {success}
+              </div>
+            )}
+
+            <div style={styles.infoBox}>
+              💡 Affiliates can refer clients and earn commission on successful sales. 
+              Default commission rate is 8% but can be customized per affiliate.
+            </div>
+
+            <form onSubmit={handleSubmit} style={styles.form}>
+              <div style={styles.row}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>
+                    <User style={{ width: '16px', height: '16px' }} />
+                    First Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                    placeholder="Enter first name"
+                    disabled={loading}
+                    required
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>
+                    <User style={{ width: '16px', height: '16px' }} />
+                    Last Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                    placeholder="Enter last name"
+                    disabled={loading}
+                    required
+                  />
+                </div>
+              </div>
+
               <div style={styles.formGroup}>
                 <label style={styles.label}>
-                  <User style={{ width: '16px', height: '16px' }} />
-                  First Name *
+                  <Mail style={{ width: '16px', height: '16px' }} />
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  style={styles.input}
+                  placeholder="affiliate@company.com"
+                  disabled={loading}
+                  required
+                />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>
+                  <Building2 style={{ width: '16px', height: '16px' }} />
+                  Company Name *
                 </label>
                 <input
                   type="text"
-                  name="firstName"
-                  value={formData.firstName}
+                  name="company"
+                  value={formData.company}
                   onChange={handleInputChange}
                   style={styles.input}
-                  placeholder="Enter first name"
+                  placeholder="Affiliate Company LLC"
                   disabled={loading}
                   required
                 />
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label}>
-                  <User style={{ width: '16px', height: '16px' }} />
-                  Last Name *
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  style={styles.input}
-                  placeholder="Enter last name"
-                  disabled={loading}
-                  required
-                />
-              </div>
-            </div>
+              <div style={styles.row}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>
+                    <Phone style={{ width: '16px', height: '16px' }} />
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                    placeholder="+1-555-0123"
+                    disabled={loading}
+                    required
+                  />
+                </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>
-                <Mail style={{ width: '16px', height: '16px' }} />
-                Email Address *
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                style={styles.input}
-                placeholder="affiliate@company.com"
-                disabled={loading}
-                required
-              />
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>
-                <Building2 style={{ width: '16px', height: '16px' }} />
-                Company Name *
-              </label>
-              <input
-                type="text"
-                name="company"
-                value={formData.company}
-                onChange={handleInputChange}
-                style={styles.input}
-                placeholder="Affiliate Company LLC"
-                disabled={loading}
-                required
-              />
-            </div>
-
-            <div style={styles.row}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>
-                  <Phone style={{ width: '16px', height: '16px' }} />
-                  Phone Number *
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  style={styles.input}
-                  placeholder="+1-555-0123"
-                  disabled={loading}
-                  required
-                />
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>
+                    <DollarSign style={{ width: '16px', height: '16px' }} />
+                    Commission Rate (%)
+                  </label>
+                  <input
+                    type="number"
+                    name="commissionRate"
+                    value={formData.commissionRate}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                    placeholder="8.00"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    disabled={loading}
+                  />
+                </div>
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label}>
-                  <DollarSign style={{ width: '16px', height: '16px' }} />
-                  Commission Rate (%)
-                </label>
-                <input
-                  type="number"
-                  name="commissionRate"
-                  value={formData.commissionRate}
-                  onChange={handleInputChange}
-                  style={styles.input}
-                  placeholder="8.00"
-                  min="0"
-                  max="100"
-                  step="0.01"
+              <div style={styles.buttonGroup}>
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  style={{
+                    ...styles.button,
+                    ...styles.cancelButton
+                  }}
                   disabled={loading}
-                />
+                  onMouseEnter={(e) => {
+                    if (!loading) {
+                      e.target.style.backgroundColor = '#f9fafb';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!loading) {
+                      e.target.style.backgroundColor = 'white';
+                    }
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    ...styles.button,
+                    ...styles.submitButton,
+                    ...(loading ? styles.submitButtonDisabled : {})
+                  }}
+                  disabled={loading}
+                  onMouseEnter={(e) => {
+                    if (!loading) {
+                      e.target.style.backgroundColor = '#6d28d9';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!loading) {
+                      e.target.style.backgroundColor = '#7c3aed';
+                    }
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 style={styles.spinner} />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Affiliate'
+                  )}
+                </button>
               </div>
-            </div>
-
-            <div style={styles.buttonGroup}>
-              <button
-                type="button"
-                onClick={handleClose}
-                style={{
-                  ...styles.button,
-                  ...styles.cancelButton
-                }}
-                disabled={loading}
-                onMouseEnter={(e) => {
-                  if (!loading) {
-                    e.target.style.backgroundColor = '#f9fafb';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!loading) {
-                    e.target.style.backgroundColor = 'white';
-                  }
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                style={{
-                  ...styles.button,
-                  ...styles.submitButton,
-                  ...(loading ? styles.submitButtonDisabled : {})
-                }}
-                disabled={loading}
-                onMouseEnter={(e) => {
-                  if (!loading) {
-                    e.target.style.backgroundColor = '#6d28d9';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!loading) {
-                    e.target.style.backgroundColor = '#7c3aed';
-                  }
-                }}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 style={{ width: '16px', height: '16px' }} className="animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Affiliate'
-                )}
-              </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
