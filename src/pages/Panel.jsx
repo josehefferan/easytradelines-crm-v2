@@ -21,6 +21,7 @@ import { supabase } from "../lib/supabase";
 import NewClientModal from '../components/NewClientModal';
 import NewBrokerModal from '../components/NewBrokerModal';
 import NewAffiliateModal from '../components/NewAffiliateModal';
+import ClientManagement from '../components/ClientManagement'; // ← NUEVO IMPORT
 
 const ModernCRMPanel = () => {
   const [currentUser] = useState({
@@ -428,7 +429,7 @@ const ModernCRMPanel = () => {
     statTrend: {
       fontSize: '14px',
       marginTop: '16px',
-      opacity: 0.9
+      opacity: 0.9'
     },
     contentGrid: {
       display: 'grid',
@@ -575,57 +576,57 @@ const ModernCRMPanel = () => {
 
       {/* Main Content */}
       <div style={styles.mainContent}>
-        {/* Header con múltiples botones */}
-        <div style={styles.header}>
-          <div>
-            <h2 style={styles.headerTitle}>
-              {selectedView === 'dashboard' && 'Dashboard'}
-              {selectedView === 'pipeline' && 'Sales Pipeline'}
-              {selectedView === 'clients' && 'Client Management'}
-              {selectedView === 'archive' && 'Archived Clients'}
-              {selectedView === 'brokers' && 'Broker Management'}
-              {selectedView === 'affiliates' && 'Affiliates & Inhouse List'}
-              {selectedView === 'reports' && 'Reports & Analytics'}
-              {selectedView === 'settings' && 'Settings'}
-            </h2>
-            <p style={styles.headerSubtitle}>
-              {selectedView === 'dashboard' && 'CRM overview and key metrics'}
-              {selectedView === 'pipeline' && 'Kanban view of client pipeline'}
-              {selectedView === 'clients' && 'Manage all clients and tradelines'}
-              {selectedView === 'archive' && 'View archived and dead clients'}
-              {selectedView === 'brokers' && 'Manage brokers and their history'}
-              {selectedView === 'affiliates' && 'Manage affiliates and inhouse tradelines'}
-              {selectedView === 'reports' && 'Performance metrics and reports'}
-              {selectedView === 'settings' && 'System configuration'}
-            </p>
+        {/* Header solo para las vistas que NO son ClientManagement */}
+        {selectedView !== 'clients' && (
+          <div style={styles.header}>
+            <div>
+              <h2 style={styles.headerTitle}>
+                {selectedView === 'dashboard' && 'Dashboard'}
+                {selectedView === 'pipeline' && 'Sales Pipeline'}
+                {selectedView === 'archive' && 'Archived Clients'}
+                {selectedView === 'brokers' && 'Broker Management'}
+                {selectedView === 'affiliates' && 'Affiliates & Inhouse List'}
+                {selectedView === 'reports' && 'Reports & Analytics'}
+                {selectedView === 'settings' && 'Settings'}
+              </h2>
+              <p style={styles.headerSubtitle}>
+                {selectedView === 'dashboard' && 'CRM overview and key metrics'}
+                {selectedView === 'pipeline' && 'Kanban view of client pipeline'}
+                {selectedView === 'archive' && 'View archived and dead clients'}
+                {selectedView === 'brokers' && 'Manage brokers and their history'}
+                {selectedView === 'affiliates' && 'Manage affiliates and inhouse tradelines'}
+                {selectedView === 'reports' && 'Performance metrics and reports'}
+                {selectedView === 'settings' && 'System configuration'}
+              </p>
+            </div>
+            
+            {/* Container de botones dinámicos */}
+            <div style={styles.buttonsContainer}>
+              {getHeaderButtons().map(button => {
+                const IconComponent = button.icon;
+                return (
+                  <button
+                    key={button.key}
+                    onClick={button.onClick}
+                    style={{
+                      ...styles.actionButton,
+                      backgroundColor: button.color
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = button.hoverColor;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = button.color;
+                    }}
+                  >
+                    <Plus style={{ width: '16px', height: '16px' }} />
+                    {button.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          
-          {/* Container de botones dinámicos */}
-          <div style={styles.buttonsContainer}>
-            {getHeaderButtons().map(button => {
-              const IconComponent = button.icon;
-              return (
-                <button
-                  key={button.key}
-                  onClick={button.onClick}
-                  style={{
-                    ...styles.actionButton,
-                    backgroundColor: button.color
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = button.hoverColor;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = button.color;
-                  }}
-                >
-                  <Plus style={{ width: '16px', height: '16px' }} />
-                  {button.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        )}
 
         {/* Dashboard Content */}
         {selectedView === 'dashboard' && (
@@ -751,12 +752,16 @@ const ModernCRMPanel = () => {
           </div>
         )}
 
-        {/* Other Views */}
-        {selectedView !== 'dashboard' && (
+        {/* NUEVA SECCIÓN: ClientManagement Component */}
+        {selectedView === 'clients' && (
+          <ClientManagement />
+        )}
+
+        {/* Other Views (excluyendo 'clients' que ya tiene su propio componente) */}
+        {selectedView !== 'dashboard' && selectedView !== 'clients' && (
           <div style={styles.card}>
             <p style={{ color: '#6b7280', fontSize: '16px' }}>
               {selectedView === 'pipeline' && 'Kanban pipeline view - Coming soon'}
-              {selectedView === 'clients' && 'Detailed client management - Coming soon'}
               {selectedView === 'archive' && 'Archived clients management - Coming soon'}
               {selectedView === 'brokers' && currentUser.role === 'admin' && 'Broker management and history - Admin only'}
               {selectedView === 'affiliates' && currentUser.role === 'admin' && 'Affiliates and inhouse tradelines - Admin only'}
