@@ -1,180 +1,202 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Phone, DollarSign, Users, Building2, Upload, FileText, Loader2 } from 'lucide-react';
-import { clientService, profileService } from '../services/supabaseServices';
+import { X, Upload, User, Mail, Phone, MapPin, Calendar, Shield, Eye, EyeOff } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
-const NewClientModal = ({ isOpen, onClose, currentUser, onClientCreated }) => {
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    brokerId: '',
-    affiliateId: '',
-    estimatedAmount: '',
-    notes: '',
-    status: 'new_lead'
-  });
-
+const NewClientModal = ({ isOpen, onClose, currentUser }) => {
+  const [loading, setLoading] = useState(false);
   const [brokers, setBrokers] = useState([]);
   const [affiliates, setAffiliates] = useState([]);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingData, setLoadingData] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [showPasswords, setShowPasswords] = useState({
+    experian_password: false,
+    experian_pin: false
+  });
 
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    address: '',
+    phone: '',
+    email: '',
+    ssn: '',
+    date_of_birth: '',
+    experian_user: '',
+    experian_password: '',
+    experian_security_answer: '',
+    experian_pin: '',
+    broker_id: '',
+    affiliate_id: '',
+    notes: '',
+    estimated_amount: '',
+    files: {
+      id_document: null,
+      ssn_card: null,
+      credit_reports: null
+    }
+  });
+
+  const [errors, setErrors] = useState({});
+
+  // Cargar brokers y affiliates
   useEffect(() => {
     if (isOpen) {
-      loadBrokersAndAffiliates();
+      fetchBrokersAndAffiliates();
     }
   }, [isOpen]);
 
-  const loadBrokersAndAffiliates = async () => {
-    setLoadingData(true);
+  const fetchBrokersAndAffiliates = async () => {
     try {
-      const [brokersResult, affiliatesResult] = await Promise.all([
-        profileService.getBrokers(),
-        profileService.getAffiliates()
+      const [brokersResponse, affiliatesResponse] = await Promise.all([
+        supabase.from('brokers').select('id, first_name, last_name').eq('active', true),
+        supabase.from('affiliates').select('id, first_name, last_name').eq('active', true)
       ]);
 
-      if (brokersResult.data) setBrokers(brokersResult.data);
-      if (affiliatesResult.data) setAffiliates(affiliatesResult.data);
-    } catch (err) {
-      setError('Failed to load brokers and affiliates');
-    } finally {
-      setLoadingData(false);
+      if (brokersResponse.data) setBrokers(brokersResponse.data);
+      if (affiliatesResponse.data) setAffiliates(affiliatesResponse.data);
+    } catch (error) {
+      console.error('Error fetching brokers/affiliates:', error);
     }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    setError('');
-  };
-
-  const handleFileUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    
-    const validFiles = files.filter(file => {
-      if (!allowedTypes.includes(file.type)) {
-        setError(`File ${file.name} is not a supported format. Please use JPG, PNG, PDF, or DOC files.`);
-        return false;
-      }
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        setError(`File ${file.name} is too large. Maximum size is 10MB.`);
-        return false;
-      }
-      return true;
-    });
-
-    setUploadedFiles(prev => [...prev, ...validFiles]);
-    setError('');
-  };
-
-  const removeFile = (index) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const validateForm = () => {
-    if (!formData.firstName.trim()) return 'First name is required';
-    if (!formData.lastName.trim()) return 'Last name is required';
-    if (!formData.email.trim()) return 'Email is required';
-    if (!formData.email.includes('@')) return 'Please enter a valid email';
-    if (!formData.phone.trim()) return 'Phone is required';
-    if (formData.estimatedAmount && isNaN(parseFloat(formData.estimatedAmount))) {
-      return 'Estimated amount must be a valid number';
+    const newErrors = {};
+
+    // Campos requeridos
+    if (!formData.first_name.trim()) newErrors.first_name = 'First name is required';
+    if (!formData.last_name.trim()) newErrors.last_name = 'Last name is required';
+    if (!formData.address.trim()) newErrors.address = 'Address is required';
+    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    if (!formData.ssn.trim()) newErrors.ssn = 'Social Security Number is required';
+    if (!formData.date_of_birth) newErrors.date_of_birth = 'Date of birth is required';
+
+    // Validación de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
-    return null;
+
+    // Validación de teléfono
+    const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
+    if (formData.phone && !phoneRegex.test(formData.phone)) {
+      newErrors.phone = 'Please enter a valid phone number';
+    }
+
+    // Validación de SSN (formato XXX-XX-XXXX)
+    const ssnRegex = /^\d{3}-?\d{2}-?\d{4}$/;
+    if (formData.ssn && !ssnRegex.test(formData.ssn.replace(/\s/g, ''))) {
+      newErrors.ssn = 'Please enter a valid SSN (XXX-XX-XXXX)';
+    }
+
+    // Validación de dirección (no PO Box)
+    if (formData.address && /p\.?o\.?\s*box/i.test(formData.address)) {
+      newErrors.address = 'PO Box addresses are not allowed. Please use residential address only.';
+    }
+
+    // Validación de PIN (4 dígitos)
+    if (formData.experian_pin && !/^\d{4}$/.test(formData.experian_pin)) {
+      newErrors.experian_pin = 'PIN must be exactly 4 digits';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
-    setError('');
-
     try {
+      // Formatear SSN
+      const formattedSSN = formData.ssn.replace(/\D/g, '').replace(/(\d{3})(\d{2})(\d{4})/, '$1-$2-$3');
+
       const clientData = {
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        email: formData.email.trim().toLowerCase(),
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        address: formData.address.trim(),
         phone: formData.phone.trim(),
-        brokerId: formData.brokerId || null,
-        affiliateId: formData.affiliateId || null,
-        estimatedAmount: formData.estimatedAmount ? parseFloat(formData.estimatedAmount) : 0,
-        notes: formData.notes.trim(),
-        status: formData.status
+        email: formData.email.toLowerCase().trim(),
+        ssn: formattedSSN,
+        date_of_birth: formData.date_of_birth,
+        experian_user: formData.experian_user.trim(),
+        experian_password: formData.experian_password,
+        experian_security_answer: formData.experian_security_answer.trim(),
+        experian_pin: formData.experian_pin,
+        broker_id: formData.broker_id || null,
+        affiliate_id: formData.affiliate_id || null,
+        estimated_amount: formData.estimated_amount ? parseFloat(formData.estimated_amount) : null,
+        status: 'new_lead',
+        created_by: currentUser?.email || 'system'
       };
 
-      const { data, error: createError } = await clientService.create(clientData);
-
-      if (createError) {
-        throw new Error(createError);
+      // Solo agregar notes si el usuario es admin
+      if (currentUser?.role === 'admin' && formData.notes.trim()) {
+        clientData.notes = formData.notes.trim();
       }
 
-      // TODO: Upload files to Supabase Storage and link to client
-      // This would require additional storage setup
+      const { data, error } = await supabase
+        .from('clients')
+        .insert([clientData])
+        .select();
 
-      setSuccess('Client created successfully!');
-      
-      // Reset form
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        brokerId: '',
-        affiliateId: '',
-        estimatedAmount: '',
-        notes: '',
-        status: 'new_lead'
-      });
-      setUploadedFiles([]);
+      if (error) throw error;
 
-      if (onClientCreated) {
-        onClientCreated(data);
-      }
+      // TODO: Implementar subida de archivos aquí
+      // Los archivos se subirían a Supabase Storage y se guardarían las URLs
 
-      setTimeout(() => {
-        setSuccess('');
-        onClose();
-      }, 1500);
-
-    } catch (err) {
-      setError(err.message || 'Failed to create client. Please try again.');
+      alert('Client created successfully!');
+      handleClose();
+    } catch (error) {
+      console.error('Error creating client:', error);
+      alert('Error creating client: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    if (!loading) {
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        brokerId: '',
-        affiliateId: '',
-        estimatedAmount: '',
-        notes: '',
-        status: 'new_lead'
-      });
-      setUploadedFiles([]);
-      setError('');
-      setSuccess('');
-      onClose();
-    }
+    setFormData({
+      first_name: '',
+      last_name: '',
+      address: '',
+      phone: '',
+      email: '',
+      ssn: '',
+      date_of_birth: '',
+      experian_user: '',
+      experian_password: '',
+      experian_security_answer: '',
+      experian_pin: '',
+      broker_id: '',
+      affiliate_id: '',
+      notes: '',
+      estimated_amount: '',
+      files: {
+        id_document: null,
+        ssn_card: null,
+        credit_reports: null
+      }
+    });
+    setErrors({});
+    onClose();
+  };
+
+  const handleFileChange = (fileType, file) => {
+    setFormData(prev => ({
+      ...prev,
+      files: {
+        ...prev.files,
+        [fileType]: file
+      }
+    }));
+  };
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
   };
 
   if (!isOpen) return null;
@@ -196,21 +218,20 @@ const NewClientModal = ({ isOpen, onClose, currentUser, onClientCreated }) => {
     modal: {
       backgroundColor: 'white',
       borderRadius: '12px',
+      maxWidth: '800px',
       width: '100%',
-      maxWidth: '600px',
       maxHeight: '90vh',
-      overflow: 'auto',
+      overflow: 'hidden',
       boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
     },
     header: {
+      padding: '24px',
+      borderBottom: '1px solid #e5e7eb',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '24px 24px 0 24px',
-      borderBottom: '1px solid #e5e7eb',
-      paddingBottom: '16px'
+      justifyContent: 'space-between'
     },
-    headerTitle: {
+    headerContent: {
       display: 'flex',
       alignItems: 'center',
       gap: '12px'
@@ -224,29 +245,38 @@ const NewClientModal = ({ isOpen, onClose, currentUser, onClientCreated }) => {
     subtitle: {
       fontSize: '14px',
       color: '#6b7280',
-      margin: '4px 0 0 0'
+      margin: 0
     },
     closeButton: {
-      background: 'none',
-      border: 'none',
       padding: '8px',
+      border: 'none',
+      backgroundColor: 'transparent',
       cursor: 'pointer',
-      borderRadius: '8px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      borderRadius: '6px',
       color: '#6b7280',
       transition: 'all 0.2s'
     },
     content: {
-      padding: '24px'
+      padding: '24px',
+      maxHeight: 'calc(90vh - 140px)',
+      overflowY: 'auto'
     },
     form: {
       display: 'flex',
       flexDirection: 'column',
       gap: '20px'
     },
-    formGroup: {
+    row: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '16px'
+    },
+    fullRow: {
+      display: 'grid',
+      gridTemplateColumns: '1fr',
+      gap: '16px'
+    },
+    fieldGroup: {
       display: 'flex',
       flexDirection: 'column',
       gap: '6px'
@@ -257,448 +287,541 @@ const NewClientModal = ({ isOpen, onClose, currentUser, onClientCreated }) => {
       color: '#374151',
       display: 'flex',
       alignItems: 'center',
-      gap: '8px'
+      gap: '6px'
+    },
+    required: {
+      color: '#ef4444'
     },
     input: {
-      padding: '12px 16px',
+      padding: '10px 12px',
       border: '1px solid #d1d5db',
-      borderRadius: '8px',
+      borderRadius: '6px',
       fontSize: '14px',
-      transition: 'border-color 0.2s, box-shadow 0.2s',
+      transition: 'border-color 0.2s',
+      outline: 'none'
+    },
+    inputError: {
+      borderColor: '#ef4444'
+    },
+    textarea: {
+      padding: '10px 12px',
+      border: '1px solid #d1d5db',
+      borderRadius: '6px',
+      fontSize: '14px',
+      minHeight: '80px',
+      resize: 'vertical',
       outline: 'none'
     },
     select: {
-      padding: '12px 16px',
+      padding: '10px 12px',
       border: '1px solid #d1d5db',
-      borderRadius: '8px',
+      borderRadius: '6px',
       fontSize: '14px',
-      transition: 'border-color 0.2s, box-shadow 0.2s',
-      outline: 'none',
-      backgroundColor: 'white'
+      backgroundColor: 'white',
+      cursor: 'pointer',
+      outline: 'none'
     },
-    textarea: {
-      padding: '12px 16px',
-      border: '1px solid #d1d5db',
-      borderRadius: '8px',
-      fontSize: '14px',
-      transition: 'border-color 0.2s, box-shadow 0.2s',
-      outline: 'none',
-      resize: 'vertical',
-      minHeight: '80px'
+    passwordContainer: {
+      position: 'relative'
     },
-    row: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px'
+    passwordToggle: {
+      position: 'absolute',
+      right: '12px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      border: 'none',
+      backgroundColor: 'transparent',
+      cursor: 'pointer',
+      color: '#6b7280',
+      padding: '4px'
+    },
+    sectionTitle: {
+      fontSize: '16px',
+      fontWeight: '600',
+      color: '#1f2937',
+      marginBottom: '16px',
+      paddingBottom: '8px',
+      borderBottom: '1px solid #e5e7eb'
     },
     fileUpload: {
       border: '2px dashed #d1d5db',
       borderRadius: '8px',
-      padding: '16px',
+      padding: '20px',
       textAlign: 'center',
       cursor: 'pointer',
       transition: 'border-color 0.2s'
     },
+    fileUploadActive: {
+      borderColor: '#3b82f6',
+      backgroundColor: '#f8fafc'
+    },
     fileInput: {
       display: 'none'
     },
-    fileList: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
-      marginTop: '12px'
-    },
-    fileItem: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '8px 12px',
-      backgroundColor: '#f3f4f6',
-      borderRadius: '6px'
-    },
-    buttonGroup: {
-      display: 'flex',
-      gap: '12px',
+    fileName: {
+      fontSize: '14px',
+      color: '#374151',
       marginTop: '8px'
     },
+    errorText: {
+      fontSize: '12px',
+      color: '#ef4444',
+      marginTop: '4px'
+    },
+    adminOnly: {
+      backgroundColor: '#fef3c7',
+      border: '1px solid #fbbf24',
+      borderRadius: '6px',
+      padding: '12px',
+      fontSize: '12px',
+      color: '#92400e',
+      marginBottom: '8px'
+    },
+    footer: {
+      padding: '16px 24px',
+      borderTop: '1px solid #e5e7eb',
+      display: 'flex',
+      justifyContent: 'flex-end',
+      gap: '12px'
+    },
     button: {
-      flex: 1,
-      padding: '12px 24px',
-      borderRadius: '8px',
+      padding: '8px 16px',
+      borderRadius: '6px',
       fontSize: '14px',
       fontWeight: '500',
       cursor: 'pointer',
       transition: 'all 0.2s',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '8px'
+      border: 'none'
     },
     cancelButton: {
-      backgroundColor: 'white',
-      color: '#374151',
-      border: '1px solid #d1d5db'
+      backgroundColor: '#f3f4f6',
+      color: '#374151'
     },
     submitButton: {
       backgroundColor: '#16a34a',
-      color: 'white',
-      border: 'none'
+      color: 'white'
     },
     submitButtonDisabled: {
       backgroundColor: '#9ca3af',
       cursor: 'not-allowed'
-    },
-    alertError: {
-      backgroundColor: '#fef2f2',
-      color: '#dc2626',
-      padding: '12px 16px',
-      borderRadius: '8px',
-      fontSize: '14px',
-      border: '1px solid #fecaca'
-    },
-    alertSuccess: {
-      backgroundColor: '#f0fdf4',
-      color: '#16a34a',
-      padding: '12px 16px',
-      borderRadius: '8px',
-      fontSize: '14px',
-      border: '1px solid #bbf7d0'
-    },
-    spinner: {
-      width: '16px',
-      height: '16px',
-      animation: 'spin 1s linear infinite'
-    },
-    statusBadge: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding: '4px 8px',
-      borderRadius: '4px',
-      fontSize: '12px',
-      fontWeight: '500',
-      backgroundColor: '#f3f4f6',
-      color: '#374151'
     }
   };
 
   return (
-    <>
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-      
-      <div style={styles.overlay} onClick={handleClose}>
-        <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-          <div style={styles.header}>
-            <div style={styles.headerTitle}>
-              <User style={{ width: '24px', height: '24px', color: '#16a34a' }} />
-              <div>
-                <h2 style={styles.title}>New Client</h2>
-                <p style={styles.subtitle}>Add a new client to the system</p>
+    <div style={styles.overlay} onClick={handleClose}>
+      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div style={styles.header}>
+          <div style={styles.headerContent}>
+            <User style={{ width: '24px', height: '24px', color: '#16a34a' }} />
+            <div>
+              <h2 style={styles.title}>New Client</h2>
+              <p style={styles.subtitle}>Add a new client to the system</p>
+            </div>
+          </div>
+          <button
+            onClick={handleClose}
+            style={styles.closeButton}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            <X style={{ width: '20px', height: '20px' }} />
+          </button>
+        </div>
+
+        <div style={styles.content}>
+          <form onSubmit={handleSubmit} style={styles.form}>
+            {/* Personal Information */}
+            <div>
+              <h3 style={styles.sectionTitle}>Personal Information</h3>
+              
+              <div style={styles.row}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <User size={16} />
+                    First Name <span style={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.first_name}
+                    onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                    style={{
+                      ...styles.input,
+                      ...(errors.first_name ? styles.inputError : {})
+                    }}
+                    placeholder="Enter first name"
+                  />
+                  {errors.first_name && <span style={styles.errorText}>{errors.first_name}</span>}
+                </div>
+
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <User size={16} />
+                    Last Name <span style={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.last_name}
+                    onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                    style={{
+                      ...styles.input,
+                      ...(errors.last_name ? styles.inputError : {})
+                    }}
+                    placeholder="Enter last name"
+                  />
+                  {errors.last_name && <span style={styles.errorText}>{errors.last_name}</span>}
+                </div>
+              </div>
+
+              <div style={styles.fullRow}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <MapPin size={16} />
+                    Address (Residential Only - No PO Box) <span style={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    style={{
+                      ...styles.input,
+                      ...(errors.address ? styles.inputError : {})
+                    }}
+                    placeholder="Enter residential address"
+                  />
+                  {errors.address && <span style={styles.errorText}>{errors.address}</span>}
+                </div>
+              </div>
+
+              <div style={styles.row}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <Phone size={16} />
+                    Phone Number <span style={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    style={{
+                      ...styles.input,
+                      ...(errors.phone ? styles.inputError : {})
+                    }}
+                    placeholder="+1-555-0123"
+                  />
+                  {errors.phone && <span style={styles.errorText}>{errors.phone}</span>}
+                </div>
+
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <Mail size={16} />
+                    Email Address <span style={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    style={{
+                      ...styles.input,
+                      ...(errors.email ? styles.inputError : {})
+                    }}
+                    placeholder="client@example.com"
+                  />
+                  {errors.email && <span style={styles.errorText}>{errors.email}</span>}
+                </div>
+              </div>
+
+              <div style={styles.row}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <Shield size={16} />
+                    Social Security Number <span style={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.ssn}
+                    onChange={(e) => setFormData({...formData, ssn: e.target.value})}
+                    style={{
+                      ...styles.input,
+                      ...(errors.ssn ? styles.inputError : {})
+                    }}
+                    placeholder="XXX-XX-XXXX"
+                    maxLength="11"
+                  />
+                  {errors.ssn && <span style={styles.errorText}>{errors.ssn}</span>}
+                </div>
+
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <Calendar size={16} />
+                    Date of Birth <span style={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.date_of_birth}
+                    onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
+                    style={{
+                      ...styles.input,
+                      ...(errors.date_of_birth ? styles.inputError : {})
+                    }}
+                  />
+                  {errors.date_of_birth && <span style={styles.errorText}>{errors.date_of_birth}</span>}
+                </div>
               </div>
             </div>
-            <button
-              onClick={handleClose}
-              style={styles.closeButton}
-              disabled={loading}
-            >
-              <X style={{ width: '20px', height: '20px' }} />
-            </button>
-          </div>
 
-          <div style={styles.content}>
-            {error && <div style={styles.alertError}>{error}</div>}
-            {success && <div style={styles.alertSuccess}>{success}</div>}
-
-            {loadingData ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <Loader2 style={styles.spinner} />
-                <p>Loading brokers and affiliates...</p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} style={styles.form}>
-                <div style={styles.row}>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>
-                      <User style={{ width: '16px', height: '16px' }} />
-                      First Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      style={styles.input}
-                      placeholder="Enter first name"
-                      disabled={loading}
-                      required
-                    />
-                  </div>
-
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>
-                      <User style={{ width: '16px', height: '16px' }} />
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      style={styles.input}
-                      placeholder="Enter last name"
-                      disabled={loading}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div style={styles.row}>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>
-                      <Mail style={{ width: '16px', height: '16px' }} />
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      style={styles.input}
-                      placeholder="client@example.com"
-                      disabled={loading}
-                      required
-                    />
-                  </div>
-
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>
-                      <Phone style={{ width: '16px', height: '16px' }} />
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      style={styles.input}
-                      placeholder="+1-555-0123"
-                      disabled={loading}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div style={styles.row}>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>
-                      <Users style={{ width: '16px', height: '16px' }} />
-                      Assigned Broker
-                    </label>
-                    <select
-                      name="brokerId"
-                      value={formData.brokerId}
-                      onChange={handleInputChange}
-                      style={styles.select}
-                      disabled={loading}
-                    >
-                      <option value="">Select a broker (optional)</option>
-                      {brokers.map(broker => (
-                        <option key={broker.id} value={broker.id}>
-                          {broker.first_name} {broker.last_name} ({broker.unique_id})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>
-                      <Building2 style={{ width: '16px', height: '16px' }} />
-                      Source Affiliate
-                    </label>
-                    <select
-                      name="affiliateId"
-                      value={formData.affiliateId}
-                      onChange={handleInputChange}
-                      style={styles.select}
-                      disabled={loading}
-                    >
-                      <option value="">Select an affiliate (optional)</option>
-                      {affiliates.map(affiliate => (
-                        <option key={affiliate.id} value={affiliate.id}>
-                          {affiliate.first_name} {affiliate.last_name} - {affiliate.company_name} ({affiliate.unique_id})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div style={styles.row}>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>
-                      <DollarSign style={{ width: '16px', height: '16px' }} />
-                      Estimated Amount
-                    </label>
-                    <input
-                      type="number"
-                      name="estimatedAmount"
-                      value={formData.estimatedAmount}
-                      onChange={handleInputChange}
-                      style={styles.input}
-                      placeholder="0.00"
-                      min="0"
-                      step="0.01"
-                      disabled={loading}
-                    />
-                  </div>
-
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>
-                      Initial Status
-                    </label>
-                    <div style={styles.statusBadge}>
-                      New Lead - Starting pipeline stage
-                    </div>
-                  </div>
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>
-                    Notes
-                  </label>
-                  <textarea
-                    name="notes"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                    style={styles.textarea}
-                    placeholder="Additional notes about this client..."
-                    disabled={loading}
-                  />
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>
-                    <Upload style={{ width: '16px', height: '16px' }} />
-                    Upload Files (JPG, PNG, PDF, DOC)
-                  </label>
-                  <div 
-                    style={styles.fileUpload}
-                    onClick={() => document.getElementById('fileInput').click()}
-                    onMouseEnter={(e) => {
-                      e.target.style.borderColor = '#2563eb';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.borderColor = '#d1d5db';
-                    }}
-                  >
-                    <Upload style={{ width: '24px', height: '24px', color: '#6b7280', margin: '0 auto 8px' }} />
-                    <p style={{ margin: 0, color: '#6b7280', fontSize: '14px' }}>
-                      Click to upload files or drag and drop
-                    </p>
-                    <p style={{ margin: '4px 0 0 0', color: '#9ca3af', fontSize: '12px' }}>
-                      Maximum 10MB per file
-                    </p>
-                  </div>
+            {/* Experian Login Information */}
+            <div>
+              <h3 style={styles.sectionTitle}>Experian Login Information</h3>
+              
+              <div style={styles.row}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>Experian User ID</label>
                   <input
-                    id="fileInput"
-                    type="file"
-                    multiple
-                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                    onChange={handleFileUpload}
-                    style={styles.fileInput}
-                    disabled={loading}
+                    type="text"
+                    value={formData.experian_user}
+                    onChange={(e) => setFormData({...formData, experian_user: e.target.value})}
+                    style={styles.input}
+                    placeholder="Experian username"
                   />
-
-                  {uploadedFiles.length > 0 && (
-                    <div style={styles.fileList}>
-                      {uploadedFiles.map((file, index) => (
-                        <div key={index} style={styles.fileItem}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <FileText style={{ width: '16px', height: '16px', color: '#6b7280' }} />
-                            <span style={{ fontSize: '14px', color: '#374151' }}>
-                              {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeFile(index)}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: '#dc2626',
-                              cursor: 'pointer',
-                              padding: '4px'
-                            }}
-                            disabled={loading}
-                          >
-                            <X style={{ width: '16px', height: '16px' }} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
-                <div style={styles.buttonGroup}>
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    style={{
-                      ...styles.button,
-                      ...styles.cancelButton
-                    }}
-                    disabled={loading}
-                    onMouseEnter={(e) => {
-                      if (!loading) {
-                        e.target.style.backgroundColor = '#f9fafb';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!loading) {
-                        e.target.style.backgroundColor = 'white';
-                      }
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    style={{
-                      ...styles.button,
-                      ...styles.submitButton,
-                      ...(loading ? styles.submitButtonDisabled : {})
-                    }}
-                    disabled={loading}
-                    onMouseEnter={(e) => {
-                      if (!loading) {
-                        e.target.style.backgroundColor = '#15803d';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!loading) {
-                        e.target.style.backgroundColor = '#16a34a';
-                      }
-                    }}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 style={styles.spinner} />
-                        Creating Client...
-                      </>
-                    ) : (
-                      'Create Client'
-                    )}
-                  </button>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>Experian Password</label>
+                  <div style={styles.passwordContainer}>
+                    <input
+                      type={showPasswords.experian_password ? "text" : "password"}
+                      value={formData.experian_password}
+                      onChange={(e) => setFormData({...formData, experian_password: e.target.value})}
+                      style={styles.input}
+                      placeholder="Experian password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('experian_password')}
+                      style={styles.passwordToggle}
+                    >
+                      {showPasswords.experian_password ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
-              </form>
+              </div>
+
+              <div style={styles.row}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>Security Answer</label>
+                  <input
+                    type="text"
+                    value={formData.experian_security_answer}
+                    onChange={(e) => setFormData({...formData, experian_security_answer: e.target.value})}
+                    style={styles.input}
+                    placeholder="Security question answer"
+                  />
+                </div>
+
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>4 Digit PIN</label>
+                  <div style={styles.passwordContainer}>
+                    <input
+                      type={showPasswords.experian_pin ? "text" : "password"}
+                      value={formData.experian_pin}
+                      onChange={(e) => setFormData({...formData, experian_pin: e.target.value})}
+                      style={{
+                        ...styles.input,
+                        ...(errors.experian_pin ? styles.inputError : {})
+                      }}
+                      placeholder="1234"
+                      maxLength="4"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('experian_pin')}
+                      style={styles.passwordToggle}
+                    >
+                      {showPasswords.experian_pin ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {errors.experian_pin && <span style={styles.errorText}>{errors.experian_pin}</span>}
+                </div>
+              </div>
+            </div>
+
+            {/* Assignment */}
+            <div>
+              <h3 style={styles.sectionTitle}>Assignment</h3>
+              
+              <div style={styles.row}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>Assigned Broker</label>
+                  <select
+                    value={formData.broker_id}
+                    onChange={(e) => setFormData({...formData, broker_id: e.target.value})}
+                    style={styles.select}
+                  >
+                    <option value="">Select a broker (optional)</option>
+                    {brokers.map(broker => (
+                      <option key={broker.id} value={broker.id}>
+                        {broker.first_name} {broker.last_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>Source Affiliate</label>
+                  <select
+                    value={formData.affiliate_id}
+                    onChange={(e) => setFormData({...formData, affiliate_id: e.target.value})}
+                    style={styles.select}
+                  >
+                    <option value="">Select an affiliate (optional)</option>
+                    {affiliates.map(affiliate => (
+                      <option key={affiliate.id} value={affiliate.id}>
+                        {affiliate.first_name} {affiliate.last_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={styles.fullRow}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>Estimated Amount</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.estimated_amount}
+                    onChange={(e) => setFormData({...formData, estimated_amount: e.target.value})}
+                    style={styles.input}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Admin Only Notes */}
+            {currentUser?.role === 'admin' && (
+              <div>
+                <h3 style={styles.sectionTitle}>Admin Notes</h3>
+                <div style={styles.adminOnly}>
+                  <strong>Admin Only:</strong> These notes are only visible to administrators.
+                </div>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>Additional Notes</label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                    style={styles.textarea}
+                    placeholder="Internal notes about this client..."
+                  />
+                </div>
+              </div>
             )}
-          </div>
+
+            {/* File Uploads */}
+            <div>
+              <h3 style={styles.sectionTitle}>Required Documents</h3>
+              
+              <div style={styles.row}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <Upload size={16} />
+                    ID Document
+                  </label>
+                  <div style={styles.fileUpload}>
+                    <input
+                      type="file"
+                      id="id_document"
+                      accept="image/*,.pdf"
+                      onChange={(e) => handleFileChange('id_document', e.target.files[0])}
+                      style={styles.fileInput}
+                    />
+                    <label htmlFor="id_document" style={{cursor: 'pointer'}}>
+                      <Upload style={{ width: '24px', height: '24px', color: '#6b7280', margin: '0 auto 8px' }} />
+                      <p>Click to upload ID Document</p>
+                      <p style={{fontSize: '12px', color: '#6b7280'}}>PNG, JPG, PDF up to 10MB</p>
+                    </label>
+                    {formData.files.id_document && (
+                      <p style={styles.fileName}>{formData.files.id_document.name}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <Upload size={16} />
+                    Social Security Card
+                  </label>
+                  <div style={styles.fileUpload}>
+                    <input
+                      type="file"
+                      id="ssn_card"
+                      accept="image/*,.pdf"
+                      onChange={(e) => handleFileChange('ssn_card', e.target.files[0])}
+                      style={styles.fileInput}
+                    />
+                    <label htmlFor="ssn_card" style={{cursor: 'pointer'}}>
+                      <Upload style={{ width: '24px', height: '24px', color: '#6b7280', margin: '0 auto 8px' }} />
+                      <p>Click to upload SSN Card</p>
+                      <p style={{fontSize: '12px', color: '#6b7280'}}>PNG, JPG, PDF up to 10MB</p>
+                    </label>
+                    {formData.files.ssn_card && (
+                      <p style={styles.fileName}>{formData.files.ssn_card.name}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div style={styles.fullRow}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <Upload size={16} />
+                    3 Bureau Credit Reports
+                  </label>
+                  <div style={styles.fileUpload}>
+                    <input
+                      type="file"
+                      id="credit_reports"
+                      accept=".pdf"
+                      onChange={(e) => handleFileChange('credit_reports', e.target.files[0])}
+                      style={styles.fileInput}
+                    />
+                    <label htmlFor="credit_reports" style={{cursor: 'pointer'}}>
+                      <Upload style={{ width: '24px', height: '24px', color: '#6b7280', margin: '0 auto 8px' }} />
+                      <p>Click to upload Credit Reports</p>
+                      <p style={{fontSize: '12px', color: '#6b7280'}}>PDF up to 10MB</p>
+                    </label>
+                    {formData.files.credit_reports && (
+                      <p style={styles.fileName}>{formData.files.credit_reports.name}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div style={styles.footer}>
+          <button
+            type="button"
+            onClick={handleClose}
+            style={{...styles.button, ...styles.cancelButton}}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            onClick={handleSubmit}
+            disabled={loading}
+            style={{
+              ...styles.button,
+              ...(loading ? styles.submitButtonDisabled : styles.submitButton)
+            }}
+          >
+            {loading ? 'Creating Client...' : 'Create Client'}
+          </button>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
