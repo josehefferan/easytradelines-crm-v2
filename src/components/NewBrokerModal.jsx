@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { X, Upload, UserCheck, Mail, Phone, Building, Globe, User } from 'lucide-react';
+import { X, Upload, UserCheck, Mail, Phone, Building, Globe, User, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import ContractSignaturePopup from './ContractSignaturePopup';
 
 const NewBrokerModal = ({ isOpen, onClose, currentUser }) => {
   const [loading, setLoading] = useState(false);
+  const [showContractPopup, setShowContractPopup] = useState(false);
+  const [contractSigned, setContractSigned] = useState(false);
+  const [signatureData, setSignatureData] = useState(null);
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -17,12 +21,18 @@ const NewBrokerModal = ({ isOpen, onClose, currentUser }) => {
     cc_poc_email: '',
     notes: '',
     files: {
-      driver_license: null,
-      signed_agreement: null
+      driver_license: null
     }
   });
 
   const [errors, setErrors] = useState({});
+
+  // Manejar firma del contrato
+  const handleContractSign = (signatureResult) => {
+    setSignatureData(signatureResult);
+    setContractSigned(true);
+    setShowContractPopup(false);
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -33,6 +43,9 @@ const NewBrokerModal = ({ isOpen, onClose, currentUser }) => {
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     if (!formData.company_name.trim()) newErrors.company_name = 'Company name is required';
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
+    
+    // Validar que el contrato esté firmado
+    if (!contractSigned) newErrors.contract = 'Contract signature is required';
 
     // Validación de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -101,7 +114,13 @@ const NewBrokerModal = ({ isOpen, onClose, currentUser }) => {
       if (error) throw error;
 
       // TODO: Implementar subida de archivos aquí
-      // Los archivos se subirían a Supabase Storage y se guardarían las URLs
+      // TODO: Guardar firma digital en Supabase Storage
+
+      if (signatureData) {
+        // Aquí guardarías la firma en Supabase Storage
+        brokerData.signature_url = 'signature_placeholder';
+        brokerData.contract_signed_date = new Date().toISOString();
+      }
 
       alert('Broker created successfully!');
       handleClose();
@@ -126,11 +145,13 @@ const NewBrokerModal = ({ isOpen, onClose, currentUser }) => {
       cc_poc_email: '',
       notes: '',
       files: {
-        driver_license: null,
-        signed_agreement: null
+        driver_license: null
       }
     });
     setErrors({});
+    setContractSigned(false);
+    setSignatureData(null);
+    setShowContractPopup(false);
     onClose();
   };
 
@@ -538,11 +559,78 @@ const NewBrokerModal = ({ isOpen, onClose, currentUser }) => {
               </div>
             </div>
 
+            {/* Contract Signature */}
+            <div>
+              <h3 style={styles.sectionTitle}>Contract Signature</h3>
+              
+              <div style={styles.fullRow}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <FileText size={16} />
+                    Reseller Agreement <span style={styles.required}>*</span>
+                  </label>
+                  
+                  {!contractSigned ? (
+                    <div style={{
+                      ...styles.fileUpload,
+                      backgroundColor: '#fef3c7',
+                      borderColor: '#fbbf24'
+                    }}>
+                      <FileText style={{ width: '24px', height: '24px', color: '#d97706', margin: '0 auto 8px' }} />
+                      <p style={{color: '#92400e', fontWeight: '500'}}>Contract signature required</p>
+                      <p style={{fontSize: '12px', color: '#92400e', marginBottom: '12px'}}>
+                        Click below to review and sign the reseller agreement
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowContractPopup(true)}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#16a34a',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <FileText size={16} style={{marginRight: '4px', display: 'inline'}} />
+                        Review & Sign Contract
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{
+                      ...styles.fileUpload,
+                      backgroundColor: '#ecfdf5',
+                      borderColor: '#10b981'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        color: '#059669',
+                        fontWeight: '600'
+                      }}>
+                        <Check size={20} />
+                        Contract signed successfully
+                      </div>
+                      <p style={{fontSize: '12px', color: '#059669', marginTop: '4px'}}>
+                        Signed on {signatureData?.contractData?.signature_date}
+                      </p>
+                    </div>
+                  )}
+                  {errors.contract && <span style={styles.errorText}>{errors.contract}</span>}
+                </div>
+              </div>
+            </div>
+
             {/* Required Documents */}
             <div>
               <h3 style={styles.sectionTitle}>Required Documents</h3>
               
-              <div style={styles.row}>
+              <div style={styles.fullRow}>
                 <div style={styles.fieldGroup}>
                   <label style={styles.label}>
                     <Upload size={16} />
@@ -563,30 +651,6 @@ const NewBrokerModal = ({ isOpen, onClose, currentUser }) => {
                     </label>
                     {formData.files.driver_license && (
                       <p style={styles.fileName}>{formData.files.driver_license.name}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div style={styles.fieldGroup}>
-                  <label style={styles.label}>
-                    <Upload size={16} />
-                    Signed Agreement
-                  </label>
-                  <div style={styles.fileUpload}>
-                    <input
-                      type="file"
-                      id="signed_agreement"
-                      accept=".pdf"
-                      onChange={(e) => handleFileChange('signed_agreement', e.target.files[0])}
-                      style={styles.fileInput}
-                    />
-                    <label htmlFor="signed_agreement" style={{cursor: 'pointer'}}>
-                      <Upload style={{ width: '24px', height: '24px', color: '#6b7280', margin: '0 auto 8px' }} />
-                      <p>Click to upload Signed Agreement</p>
-                      <p style={{fontSize: '12px', color: '#6b7280'}}>PDF up to 10MB</p>
-                    </label>
-                    {formData.files.signed_agreement && (
-                      <p style={styles.fileName}>{formData.files.signed_agreement.name}</p>
                     )}
                   </div>
                 </div>
@@ -635,6 +699,14 @@ const NewBrokerModal = ({ isOpen, onClose, currentUser }) => {
           </button>
         </div>
       </div>
+
+      {/* Contract Signature Popup */}
+      <ContractSignaturePopup
+        isOpen={showContractPopup}
+        onClose={() => setShowContractPopup(false)}
+        brokerData={formData}
+        onSignComplete={handleContractSign}
+      />
     </div>
   );
 };
