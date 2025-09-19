@@ -25,7 +25,9 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     files: {
       id_document: null,
       ssn_card: null,
-      credit_reports: null
+      experian_report: null,
+      equifax_report: null,
+      transunion_report: null
     }
   });
 
@@ -143,7 +145,9 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       files: {
         id_document: null,
         ssn_card: null,
-        credit_reports: null
+        experian_report: null,
+        equifax_report: null,
+        transunion_report: null
       }
     });
     setErrors({});
@@ -239,6 +243,11 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       gridTemplateColumns: '1fr 1fr',
       gap: '16px'
     },
+    threeColumns: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr 1fr',
+      gap: '16px'
+    },
     fullRow: {
       display: 'grid',
       gridTemplateColumns: '1fr',
@@ -310,13 +319,22 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       cursor: 'pointer',
       transition: 'border-color 0.2s'
     },
+    fileUploadSmall: {
+      border: '2px dashed #d1d5db',
+      borderRadius: '8px',
+      padding: '16px',
+      textAlign: 'center',
+      cursor: 'pointer',
+      transition: 'border-color 0.2s'
+    },
     fileInput: {
       display: 'none'
     },
     fileName: {
-      fontSize: '14px',
+      fontSize: '12px',
       color: '#374151',
-      marginTop: '8px'
+      marginTop: '8px',
+      wordBreak: 'break-word'
     },
     errorText: {
       fontSize: '12px',
@@ -359,6 +377,13 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     submitButtonDisabled: {
       backgroundColor: '#9ca3af',
       cursor: 'not-allowed'
+    },
+    creditBureauLabel: {
+      fontSize: '13px',
+      fontWeight: '600',
+      color: '#374151',
+      textAlign: 'center',
+      marginBottom: '8px'
     }
   };
 
@@ -673,28 +698,75 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
                 </div>
               </div>
 
-              <div style={styles.fullRow}>
-                <div style={styles.fieldGroup}>
-                  <label style={styles.label}>
-                    <Upload size={16} />
-                    3 Bureau Credit Reports
-                  </label>
-                  <div style={styles.fileUpload}>
-                    <input
-                      type="file"
-                      id="credit_reports"
-                      accept=".pdf"
-                      onChange={(e) => handleFileChange('credit_reports', e.target.files[0])}
-                      style={styles.fileInput}
-                    />
-                    <label htmlFor="credit_reports" style={{cursor: 'pointer'}}>
-                      <Upload style={{ width: '24px', height: '24px', color: '#6b7280', margin: '0 auto 8px' }} />
-                      <p>Click to upload Credit Reports</p>
-                      <p style={{fontSize: '12px', color: '#6b7280'}}>PDF up to 10MB</p>
-                    </label>
-                    {formData.files.credit_reports && (
-                      <p style={styles.fileName}>{formData.files.credit_reports.name}</p>
-                    )}
+              {/* 3 Bureau Credit Reports - Separated */}
+              <div>
+                <h4 style={{...styles.sectionTitle, fontSize: '14px', marginBottom: '12px'}}>3 Bureau Credit Reports</h4>
+                
+                <div style={styles.threeColumns}>
+                  {/* Experian Report */}
+                  <div style={styles.fieldGroup}>
+                    <div style={styles.creditBureauLabel}>1. Experian</div>
+                    <div style={styles.fileUploadSmall}>
+                      <input
+                        type="file"
+                        id="experian_report"
+                        accept=".pdf"
+                        onChange={(e) => handleFileChange('experian_report', e.target.files[0])}
+                        style={styles.fileInput}
+                      />
+                      <label htmlFor="experian_report" style={{cursor: 'pointer'}}>
+                        <Upload style={{ width: '20px', height: '20px', color: '#6b7280', margin: '0 auto 6px' }} />
+                        <p style={{fontSize: '12px', margin: '4px 0'}}>Upload Experian</p>
+                        <p style={{fontSize: '10px', color: '#6b7280'}}>PDF up to 10MB</p>
+                      </label>
+                      {formData.files.experian_report && (
+                        <p style={styles.fileName}>{formData.files.experian_report.name}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Equifax Report */}
+                  <div style={styles.fieldGroup}>
+                    <div style={styles.creditBureauLabel}>2. Equifax</div>
+                    <div style={styles.fileUploadSmall}>
+                      <input
+                        type="file"
+                        id="equifax_report"
+                        accept=".pdf"
+                        onChange={(e) => handleFileChange('equifax_report', e.target.files[0])}
+                        style={styles.fileInput}
+                      />
+                      <label htmlFor="equifax_report" style={{cursor: 'pointer'}}>
+                        <Upload style={{ width: '20px', height: '20px', color: '#6b7280', margin: '0 auto 6px' }} />
+                        <p style={{fontSize: '12px', margin: '4px 0'}}>Upload Equifax</p>
+                        <p style={{fontSize: '10px', color: '#6b7280'}}>PDF up to 10MB</p>
+                      </label>
+                      {formData.files.equifax_report && (
+                        <p style={styles.fileName}>{formData.files.equifax_report.name}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* TransUnion Report */}
+                  <div style={styles.fieldGroup}>
+                    <div style={styles.creditBureauLabel}>3. TransUnion</div>
+                    <div style={styles.fileUploadSmall}>
+                      <input
+                        type="file"
+                        id="transunion_report"
+                        accept=".pdf"
+                        onChange={(e) => handleFileChange('transunion_report', e.target.files[0])}
+                        style={styles.fileInput}
+                      />
+                      <label htmlFor="transunion_report" style={{cursor: 'pointer'}}>
+                        <Upload style={{ width: '20px', height: '20px', color: '#6b7280', margin: '0 auto 6px' }} />
+                        <p style={{fontSize: '12px', margin: '4px 0'}}>Upload TransUnion</p>
+                        <p style={{fontSize: '10px', color: '#6b7280'}}>PDF up to 10MB</p>
+                      </label>
+                      {formData.files.transunion_report && (
+                        <p style={styles.fileName}>{formData.files.transunion_report.name}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
