@@ -151,12 +151,13 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     editableField: {
       display: 'inline-block',
       minWidth: '200px',
-      padding: '4px 8px',
+      padding: '6px 10px',
       margin: '0 4px',
-      backgroundColor: '#fff3cd !important',
-      border: '2px solid #ffc107 !important',
+      backgroundColor: '#fff3cd',
+      border: '2px solid #ffc107',
       borderRadius: '4px',
-      verticalAlign: 'baseline'
+      verticalAlign: 'baseline',
+      boxSizing: 'border-box'
     },
     editableInput: {
       border: 'none',
