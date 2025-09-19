@@ -1,111 +1,63 @@
-import React, { useState, useRef } from 'react';
-import { X, Download, FileText, Save, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Download, Save, Check } from 'lucide-react';
 
 const W9FormPopup = ({ isOpen, onClose, affiliateData, onFormComplete }) => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [formData, setFormData] = useState({
-    // Part I - Basic Information
+    // Line 1 - Name
     name: `${affiliateData?.first_name || ''} ${affiliateData?.last_name || ''}`.trim(),
+    
+    // Line 2 - Business name
     businessName: '',
-    taxClassification: '',
+    
+    // Line 3a - Tax classification
+    individual: false,
+    corporation: false,
+    scorporation: false,
+    partnership: false,
+    trustEstate: false,
+    llc: false,
     llcClassification: '',
-    otherClassification: '',
+    other: false,
+    otherDescription: '',
+    
+    // Line 3b - Foreign partners
     foreignPartners: false,
+    
+    // Line 4 - Exemptions
     exemptPayeeCode: '',
     fatcaCode: '',
     
-    // Address Information
+    // Line 5-6 - Address
     address: '',
-    city: '',
-    state: '',
-    zipCode: '',
+    cityStateZip: '',
     
-    // Requester Information
-    requesterName: 'Smart Latinos Consulting Group, LLC',
-    requesterAddress: '777 NW 72ND AVE, STE 2008 MIAMI, FL 33126',
+    // Requester info
+    requesterName: '',
+    requesterAddress: '',
+    
+    // Line 7 - Account numbers
     accountNumbers: '',
     
-    // TIN Information
-    ssn: '',
-    ein: '',
+    // Part I - TIN
+    ssn1: '', ssn2: '', ssn3: '',
+    ein1: '', ein2: '',
     
-    // Certification
-    certifyTin: true,
-    certifyBackupWithholding: true,
-    certifyUsPerson: true,
-    certifyFatca: true,
-    
-    // Signature
+    // Part II - Certification
     signature: '',
-    signatureDate: ''
+    date: new Date().toLocaleDateString('en-US')
   });
 
-  const [errors, setErrors] = useState({});
-
-  const taxClassifications = [
-    { value: 'individual', label: 'Individual/sole proprietor' },
-    { value: 'ccorp', label: 'C Corporation' },
-    { value: 'scorp', label: 'S Corporation' },
-    { value: 'partnership', label: 'Partnership' },
-    { value: 'trust', label: 'Trust/estate' },
-    { value: 'llc', label: 'Limited liability company (LLC)' },
-    { value: 'other', label: 'Other (see instructions)' }
-  ];
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    // Required fields
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (!formData.taxClassification) newErrors.taxClassification = 'Tax classification is required';
-    if (!formData.address.trim()) newErrors.address = 'Address is required';
-    if (!formData.city.trim()) newErrors.city = 'City is required';
-    if (!formData.state.trim()) newErrors.state = 'State is required';
-    if (!formData.zipCode.trim()) newErrors.zipCode = 'ZIP code is required';
-
-    // TIN validation
-    if (!formData.ssn.trim() && !formData.ein.trim()) {
-      newErrors.tin = 'Either SSN or EIN is required';
-    }
-
-    // SSN format validation
-    if (formData.ssn && !/^\d{3}-?\d{2}-?\d{4}$/.test(formData.ssn.replace(/\s/g, ''))) {
-      newErrors.ssn = 'Please enter a valid SSN (XXX-XX-XXXX)';
-    }
-
-    // EIN format validation
-    if (formData.ein && !/^\d{2}-?\d{7}$/.test(formData.ein.replace(/\s/g, ''))) {
-      newErrors.ein = 'Please enter a valid EIN (XX-XXXXXXX)';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleSubmit = () => {
-    if (!validateForm()) return;
-
-    const completedFormData = {
-      ...formData,
-      signatureDate: new Date().toLocaleDateString('en-US'),
-      completionDate: new Date().toISOString()
-    };
-
     setIsCompleted(true);
-    onFormComplete(completedFormData);
+    onFormComplete({
+      ...formData,
+      completionDate: new Date().toISOString()
+    });
   };
 
   const downloadPDF = () => {
-    // Aquí implementarías la generación del PDF del W-9 completado
-    alert('PDF generation would be implemented here with jsPDF library');
-  };
-
-  const getCurrentDate = () => {
-    return new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    alert('PDF generation would be implemented here to create official W-9 PDF');
   };
 
   if (!isOpen) return null;
@@ -127,14 +79,14 @@ const W9FormPopup = ({ isOpen, onClose, affiliateData, onFormComplete }) => {
     modal: {
       backgroundColor: 'white',
       borderRadius: '12px',
-      maxWidth: '800px',
+      maxWidth: '850px',
       width: '100%',
       maxHeight: '95vh',
       overflow: 'hidden',
       boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
     },
     header: {
-      padding: '24px',
+      padding: '16px 24px',
       borderBottom: '1px solid #e5e7eb',
       display: 'flex',
       alignItems: 'center',
@@ -145,20 +97,6 @@ const W9FormPopup = ({ isOpen, onClose, affiliateData, onFormComplete }) => {
       display: 'flex',
       alignItems: 'center',
       gap: '12px'
-    },
-    logo: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px'
-    },
-    logoSvg: {
-      width: '40px',
-      height: '40px'
-    },
-    logoText: {
-      fontSize: '20px',
-      fontWeight: 'bold',
-      color: '#2E7D32'
     },
     title: {
       fontSize: '18px',
@@ -179,8 +117,7 @@ const W9FormPopup = ({ isOpen, onClose, affiliateData, onFormComplete }) => {
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
-      gap: '4px',
-      transition: 'all 0.2s'
+      gap: '4px'
     },
     downloadButton: {
       backgroundColor: '#2563eb',
@@ -191,145 +128,193 @@ const W9FormPopup = ({ isOpen, onClose, affiliateData, onFormComplete }) => {
       color: '#6b7280'
     },
     content: {
-      padding: '32px',
-      maxHeight: 'calc(95vh - 200px)',
+      padding: '24px',
+      maxHeight: 'calc(95vh - 140px)',
       overflowY: 'auto',
-      fontSize: '14px',
-      lineHeight: '1.6',
-      color: '#374151'
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '12px',
+      lineHeight: '1.4'
+    },
+    formHeader: {
+      textAlign: 'center',
+      marginBottom: '20px',
+      borderBottom: '2px solid #000',
+      paddingBottom: '10px'
     },
     formTitle: {
-      fontSize: '24px',
+      fontSize: '16px',
       fontWeight: 'bold',
-      textAlign: 'center',
-      color: '#1f2937',
-      marginBottom: '8px'
+      margin: '0 0 4px 0'
     },
     formSubtitle: {
-      fontSize: '16px',
-      textAlign: 'center',
-      color: '#6b7280',
-      marginBottom: '24px'
-    },
-    section: {
-      marginBottom: '24px',
-      padding: '20px',
-      border: '1px solid #e5e7eb',
-      borderRadius: '8px',
-      backgroundColor: '#fafafa'
-    },
-    sectionTitle: {
-      fontSize: '16px',
-      fontWeight: 'bold',
-      color: '#1f2937',
-      marginBottom: '16px',
-      textTransform: 'uppercase',
-      borderBottom: '2px solid #2563eb',
-      paddingBottom: '4px'
-    },
-    row: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px',
-      marginBottom: '16px'
-    },
-    fullRow: {
-      display: 'grid',
-      gridTemplateColumns: '1fr',
-      gap: '16px',
-      marginBottom: '16px'
-    },
-    fieldGroup: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '6px'
-    },
-    label: {
       fontSize: '14px',
-      fontWeight: '500',
-      color: '#374151'
+      margin: '0 0 4px 0'
     },
-    input: {
-      padding: '10px 12px',
-      border: '1px solid #d1d5db',
-      borderRadius: '6px',
-      fontSize: '14px',
-      transition: 'border-color 0.2s',
-      outline: 'none'
-    },
-    inputError: {
-      borderColor: '#ef4444'
-    },
-    select: {
-      padding: '10px 12px',
-      border: '1px solid #d1d5db',
-      borderRadius: '6px',
-      fontSize: '14px',
-      backgroundColor: 'white',
-      cursor: 'pointer',
-      outline: 'none'
-    },
-    checkbox: {
-      width: '16px',
-      height: '16px',
-      marginRight: '8px'
-    },
-    checkboxLabel: {
-      display: 'flex',
-      alignItems: 'center',
-      fontSize: '14px',
-      color: '#374151',
-      marginBottom: '8px'
-    },
-    errorText: {
-      fontSize: '12px',
-      color: '#ef4444',
-      marginTop: '4px'
+    deptInfo: {
+      fontSize: '11px',
+      margin: 0
     },
     instructionText: {
-      fontSize: '12px',
-      color: '#6b7280',
-      fontStyle: 'italic',
-      marginTop: '4px'
+      fontSize: '11px',
+      marginBottom: '16px',
+      textAlign: 'right'
     },
-    tinSection: {
+    beforeSection: {
+      backgroundColor: '#f0f0f0',
+      padding: '8px',
+      marginBottom: '16px',
+      fontSize: '11px'
+    },
+    line: {
       display: 'flex',
+      alignItems: 'center',
+      marginBottom: '12px',
+      minHeight: '24px'
+    },
+    lineNumber: {
+      width: '20px',
+      fontWeight: 'bold',
+      fontSize: '11px'
+    },
+    lineContent: {
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
+    },
+    input: {
+      border: 'none',
+      borderBottom: '1px solid #000',
+      padding: '2px 4px',
+      fontSize: '12px',
+      backgroundColor: 'transparent',
+      outline: 'none'
+    },
+    longInput: {
+      flex: 1,
+      minWidth: '200px'
+    },
+    shortInput: {
+      width: '40px'
+    },
+    checkbox: {
+      width: '12px',
+      height: '12px',
+      marginRight: '4px'
+    },
+    checkboxGroup: {
+      display: 'flex',
+      flexWrap: 'wrap',
       gap: '16px',
-      alignItems: 'end'
+      marginTop: '8px'
+    },
+    checkboxItem: {
+      display: 'flex',
+      alignItems: 'center',
+      fontSize: '11px'
     },
     tinBox: {
-      flex: 1,
-      padding: '16px',
-      border: '2px dashed #d1d5db',
-      borderRadius: '8px',
+      border: '2px solid #000',
+      padding: '12px',
+      margin: '8px 0',
       textAlign: 'center'
     },
-    certificationSection: {
-      backgroundColor: '#fef3c7',
-      border: '1px solid #fbbf24',
-      borderRadius: '8px',
-      padding: '20px'
+    tinTitle: {
+      fontWeight: 'bold',
+      marginBottom: '8px'
+    },
+    tinInputGroup: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: '8px'
+    },
+    tinInput: {
+      border: 'none',
+      borderBottom: '2px solid #000',
+      width: '30px',
+      textAlign: 'center',
+      fontSize: '14px',
+      padding: '4px 2px'
+    },
+    dash: {
+      fontSize: '16px',
+      fontWeight: 'bold'
+    },
+    certificationBox: {
+      border: '2px solid #000',
+      padding: '16px',
+      margin: '16px 0',
+      backgroundColor: '#f9f9f9'
+    },
+    certificationTitle: {
+      fontWeight: 'bold',
+      marginBottom: '12px',
+      fontSize: '12px'
     },
     certificationText: {
-      fontSize: '13px',
-      lineHeight: '1.5',
+      fontSize: '11px',
+      lineHeight: '1.4',
       marginBottom: '16px'
     },
     signatureArea: {
-      marginTop: '20px',
-      padding: '20px',
-      backgroundColor: '#f8fafc',
-      borderRadius: '8px',
-      border: '2px solid #e5e7eb'
+      display: 'flex',
+      justifyContent: 'space-between',
+      marginTop: '16px',
+      paddingTop: '8px',
+      borderTop: '1px solid #ccc'
+    },
+    signatureField: {
+      flex: 1,
+      marginRight: '20px'
+    },
+    dateField: {
+      width: '120px'
+    },
+    signatureLabel: {
+      fontSize: '10px',
+      marginBottom: '4px'
+    },
+    signatureLine: {
+      borderBottom: '1px solid #000',
+      height: '24px',
+      position: 'relative'
     },
     signatureInput: {
-      padding: '12px',
-      border: '2px solid #d1d5db',
-      borderRadius: '6px',
-      fontSize: '16px',
-      fontFamily: 'cursive',
       width: '100%',
-      backgroundColor: 'white'
+      border: 'none',
+      fontSize: '14px',
+      fontFamily: 'cursive',
+      position: 'absolute',
+      bottom: '2px',
+      backgroundColor: 'transparent',
+      outline: 'none'
+    },
+    footer: {
+      padding: '16px 24px',
+      borderTop: '1px solid #e5e7eb',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    },
+    footerInfo: {
+      fontSize: '10px',
+      color: '#666'
+    },
+    button: {
+      padding: '8px 16px',
+      borderRadius: '6px',
+      fontSize: '14px',
+      fontWeight: '500',
+      cursor: 'pointer',
+      border: 'none',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px'
+    },
+    saveButton: {
+      backgroundColor: '#16a34a',
+      color: 'white'
     },
     completedIndicator: {
       display: 'flex',
@@ -342,86 +327,15 @@ const W9FormPopup = ({ isOpen, onClose, affiliateData, onFormComplete }) => {
       backgroundColor: '#ecfdf5',
       borderRadius: '8px',
       marginBottom: '16px'
-    },
-    footer: {
-      padding: '24px',
-      backgroundColor: '#f8fafc',
-      borderTop: '1px solid #e5e7eb',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    },
-    footerLeft: {
-      fontSize: '12px',
-      color: '#6b7280',
-      lineHeight: '1.4'
-    },
-    footerCompany: {
-      fontWeight: '600',
-      color: '#1f2937'
-    },
-    footerButtons: {
-      display: 'flex',
-      gap: '12px'
-    },
-    button: {
-      padding: '8px 16px',
-      borderRadius: '6px',
-      fontSize: '14px',
-      fontWeight: '500',
-      cursor: 'pointer',
-      transition: 'all 0.2s',
-      border: 'none',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '4px'
-    },
-    saveButton: {
-      backgroundColor: '#16a34a',
-      color: 'white'
-    },
-    cancelButton: {
-      backgroundColor: '#f3f4f6',
-      color: '#374151'
     }
   };
-
-  const LogoSVG = () => (
-    <svg style={styles.logoSvg} viewBox="0 0 120 60">
-      <rect x="8" y="35" width="12" height="20" fill="#FF6B35" rx="2"/>
-      <rect x="24" y="25" width="12" height="30" fill="#FFB800" rx="2"/>
-      <rect x="40" y="15" width="12" height="40" fill="#7CB342" rx="2"/>
-      <path d="M45 8 L65 8 L60 3 M65 8 L60 13" 
-            stroke="#2E7D32" 
-            strokeWidth="3" 
-            fill="none" 
-            strokeLinecap="round" 
-            strokeLinejoin="round"/>
-      <text x="75" y="25" 
-            fill="#2E7D32" 
-            fontSize="14" 
-            fontWeight="bold" 
-            fontFamily="Arial, sans-serif">EASY</text>
-      <text x="75" y="42" 
-            fill="#2E7D32" 
-            fontSize="14" 
-            fontWeight="bold" 
-            fontFamily="Arial, sans-serif">TRADELINES</text>
-    </svg>
-  );
 
   return (
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={styles.header}>
           <div style={styles.headerContent}>
-            <div style={styles.logo}>
-              <LogoSVG />
-              <div>
-                <div style={styles.logoText}>EASY TRADELINES</div>
-                <div style={styles.title}>Form W-9 Request for Taxpayer ID</div>
-              </div>
-            </div>
+            <div style={styles.title}>Form W-9 (Rev. March 2024)</div>
           </div>
           <div style={styles.headerButtons}>
             <button 
@@ -441,360 +355,355 @@ const W9FormPopup = ({ isOpen, onClose, affiliateData, onFormComplete }) => {
         </div>
 
         <div style={styles.content}>
-          <h1 style={styles.formTitle}>Form W-9</h1>
-          <p style={styles.formSubtitle}>
-            Request for Taxpayer Identification Number and Certification
-          </p>
-
           {isCompleted && (
             <div style={styles.completedIndicator}>
               <Check size={20} />
-              W-9 Form completed successfully on {getCurrentDate()}
+              Form W-9 completed successfully
             </div>
           )}
 
-          {/* Basic Information */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>Basic Information</h3>
-            
-            <div style={styles.fullRow}>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>
-                  1. Name (as shown on your income tax return)
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  style={{
-                    ...styles.input,
-                    ...(errors.name ? styles.inputError : {})
-                  }}
-                  placeholder="Enter your full name"
-                />
-                {errors.name && <span style={styles.errorText}>{errors.name}</span>}
-              </div>
-            </div>
+          <div style={styles.formHeader}>
+            <div style={styles.formTitle}>Form W-9</div>
+            <div style={styles.formSubtitle}>(Rev. March 2024)</div>
+            <div style={styles.formSubtitle}>Request for Taxpayer Identification Number and Certification</div>
+            <div style={styles.deptInfo}>Department of the Treasury Internal Revenue Service</div>
+          </div>
 
-            <div style={styles.fullRow}>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>
-                  2. Business name/disregarded entity name, if different from above
-                </label>
-                <input
-                  type="text"
-                  value={formData.businessName}
-                  onChange={(e) => setFormData({...formData, businessName: e.target.value})}
-                  style={styles.input}
-                  placeholder="Enter business name (if applicable)"
-                />
-              </div>
+          <div style={styles.instructionText}>
+            Go to www.irs.gov/FormW9 for instructions and the latest information.
+          </div>
+
+          <div style={styles.beforeSection}>
+            <strong>Before you begin.</strong> For guidance related to the purpose of Form W-9, see Purpose of Form, below. Print or type. See Specific Instructions on page 3.
+          </div>
+
+          {/* Line 1 */}
+          <div style={styles.line}>
+            <div style={styles.lineNumber}>1</div>
+            <div style={styles.lineContent}>
+              Name of entity/individual. An entry is required.
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                style={{...styles.input, ...styles.longInput}}
+              />
             </div>
           </div>
 
-          {/* Tax Classification */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>Federal Tax Classification</h3>
-            
-            <div style={styles.fullRow}>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>
-                  3a. Check the appropriate box for federal tax classification
-                </label>
-                <select
-                  value={formData.taxClassification}
-                  onChange={(e) => setFormData({...formData, taxClassification: e.target.value})}
-                  style={{
-                    ...styles.select,
-                    ...(errors.taxClassification ? styles.inputError : {})
-                  }}
-                >
-                  <option value="">Select tax classification</option>
-                  {taxClassifications.map(classification => (
-                    <option key={classification.value} value={classification.value}>
-                      {classification.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.taxClassification && <span style={styles.errorText}>{errors.taxClassification}</span>}
-              </div>
+          {/* Line 2 */}
+          <div style={styles.line}>
+            <div style={styles.lineNumber}>2</div>
+            <div style={styles.lineContent}>
+              Business name/disregarded entity name, if different from above.
+              <input
+                type="text"
+                value={formData.businessName}
+                onChange={(e) => setFormData({...formData, businessName: e.target.value})}
+                style={{...styles.input, ...styles.longInput}}
+              />
             </div>
+          </div>
 
-            {formData.taxClassification === 'llc' && (
-              <div style={styles.fullRow}>
-                <div style={styles.fieldGroup}>
-                  <label style={styles.label}>
-                    LLC Classification (C = C corporation, S = S corporation, P = Partnership)
-                  </label>
+          {/* Line 3a */}
+          <div style={styles.line}>
+            <div style={styles.lineNumber}>3a</div>
+            <div style={styles.lineContent}>
+              Check the appropriate box for federal tax classification of the entity/individual whose name is entered on line 1. Check only one of the following seven boxes.
+              <div style={styles.checkboxGroup}>
+                <div style={styles.checkboxItem}>
+                  <input
+                    type="checkbox"
+                    checked={formData.individual}
+                    onChange={(e) => setFormData({...formData, individual: e.target.checked})}
+                    style={styles.checkbox}
+                  />
+                  Individual/sole proprietor
+                </div>
+                <div style={styles.checkboxItem}>
+                  <input
+                    type="checkbox"
+                    checked={formData.corporation}
+                    onChange={(e) => setFormData({...formData, corporation: e.target.checked})}
+                    style={styles.checkbox}
+                  />
+                  C corporation
+                </div>
+                <div style={styles.checkboxItem}>
+                  <input
+                    type="checkbox"
+                    checked={formData.scorporation}
+                    onChange={(e) => setFormData({...formData, scorporation: e.target.checked})}
+                    style={styles.checkbox}
+                  />
+                  S corporation
+                </div>
+                <div style={styles.checkboxItem}>
+                  <input
+                    type="checkbox"
+                    checked={formData.partnership}
+                    onChange={(e) => setFormData({...formData, partnership: e.target.checked})}
+                    style={styles.checkbox}
+                  />
+                  Partnership
+                </div>
+                <div style={styles.checkboxItem}>
+                  <input
+                    type="checkbox"
+                    checked={formData.trustEstate}
+                    onChange={(e) => setFormData({...formData, trustEstate: e.target.checked})}
+                    style={styles.checkbox}
+                  />
+                  Trust/estate
+                </div>
+                <div style={styles.checkboxItem}>
+                  <input
+                    type="checkbox"
+                    checked={formData.llc}
+                    onChange={(e) => setFormData({...formData, llc: e.target.checked})}
+                    style={styles.checkbox}
+                  />
+                  LLC. Enter the tax classification
                   <input
                     type="text"
                     value={formData.llcClassification}
                     onChange={(e) => setFormData({...formData, llcClassification: e.target.value})}
-                    style={styles.input}
-                    placeholder="Enter C, S, or P"
-                    maxLength="1"
+                    style={{...styles.input, width: '60px', marginLeft: '4px'}}
+                    placeholder="C, S, or P"
                   />
                 </div>
-              </div>
-            )}
-
-            {formData.taxClassification === 'other' && (
-              <div style={styles.fullRow}>
-                <div style={styles.fieldGroup}>
-                  <label style={styles.label}>
-                    Other classification (see instructions)
-                  </label>
+                <div style={styles.checkboxItem}>
+                  <input
+                    type="checkbox"
+                    checked={formData.other}
+                    onChange={(e) => setFormData({...formData, other: e.target.checked})}
+                    style={styles.checkbox}
+                  />
+                  Other
                   <input
                     type="text"
-                    value={formData.otherClassification}
-                    onChange={(e) => setFormData({...formData, otherClassification: e.target.value})}
-                    style={styles.input}
-                    placeholder="Specify other classification"
+                    value={formData.otherDescription}
+                    onChange={(e) => setFormData({...formData, otherDescription: e.target.value})}
+                    style={{...styles.input, width: '120px', marginLeft: '4px'}}
                   />
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Exemptions */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>Exemptions</h3>
-            
-            <div style={styles.row}>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>4. Exempt payee code (if any)</label>
+          {/* Line 3b */}
+          <div style={styles.line}>
+            <div style={styles.lineNumber}>3b</div>
+            <div style={styles.lineContent}>
+              <input
+                type="checkbox"
+                checked={formData.foreignPartners}
+                onChange={(e) => setFormData({...formData, foreignPartners: e.target.checked})}
+                style={styles.checkbox}
+              />
+              If on line 3a you checked "Partnership" or "Trust/estate," check this box if you have any foreign partners, owners, or beneficiaries.
+            </div>
+          </div>
+
+          {/* Line 4 */}
+          <div style={styles.line}>
+            <div style={styles.lineNumber}>4</div>
+            <div style={styles.lineContent}>
+              Exemptions (codes apply only to certain entities, not individuals):
+              <span style={{marginLeft: '16px'}}>
+                Exempt payee code (if any)
                 <input
                   type="text"
                   value={formData.exemptPayeeCode}
                   onChange={(e) => setFormData({...formData, exemptPayeeCode: e.target.value})}
-                  style={styles.input}
-                  placeholder="Enter code if applicable"
+                  style={{...styles.input, width: '60px', marginLeft: '8px'}}
                 />
-              </div>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>FATCA reporting code (if any)</label>
+              </span>
+              <span style={{marginLeft: '16px'}}>
+                Exemption from FATCA reporting code (if any)
                 <input
                   type="text"
                   value={formData.fatcaCode}
                   onChange={(e) => setFormData({...formData, fatcaCode: e.target.value})}
-                  style={styles.input}
-                  placeholder="Enter FATCA code if applicable"
+                  style={{...styles.input, width: '60px', marginLeft: '8px'}}
                 />
-              </div>
+              </span>
             </div>
           </div>
 
-          {/* Address */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>Address</h3>
-            
-            <div style={styles.fullRow}>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>5. Address (number, street, and apt. or suite no.)</label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  style={{
-                    ...styles.input,
-                    ...(errors.address ? styles.inputError : {})
-                  }}
-                  placeholder="Enter your address"
-                />
-                {errors.address && <span style={styles.errorText}>{errors.address}</span>}
-              </div>
-            </div>
-
-            <div style={styles.row}>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>6. City, state, and ZIP code</label>
-                <div style={{display: 'flex', gap: '8px'}}>
-                  <input
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => setFormData({...formData, city: e.target.value})}
-                    style={{
-                      ...styles.input,
-                      flex: 2,
-                      ...(errors.city ? styles.inputError : {})
-                    }}
-                    placeholder="City"
-                  />
-                  <input
-                    type="text"
-                    value={formData.state}
-                    onChange={(e) => setFormData({...formData, state: e.target.value})}
-                    style={{
-                      ...styles.input,
-                      flex: 1,
-                      ...(errors.state ? styles.inputError : {})
-                    }}
-                    placeholder="State"
-                    maxLength="2"
-                  />
-                  <input
-                    type="text"
-                    value={formData.zipCode}
-                    onChange={(e) => setFormData({...formData, zipCode: e.target.value})}
-                    style={{
-                      ...styles.input,
-                      flex: 1,
-                      ...(errors.zipCode ? styles.inputError : {})
-                    }}
-                    placeholder="ZIP"
-                  />
-                </div>
-                {(errors.city || errors.state || errors.zipCode) && (
-                  <span style={styles.errorText}>All address fields are required</span>
-                )}
-              </div>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>7. List account number(s) here (optional)</label>
-                <input
-                  type="text"
-                  value={formData.accountNumbers}
-                  onChange={(e) => setFormData({...formData, accountNumbers: e.target.value})}
-                  style={styles.input}
-                  placeholder="Account numbers if applicable"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Taxpayer Identification Number */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>Part I. Taxpayer Identification Number (TIN)</h3>
-            
-            <div style={styles.tinSection}>
-              <div style={styles.tinBox}>
-                <label style={styles.label}>Social Security Number</label>
-                <input
-                  type="text"
-                  value={formData.ssn}
-                  onChange={(e) => setFormData({...formData, ssn: e.target.value})}
-                  style={{
-                    ...styles.input,
-                    marginTop: '8px',
-                    ...(errors.ssn ? styles.inputError : {})
-                  }}
-                  placeholder="XXX-XX-XXXX"
-                />
-                {errors.ssn && <span style={styles.errorText}>{errors.ssn}</span>}
-              </div>
-              
-              <div style={{textAlign: 'center', alignSelf: 'center', fontWeight: 'bold'}}>
-                OR
-              </div>
-              
-              <div style={styles.tinBox}>
-                <label style={styles.label}>Employer Identification Number</label>
-                <input
-                  type="text"
-                  value={formData.ein}
-                  onChange={(e) => setFormData({...formData, ein: e.target.value})}
-                  style={{
-                    ...styles.input,
-                    marginTop: '8px',
-                    ...(errors.ein ? styles.inputError : {})
-                  }}
-                  placeholder="XX-XXXXXXX"
-                />
-                {errors.ein && <span style={styles.errorText}>{errors.ein}</span>}
-              </div>
-            </div>
-            
-            {errors.tin && <span style={styles.errorText}>{errors.tin}</span>}
-          </div>
-
-          {/* Certification */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>Part II. Certification</h3>
-            
-            <div style={styles.certificationSection}>
-              <div style={styles.certificationText}>
-                Under penalties of perjury, I certify that:
-              </div>
-              
-              <div style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={formData.certifyTin}
-                  onChange={(e) => setFormData({...formData, certifyTin: e.target.checked})}
-                  style={styles.checkbox}
-                />
-                1. The number shown on this form is my correct taxpayer identification number (or I am waiting for a number to be issued to me); and
-              </div>
-              
-              <div style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={formData.certifyBackupWithholding}
-                  onChange={(e) => setFormData({...formData, certifyBackupWithholding: e.target.checked})}
-                  style={styles.checkbox}
-                />
-                2. I am not subject to backup withholding because (a) I am exempt from backup withholding, or (b) I have not been notified by the Internal Revenue Service (IRS) that I am subject to backup withholding; and
-              </div>
-              
-              <div style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={formData.certifyUsPerson}
-                  onChange={(e) => setFormData({...formData, certifyUsPerson: e.target.checked})}
-                  style={styles.checkbox}
-                />
-                3. I am a U.S. citizen or other U.S. person; and
-              </div>
-              
-              <div style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={formData.certifyFatca}
-                  onChange={(e) => setFormData({...formData, certifyFatca: e.target.checked})}
-                  style={styles.checkbox}
-                />
-                4. The FATCA code(s) entered on this form (if any) indicating that I am exempt from FATCA reporting is correct.
-              </div>
-            </div>
-
-            {/* Signature */}
-            <div style={styles.signatureArea}>
-              <label style={styles.label}>Signature of U.S. person</label>
+          {/* Line 5 */}
+          <div style={styles.line}>
+            <div style={styles.lineNumber}>5</div>
+            <div style={styles.lineContent}>
+              Address (number, street, and apt. or suite no.). See instructions.
               <input
                 type="text"
-                value={formData.signature}
-                onChange={(e) => setFormData({...formData, signature: e.target.value})}
-                style={styles.signatureInput}
-                placeholder="Type your full name as electronic signature"
+                value={formData.address}
+                onChange={(e) => setFormData({...formData, address: e.target.value})}
+                style={{...styles.input, ...styles.longInput}}
               />
-              <div style={{marginTop: '8px', fontSize: '12px', color: '#6b7280'}}>
-                Date: {getCurrentDate()}
+            </div>
+          </div>
+
+          {/* Line 6 */}
+          <div style={styles.line}>
+            <div style={styles.lineNumber}>6</div>
+            <div style={styles.lineContent}>
+              City, state, and ZIP code
+              <input
+                type="text"
+                value={formData.cityStateZip}
+                onChange={(e) => setFormData({...formData, cityStateZip: e.target.value})}
+                style={{...styles.input, ...styles.longInput}}
+              />
+            </div>
+          </div>
+
+          {/* Requester section */}
+          <div style={{margin: '16px 0', fontSize: '11px'}}>
+            <div style={{fontWeight: 'bold', marginBottom: '8px'}}>Requester's name and address (optional)</div>
+            <input
+              type="text"
+              value={formData.requesterName}
+              onChange={(e) => setFormData({...formData, requesterName: e.target.value})}
+              style={{...styles.input, width: '100%', marginBottom: '4px'}}
+              placeholder="Smart Latinos Consulting Group, LLC"
+            />
+            <input
+              type="text"
+              value={formData.requesterAddress}
+              onChange={(e) => setFormData({...formData, requesterAddress: e.target.value})}
+              style={{...styles.input, width: '100%'}}
+              placeholder="777 NW 72ND AVE, STE 2008 MIAMI, FL 33126"
+            />
+          </div>
+
+          {/* Line 7 */}
+          <div style={styles.line}>
+            <div style={styles.lineNumber}>7</div>
+            <div style={styles.lineContent}>
+              List account number(s) here (optional)
+              <input
+                type="text"
+                value={formData.accountNumbers}
+                onChange={(e) => setFormData({...formData, accountNumbers: e.target.value})}
+                style={{...styles.input, ...styles.longInput}}
+              />
+            </div>
+          </div>
+
+          {/* Part I - TIN */}
+          <div style={styles.tinBox}>
+            <div style={styles.tinTitle}>Part I Taxpayer Identification Number (TIN)</div>
+            <div style={{fontSize: '11px', marginBottom: '12px'}}>
+              Enter your TIN in the appropriate box. The TIN provided must match the name given on line 1 to avoid backup withholding.
+            </div>
+            
+            <div style={{display: 'flex', justifyContent: 'space-around', alignItems: 'center'}}>
+              <div>
+                <div style={{marginBottom: '8px'}}>Social security number</div>
+                <div style={styles.tinInputGroup}>
+                  <input
+                    type="text"
+                    value={formData.ssn1}
+                    onChange={(e) => setFormData({...formData, ssn1: e.target.value})}
+                    style={styles.tinInput}
+                    maxLength="3"
+                  />
+                  <span style={styles.dash}>–</span>
+                  <input
+                    type="text"
+                    value={formData.ssn2}
+                    onChange={(e) => setFormData({...formData, ssn2: e.target.value})}
+                    style={{...styles.tinInput, width: '24px'}}
+                    maxLength="2"
+                  />
+                  <span style={styles.dash}>–</span>
+                  <input
+                    type="text"
+                    value={formData.ssn3}
+                    onChange={(e) => setFormData({...formData, ssn3: e.target.value})}
+                    style={{...styles.tinInput, width: '40px'}}
+                    maxLength="4"
+                  />
+                </div>
+              </div>
+              
+              <div style={{fontSize: '16px', fontWeight: 'bold'}}>or</div>
+              
+              <div>
+                <div style={{marginBottom: '8px'}}>Employer identification number</div>
+                <div style={styles.tinInputGroup}>
+                  <input
+                    type="text"
+                    value={formData.ein1}
+                    onChange={(e) => setFormData({...formData, ein1: e.target.value})}
+                    style={{...styles.tinInput, width: '24px'}}
+                    maxLength="2"
+                  />
+                  <span style={styles.dash}>–</span>
+                  <input
+                    type="text"
+                    value={formData.ein2}
+                    onChange={(e) => setFormData({...formData, ein2: e.target.value})}
+                    style={{...styles.tinInput, width: '70px'}}
+                    maxLength="7"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Part II - Certification */}
+          <div style={styles.certificationBox}>
+            <div style={styles.certificationTitle}>Part II Certification</div>
+            <div style={styles.certificationText}>
+              Under penalties of perjury, I certify that:
+              <br/>1. The number shown on this form is my correct taxpayer identification number (or I am waiting for a number to be issued to me); and
+              <br/>2. I am not subject to backup withholding because (a) I am exempt from backup withholding, or (b) I have not been notified by the Internal Revenue Service (IRS) that I am subject to backup withholding as a result of a failure to report all interest or dividends, or (c) the IRS has notified me that I am no longer subject to backup withholding; and
+              <br/>3. I am a U.S. citizen or other U.S. person (defined below); and
+              <br/>4. The FATCA code(s) entered on this form (if any) indicating that I am exempt from FATCA reporting is correct.
+            </div>
+            
+            <div style={styles.signatureArea}>
+              <div style={styles.signatureField}>
+                <div style={styles.signatureLabel}>Signature of U.S. person</div>
+                <div style={styles.signatureLine}>
+                  <input
+                    type="text"
+                    value={formData.signature}
+                    onChange={(e) => setFormData({...formData, signature: e.target.value})}
+                    style={styles.signatureInput}
+                    placeholder="Type your full name"
+                  />
+                </div>
+              </div>
+              <div style={styles.dateField}>
+                <div style={styles.signatureLabel}>Date</div>
+                <div style={styles.signatureLine}>
+                  <input
+                    type="text"
+                    value={formData.date}
+                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                    style={styles.signatureInput}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <div style={styles.footer}>
-          <div style={styles.footerLeft}>
-            <div style={styles.footerCompany}>SMART LATINOS CONSULTING GROUP, LLC</div>
-            <div>777 NW 72ND AVE, STE 2008 MIAMI, FL 33126</div>
-            <div>info@easytradelines.com</div>
+          <div style={styles.footerInfo}>
+            Cat. No. 10231X Form W-9 (Rev. 3-2024)
           </div>
-          
-          <div style={styles.footerButtons}>
-            <button
-              onClick={onClose}
-              style={{...styles.button, ...styles.cancelButton}}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              style={{...styles.button, ...styles.saveButton}}
-            >
-              <Save size={16} />
-              Complete W-9 Form
-            </button>
-          </div>
+          <button
+            onClick={handleSubmit}
+            style={{...styles.button, ...styles.saveButton}}
+          >
+            <Save size={16} />
+            Complete W-9 Form
+          </button>
         </div>
       </div>
     </div>
