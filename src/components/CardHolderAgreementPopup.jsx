@@ -10,6 +10,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     investorPhone: affiliateData.phone || '',
     investorEmail: affiliateData.email || '',
     cardHolderSignature: '',
+    affiliateSignature: '',
     easyTradeLinesSignature: 'Jose Hefferan',
     signatureDate: new Date().toLocaleDateString('en-US', {
       year: 'numeric',
@@ -546,7 +547,20 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                       value={agreementData.cardHolderSignature}
                       onChange={(e) => handleInputChange('cardHolderSignature', e.target.value)}
                       style={styles.editableInput}
-                      placeholder="Card Holder Signature"
+                      placeholder="CardHolder Full Name"
+                    />
+                  </span>
+                </p>
+                <br />
+                <p>
+                  Affiliate Signature:{' '}
+                  <span style={{...styles.editableField, minWidth: '300px'}}>
+                    <input
+                      type="text"
+                      value={agreementData.affiliateSignature || ''}
+                      onChange={(e) => handleInputChange('affiliateSignature', e.target.value)}
+                      style={styles.editableInput}
+                      placeholder="Signature space for affiliate"
                     />
                   </span>
                 </p>
