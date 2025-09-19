@@ -2,16 +2,12 @@ import React, { useState } from 'react';
 import { X, Upload, Building2, Mail, Phone, User, FileText, CreditCard, DollarSign, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import CardHolderAgreementPopup from './CardHolderAgreementPopup';
-import W9FormPopup from './W9FormPopup';
 
 const NewAffiliateModal = ({ isOpen, onClose, currentUser }) => {
   const [loading, setLoading] = useState(false);
   const [showContractPopup, setShowContractPopup] = useState(false);
-  const [showW9Popup, setShowW9Popup] = useState(false);
   const [contractSigned, setContractSigned] = useState(false);
-  const [w9Completed, setW9Completed] = useState(false);
   const [signatureData, setSignatureData] = useState(null);
-  const [w9Data, setW9Data] = useState(null);
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -111,11 +107,6 @@ const NewAffiliateModal = ({ isOpen, onClose, currentUser }) => {
         affiliateData.contract_signed_date = new Date().toISOString();
       }
 
-      if (w9Data) {
-        affiliateData.w9_completed = true;
-        affiliateData.w9_completion_date = new Date().toISOString();
-      }
-
       const { data, error } = await supabase
         .from('affiliates')
         .insert([affiliateData])
@@ -154,11 +145,8 @@ const NewAffiliateModal = ({ isOpen, onClose, currentUser }) => {
     });
     setErrors({});
     setContractSigned(false);
-    setW9Completed(false);
     setSignatureData(null);
-    setW9Data(null);
     setShowContractPopup(false);
-    setShowW9Popup(false);
     onClose();
   };
 
@@ -176,12 +164,6 @@ const NewAffiliateModal = ({ isOpen, onClose, currentUser }) => {
     setSignatureData(signatureResult);
     setContractSigned(true);
     setShowContractPopup(false);
-  };
-
-  const handleW9Complete = (w9Result) => {
-    setW9Data(w9Result);
-    setW9Completed(true);
-    setShowW9Popup(false);
   };
 
   const getPaymentFields = () => {
@@ -706,34 +688,45 @@ const NewAffiliateModal = ({ isOpen, onClose, currentUser }) => {
                   
                   <div style={styles.row}>
                     <div style={styles.fieldGroup}>
-                      <button
-                        type="button"
-                        onClick={() => setShowW9Popup(true)}
+                      <a
+                        href="/w9-form.pdf"
+                        download="W-9_Tax_Form.pdf"
                         style={{
                           ...styles.fileUpload,
-                          backgroundColor: w9Completed ? '#ecfdf5' : '#f8fafc',
-                          borderColor: w9Completed ? '#10b981' : '#d1d5db',
+                          backgroundColor: '#f8fafc',
+                          borderColor: '#d1d5db',
                           cursor: 'pointer',
-                          border: 'none',
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          display: 'block',
                           transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#f1f5f9';
+                          e.target.style.borderColor = '#94a3b8';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#f8fafc';
+                          e.target.style.borderColor = '#d1d5db';
                         }}
                       >
                         <FileText style={{ 
                           width: '24px', 
                           height: '24px', 
-                          color: w9Completed ? '#059669' : '#6b7280', 
+                          color: '#6b7280', 
                           margin: '0 auto 8px' 
                         }} />
                         <p style={{
-                          color: w9Completed ? '#059669' : '#374151',
-                          fontWeight: w9Completed ? '600' : '400'
+                          color: '#374151',
+                          fontWeight: '500',
+                          margin: '4px 0'
                         }}>
-                          {w9Completed ? 'W-9 Form Completed' : 'Fill W-9 Form Online'}
+                          Download W-9 Form
                         </p>
                         <p style={{fontSize: '12px', color: '#6b7280'}}>
-                          Click to {w9Completed ? 'view/edit' : 'complete'} W-9 form
+                          Click to download official W-9 form
                         </p>
-                      </button>
+                      </a>
                     </div>
 
                     <div style={styles.fieldGroup}>
@@ -747,7 +740,7 @@ const NewAffiliateModal = ({ isOpen, onClose, currentUser }) => {
                         />
                         <label htmlFor="w9_document" style={{cursor: 'pointer'}}>
                           <Upload style={{ width: '24px', height: '24px', color: '#6b7280', margin: '0 auto 8px' }} />
-                          <p>Upload Your Own W-9</p>
+                          <p>Upload W-9 Form</p>
                           <p style={{fontSize: '12px', color: '#6b7280'}}>PDF up to 10MB</p>
                         </label>
                         {formData.files.w9_document && (
@@ -803,19 +796,12 @@ const NewAffiliateModal = ({ isOpen, onClose, currentUser }) => {
         </div>
       </div>
 
-      {/* Contract and W-9 Popups */}
+      {/* Contract Popup */}
       <CardHolderAgreementPopup
         isOpen={showContractPopup}
         onClose={() => setShowContractPopup(false)}
         affiliateData={formData}
         onSignComplete={handleContractSign}
-      />
-      
-      <W9FormPopup
-        isOpen={showW9Popup}
-        onClose={() => setShowW9Popup(false)}
-        affiliateData={formData}
-        onFormComplete={handleW9Complete}
       />
     </div>
   );
