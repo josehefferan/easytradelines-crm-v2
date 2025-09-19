@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { X, Upload, Building2, Mail, Phone, User, FileText, CreditCard, DollarSign } from 'lucide-react';
+import { X, Upload, Building2, Mail, Phone, User, FileText, CreditCard, DollarSign, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import CardHolderAgreementPopup from './CardHolderAgreementPopup';
+import W9FormPopup from './W9FormPopup';
 
 const NewAffiliateModal = ({ isOpen, onClose, currentUser }) => {
   const [loading, setLoading] = useState(false);
@@ -801,7 +803,20 @@ const NewAffiliateModal = ({ isOpen, onClose, currentUser }) => {
         </div>
       </div>
 
-      {/* Contract and W-9 Popups will be added here */}
+      {/* Contract and W-9 Popups */}
+      <CardHolderAgreementPopup
+        isOpen={showContractPopup}
+        onClose={() => setShowContractPopup(false)}
+        affiliateData={formData}
+        onSignComplete={handleContractSign}
+      />
+      
+      <W9FormPopup
+        isOpen={showW9Popup}
+        onClose={() => setShowW9Popup(false)}
+        affiliateData={formData}
+        onFormComplete={handleW9Complete}
+      />
     </div>
   );
 };
