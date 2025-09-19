@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Upload, User, Mail, Phone, MapPin, Calendar, Shield, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const NewClientModal = ({ isOpen, onClose, currentUser }) => {
   const [loading, setLoading] = useState(false);
-  const [brokers, setBrokers] = useState([]);
-  const [affiliates, setAffiliates] = useState([]);
   const [showPasswords, setShowPasswords] = useState({
     experian_password: false,
     experian_pin: false
@@ -23,10 +21,7 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     experian_password: '',
     experian_security_answer: '',
     experian_pin: '',
-    broker_id: '',
-    affiliate_id: '',
     notes: '',
-    estimated_amount: '',
     files: {
       id_document: null,
       ssn_card: null,
@@ -35,27 +30,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
   });
 
   const [errors, setErrors] = useState({});
-
-  // Cargar brokers y affiliates
-  useEffect(() => {
-    if (isOpen) {
-      fetchBrokersAndAffiliates();
-    }
-  }, [isOpen]);
-
-  const fetchBrokersAndAffiliates = async () => {
-    try {
-      const [brokersResponse, affiliatesResponse] = await Promise.all([
-        supabase.from('brokers').select('id, first_name, last_name').eq('active', true),
-        supabase.from('affiliates').select('id, first_name, last_name').eq('active', true)
-      ]);
-
-      if (brokersResponse.data) setBrokers(brokersResponse.data);
-      if (affiliatesResponse.data) setAffiliates(affiliatesResponse.data);
-    } catch (error) {
-      console.error('Error fetching brokers/affiliates:', error);
-    }
-  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -123,9 +97,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
         experian_password: formData.experian_password,
         experian_security_answer: formData.experian_security_answer.trim(),
         experian_pin: formData.experian_pin,
-        broker_id: formData.broker_id || null,
-        affiliate_id: formData.affiliate_id || null,
-        estimated_amount: formData.estimated_amount ? parseFloat(formData.estimated_amount) : null,
         status: 'new_lead',
         created_by: currentUser?.email || 'system'
       };
@@ -168,10 +139,7 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       experian_password: '',
       experian_security_answer: '',
       experian_pin: '',
-      broker_id: '',
-      affiliate_id: '',
       notes: '',
-      estimated_amount: '',
       files: {
         id_document: null,
         ssn_card: null,
@@ -312,15 +280,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       resize: 'vertical',
       outline: 'none'
     },
-    select: {
-      padding: '10px 12px',
-      border: '1px solid #d1d5db',
-      borderRadius: '6px',
-      fontSize: '14px',
-      backgroundColor: 'white',
-      cursor: 'pointer',
-      outline: 'none'
-    },
     passwordContainer: {
       position: 'relative'
     },
@@ -350,10 +309,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       textAlign: 'center',
       cursor: 'pointer',
       transition: 'border-color 0.2s'
-    },
-    fileUploadActive: {
-      borderColor: '#3b82f6',
-      backgroundColor: '#f8fafc'
     },
     fileInput: {
       display: 'none'
@@ -641,59 +596,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
                     </button>
                   </div>
                   {errors.experian_pin && <span style={styles.errorText}>{errors.experian_pin}</span>}
-                </div>
-              </div>
-            </div>
-
-            {/* Assignment */}
-            <div>
-              <h3 style={styles.sectionTitle}>Assignment</h3>
-              
-              <div style={styles.row}>
-                <div style={styles.fieldGroup}>
-                  <label style={styles.label}>Assigned Broker</label>
-                  <select
-                    value={formData.broker_id}
-                    onChange={(e) => setFormData({...formData, broker_id: e.target.value})}
-                    style={styles.select}
-                  >
-                    <option value="">Select a broker (optional)</option>
-                    {brokers.map(broker => (
-                      <option key={broker.id} value={broker.id}>
-                        {broker.first_name} {broker.last_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div style={styles.fieldGroup}>
-                  <label style={styles.label}>Source Affiliate</label>
-                  <select
-                    value={formData.affiliate_id}
-                    onChange={(e) => setFormData({...formData, affiliate_id: e.target.value})}
-                    style={styles.select}
-                  >
-                    <option value="">Select an affiliate (optional)</option>
-                    {affiliates.map(affiliate => (
-                      <option key={affiliate.id} value={affiliate.id}>
-                        {affiliate.first_name} {affiliate.last_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div style={styles.fullRow}>
-                <div style={styles.fieldGroup}>
-                  <label style={styles.label}>Estimated Amount</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.estimated_amount}
-                    onChange={(e) => setFormData({...formData, estimated_amount: e.target.value})}
-                    style={styles.input}
-                    placeholder="0.00"
-                  />
                 </div>
               </div>
             </div>
