@@ -1,37 +1,49 @@
-import React, { useState } from 'react';
-import { X, Upload, FileText, Image, Check, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, User, Mail, Phone, DollarSign, Users, Building2, Upload, FileText, Loader2 } from 'lucide-react';
+import { clientService, profileService } from '../services/supabaseServices';
 
-const NewClientModal = ({ isOpen, onClose, currentUser }) => {
+const NewClientModal = ({ isOpen, onClose, currentUser, onClientCreated }) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    address: '',
-    phoneNumber: '',
     email: '',
-    ssn: '',
-    dateOfBirth: '',
-    experianLogin: ''
+    phone: '',
+    brokerId: '',
+    affiliateId: '',
+    estimatedAmount: '',
+    notes: '',
+    status: 'new_lead'
   });
 
-  const [files, setFiles] = useState({
-    id: null,
-    ssCard: null,
-    creditReports: null
-  });
+  const [brokers, setBrokers] = useState([]);
+  const [affiliates, setAffiliates] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const [uploadStatus, setUploadStatus] = useState({
-    id: 'pending',
-    ssCard: 'pending',
-    creditReports: 'pending'
-  });
+  useEffect(() => {
+    if (isOpen) {
+      loadBrokersAndAffiliates();
+    }
+  }, [isOpen]);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState({});
+  const loadBrokersAndAffiliates = async () => {
+    setLoadingData(true);
+    try {
+      const [brokersResult, affiliatesResult] = await Promise.all([
+        profileService.getBrokers(),
+        profileService.getAffiliates()
+      ]);
 
-  const generateClientFolio = async () => {
-    const timestamp = Date.now();
-    const lastDigits = timestamp.toString().slice(-6);
-    return `C-${lastDigits}`;
+      if (brokersResult.data) setBrokers(brokersResult.data);
+      if (affiliatesResult.data) setAffiliates(affiliatesResult.data);
+    } catch (err) {
+      setError('Failed to load brokers and affiliates');
+    } finally {
+      setLoadingData(false);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -40,219 +52,135 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       ...prev,
       [name]: value
     }));
-    
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    setError('');
   };
 
-  const handleFileUpload = (fileType, file) => {
-    const validations = {
-      id: ['jpg', 'jpeg', 'png', 'pdf'],
-      ssCard: ['pdf'],
-      creditReports: ['pdf']
-    };
-
-    const fileExtension = file.name.split('.').pop().toLowerCase();
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     
-    if (!validations[fileType].includes(fileExtension)) {
-      setUploadStatus(prev => ({
-        ...prev,
-        [fileType]: 'error'
-      }));
-      return;
-    }
+    const validFiles = files.filter(file => {
+      if (!allowedTypes.includes(file.type)) {
+        setError(`File ${file.name} is not a supported format. Please use JPG, PNG, PDF, or DOC files.`);
+        return false;
+      }
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        setError(`File ${file.name} is too large. Maximum size is 10MB.`);
+        return false;
+      }
+      return true;
+    });
 
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadStatus(prev => ({
-        ...prev,
-        [fileType]: 'error'
-      }));
-      return;
-    }
+    setUploadedFiles(prev => [...prev, ...validFiles]);
+    setError('');
+  };
 
-    setUploadStatus(prev => ({
-      ...prev,
-      [fileType]: 'uploading'
-    }));
-
-    setTimeout(() => {
-      setFiles(prev => ({
-        ...prev,
-        [fileType]: file
-      }));
-      setUploadStatus(prev => ({
-        ...prev,
-        [fileType]: 'success'
-      }));
-    }, 1500);
+  const removeFile = (index) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!formData.address.trim()) newErrors.address = 'Address is required';
-    if (!formData.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    if (!formData.ssn.trim()) newErrors.ssn = 'SSN is required';
-    if (!formData.dateOfBirth.trim()) newErrors.dateOfBirth = 'Date of birth is required';
-    if (!formData.experianLogin.trim()) newErrors.experianLogin = 'Experian login is required';
-
-    // Email validation
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+    if (!formData.firstName.trim()) return 'First name is required';
+    if (!formData.lastName.trim()) return 'Last name is required';
+    if (!formData.email.trim()) return 'Email is required';
+    if (!formData.email.includes('@')) return 'Please enter a valid email';
+    if (!formData.phone.trim()) return 'Phone is required';
+    if (formData.estimatedAmount && isNaN(parseFloat(formData.estimatedAmount))) {
+      return 'Estimated amount must be a valid number';
     }
-
-    // Phone validation
-    if (formData.phoneNumber && !/^\d{10}$/.test(formData.phoneNumber.replace(/\D/g, ''))) {
-      newErrors.phoneNumber = 'Please enter a valid 10-digit phone number';
-    }
-
-    // SSN validation
-    if (formData.ssn && !/^\d{3}-?\d{2}-?\d{4}$/.test(formData.ssn)) {
-      newErrors.ssn = 'Please enter a valid SSN (XXX-XX-XXXX)';
-    }
-
-    // File validations
-    if (uploadStatus.id !== 'success') newErrors.id = 'ID document is required';
-    if (uploadStatus.ssCard !== 'success') newErrors.ssCard = 'SS Card is required';
-    if (uploadStatus.creditReports !== 'success') newErrors.creditReports = 'Credit reports are required';
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return null;
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
-    setIsSubmitting(true);
+    setLoading(true);
+    setError('');
 
     try {
-      const clientFolio = await generateClientFolio();
-      
       const clientData = {
-        ...formData,
-        folio: clientFolio,
-        status: 'nuevo_cliente',
-        assignedBroker: currentUser?.id || 'demo-broker',
-        brokerName: currentUser?.name || 'Demo Broker',
-        createdAt: new Date().toISOString(),
-        lastActivity: new Date().toISOString(),
-        progress: 10
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.trim(),
+        brokerId: formData.brokerId || null,
+        affiliateId: formData.affiliateId || null,
+        estimatedAmount: formData.estimatedAmount ? parseFloat(formData.estimatedAmount) : 0,
+        notes: formData.notes.trim(),
+        status: formData.status
       };
 
-      console.log('Client Data:', clientData);
-      console.log('Files:', files);
+      const { data, error: createError } = await clientService.create(clientData);
+
+      if (createError) {
+        throw new Error(createError);
+      }
+
+      // TODO: Upload files to Supabase Storage and link to client
+      // This would require additional storage setup
+
+      setSuccess('Client created successfully!');
       
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      alert(`Client created successfully with folio: ${clientFolio}`);
-      onClose();
-      
-    } catch (error) {
-      console.error('Error creating client:', error);
-      alert('Error creating client. Please try again.');
+      // Reset form
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        brokerId: '',
+        affiliateId: '',
+        estimatedAmount: '',
+        notes: '',
+        status: 'new_lead'
+      });
+      setUploadedFiles([]);
+
+      if (onClientCreated) {
+        onClientCreated(data);
+      }
+
+      setTimeout(() => {
+        setSuccess('');
+        onClose();
+      }, 1500);
+
+    } catch (err) {
+      setError(err.message || 'Failed to create client. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const FileUploadBox = ({ fileType, label, acceptedFormats, description }) => {
-    const status = uploadStatus[fileType];
-    
-    return (
-      <div style={{ marginBottom: '24px' }}>
-        <label style={{
-          fontSize: '14px',
-          fontWeight: '600',
-          color: '#374151',
-          display: 'block',
-          marginBottom: '8px'
-        }}>
-          {label} <span style={{ color: '#ef4444' }}>*</span>
-        </label>
-        
-        <div style={{
-          border: `2px dashed ${status === 'success' ? '#10b981' : status === 'error' ? '#ef4444' : '#d1d5db'}`,
-          borderRadius: '8px',
-          padding: '24px',
-          textAlign: 'center',
-          backgroundColor: status === 'success' ? '#f0fdf4' : status === 'error' ? '#fef2f2' : '#f9fafb',
-          cursor: 'pointer',
-          transition: 'all 0.2s'
-        }}>
-          <input
-            type="file"
-            accept={acceptedFormats}
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (file) {
-                handleFileUpload(fileType, file);
-              }
-            }}
-            style={{ display: 'none' }}
-            id={`upload-${fileType}`}
-          />
-          
-          <label htmlFor={`upload-${fileType}`} style={{ cursor: 'pointer', display: 'block' }}>
-            {status === 'uploading' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                <div style={{
-                  width: '24px',
-                  height: '24px',
-                  border: '2px solid #3b82f6',
-                  borderTop: '2px solid transparent',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }} />
-                <span style={{ color: '#3b82f6', fontSize: '14px' }}>Uploading...</span>
-              </div>
-            ) : status === 'success' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                <Check style={{ width: '24px', height: '24px', color: '#10b981' }} />
-                <span style={{ color: '#10b981', fontSize: '14px', fontWeight: '500' }}>
-                  {files[fileType]?.name}
-                </span>
-                <span style={{ color: '#6b7280', fontSize: '12px' }}>Click to change</span>
-              </div>
-            ) : status === 'error' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                <AlertCircle style={{ width: '24px', height: '24px', color: '#ef4444' }} />
-                <span style={{ color: '#ef4444', fontSize: '14px' }}>Upload failed</span>
-                <span style={{ color: '#6b7280', fontSize: '12px' }}>Click to try again</span>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                {fileType === 'id' ? <Image style={{ width: '24px', height: '24px', color: '#6b7280' }} /> : <FileText style={{ width: '24px', height: '24px', color: '#6b7280' }} />}
-                <span style={{ color: '#374151', fontSize: '14px', fontWeight: '500' }}>
-                  Click to upload {label}
-                </span>
-                <span style={{ color: '#6b7280', fontSize: '12px' }}>{description}</span>
-              </div>
-            )}
-          </label>
-        </div>
-        
-        {errors[fileType] && (
-          <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-            {errors[fileType]}
-          </p>
-        )}
-      </div>
-    );
+  const handleClose = () => {
+    if (!loading) {
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        brokerId: '',
+        affiliateId: '',
+        estimatedAmount: '',
+        notes: '',
+        status: 'new_lead'
+      });
+      setUploadedFiles([]);
+      setError('');
+      setSuccess('');
+      onClose();
+    }
   };
 
   if (!isOpen) return null;
 
-  return (
-    <div style={{
+  const styles = {
+    overlay: {
       position: 'fixed',
       top: 0,
       left: 0,
@@ -264,450 +192,513 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       justifyContent: 'center',
       zIndex: 1000,
       padding: '20px'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '16px',
-        width: '100%',
-        maxWidth: '800px',
-        maxHeight: '90vh',
-        overflow: 'hidden',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-      }}>
-        {/* Header */}
-        <div style={{
-          padding: '24px',
-          borderBottom: '1px solid #e5e7eb',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <h2 style={{
-            fontSize: '24px',
-            fontWeight: 'bold',
-            color: '#1f2937',
-            margin: 0
-          }}>
-            New Client Registration
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '8px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              cursor: 'pointer',
-              borderRadius: '8px',
-              color: '#6b7280'
-            }}
-          >
-            <X style={{ width: '24px', height: '24px' }} />
-          </button>
-        </div>
+    },
+    modal: {
+      backgroundColor: 'white',
+      borderRadius: '12px',
+      width: '100%',
+      maxWidth: '600px',
+      maxHeight: '90vh',
+      overflow: 'auto',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '24px 24px 0 24px',
+      borderBottom: '1px solid #e5e7eb',
+      paddingBottom: '16px'
+    },
+    headerTitle: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px'
+    },
+    title: {
+      fontSize: '20px',
+      fontWeight: '600',
+      color: '#1f2937',
+      margin: 0
+    },
+    subtitle: {
+      fontSize: '14px',
+      color: '#6b7280',
+      margin: '4px 0 0 0'
+    },
+    closeButton: {
+      background: 'none',
+      border: 'none',
+      padding: '8px',
+      cursor: 'pointer',
+      borderRadius: '8px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#6b7280',
+      transition: 'all 0.2s'
+    },
+    content: {
+      padding: '24px'
+    },
+    form: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '20px'
+    },
+    formGroup: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '6px'
+    },
+    label: {
+      fontSize: '14px',
+      fontWeight: '500',
+      color: '#374151',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
+    },
+    input: {
+      padding: '12px 16px',
+      border: '1px solid #d1d5db',
+      borderRadius: '8px',
+      fontSize: '14px',
+      transition: 'border-color 0.2s, box-shadow 0.2s',
+      outline: 'none'
+    },
+    select: {
+      padding: '12px 16px',
+      border: '1px solid #d1d5db',
+      borderRadius: '8px',
+      fontSize: '14px',
+      transition: 'border-color 0.2s, box-shadow 0.2s',
+      outline: 'none',
+      backgroundColor: 'white'
+    },
+    textarea: {
+      padding: '12px 16px',
+      border: '1px solid #d1d5db',
+      borderRadius: '8px',
+      fontSize: '14px',
+      transition: 'border-color 0.2s, box-shadow 0.2s',
+      outline: 'none',
+      resize: 'vertical',
+      minHeight: '80px'
+    },
+    row: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '16px'
+    },
+    fileUpload: {
+      border: '2px dashed #d1d5db',
+      borderRadius: '8px',
+      padding: '16px',
+      textAlign: 'center',
+      cursor: 'pointer',
+      transition: 'border-color 0.2s'
+    },
+    fileInput: {
+      display: 'none'
+    },
+    fileList: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px',
+      marginTop: '12px'
+    },
+    fileItem: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '8px 12px',
+      backgroundColor: '#f3f4f6',
+      borderRadius: '6px'
+    },
+    buttonGroup: {
+      display: 'flex',
+      gap: '12px',
+      marginTop: '8px'
+    },
+    button: {
+      flex: 1,
+      padding: '12px 24px',
+      borderRadius: '8px',
+      fontSize: '14px',
+      fontWeight: '500',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px'
+    },
+    cancelButton: {
+      backgroundColor: 'white',
+      color: '#374151',
+      border: '1px solid #d1d5db'
+    },
+    submitButton: {
+      backgroundColor: '#16a34a',
+      color: 'white',
+      border: 'none'
+    },
+    submitButtonDisabled: {
+      backgroundColor: '#9ca3af',
+      cursor: 'not-allowed'
+    },
+    alertError: {
+      backgroundColor: '#fef2f2',
+      color: '#dc2626',
+      padding: '12px 16px',
+      borderRadius: '8px',
+      fontSize: '14px',
+      border: '1px solid #fecaca'
+    },
+    alertSuccess: {
+      backgroundColor: '#f0fdf4',
+      color: '#16a34a',
+      padding: '12px 16px',
+      borderRadius: '8px',
+      fontSize: '14px',
+      border: '1px solid #bbf7d0'
+    },
+    spinner: {
+      width: '16px',
+      height: '16px',
+      animation: 'spin 1s linear infinite'
+    },
+    statusBadge: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '4px 8px',
+      borderRadius: '4px',
+      fontSize: '12px',
+      fontWeight: '500',
+      backgroundColor: '#f3f4f6',
+      color: '#374151'
+    }
+  };
 
-        {/* Content */}
-        <div style={{
-          padding: '24px',
-          maxHeight: 'calc(90vh - 140px)',
-          overflowY: 'auto'
-        }}>
-          {/* Personal Information Section */}
-          <div style={{ marginBottom: '32px' }}>
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1f2937',
-              marginBottom: '16px'
-            }}>
-              Personal Information
-            </h3>
-            
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '16px'
-            }}>
+  return (
+    <>
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+      
+      <div style={styles.overlay} onClick={handleClose}>
+        <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div style={styles.header}>
+            <div style={styles.headerTitle}>
+              <User style={{ width: '24px', height: '24px', color: '#16a34a' }} />
               <div>
-                <label style={{
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  display: 'block',
-                  marginBottom: '4px'
-                }}>
-                  First Name <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: `2px solid ${errors.firstName ? '#ef4444' : '#e5e7eb'}`,
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    boxSizing: 'border-box'
-                  }}
-                  placeholder="Enter first name"
-                />
-                {errors.firstName && (
-                  <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                    {errors.firstName}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label style={{
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  display: 'block',
-                  marginBottom: '4px'
-                }}>
-                  Last Name <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: `2px solid ${errors.lastName ? '#ef4444' : '#e5e7eb'}`,
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    boxSizing: 'border-box'
-                  }}
-                  placeholder="Enter last name"
-                />
-                {errors.lastName && (
-                  <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                    {errors.lastName}
-                  </p>
-                )}
-              </div>
-
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  display: 'block',
-                  marginBottom: '4px'
-                }}>
-                  Address (no PO Box/residential only) <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: `2px solid ${errors.address ? '#ef4444' : '#e5e7eb'}`,
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    boxSizing: 'border-box'
-                  }}
-                  placeholder="Enter residential address"
-                />
-                {errors.address && (
-                  <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                    {errors.address}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label style={{
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  display: 'block',
-                  marginBottom: '4px'
-                }}>
-                  Phone Number <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: `2px solid ${errors.phoneNumber ? '#ef4444' : '#e5e7eb'}`,
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    boxSizing: 'border-box'
-                  }}
-                  placeholder="(555) 123-4567"
-                />
-                {errors.phoneNumber && (
-                  <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                    {errors.phoneNumber}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label style={{
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  display: 'block',
-                  marginBottom: '4px'
-                }}>
-                  Email <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: `2px solid ${errors.email ? '#ef4444' : '#e5e7eb'}`,
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    boxSizing: 'border-box'
-                  }}
-                  placeholder="Enter email address"
-                />
-                {errors.email && (
-                  <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                    {errors.email}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label style={{
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  display: 'block',
-                  marginBottom: '4px'
-                }}>
-                  SSN <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  name="ssn"
-                  value={formData.ssn}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: `2px solid ${errors.ssn ? '#ef4444' : '#e5e7eb'}`,
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    boxSizing: 'border-box'
-                  }}
-                  placeholder="XXX-XX-XXXX"
-                />
-                {errors.ssn && (
-                  <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                    {errors.ssn}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label style={{
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  display: 'block',
-                  marginBottom: '4px'
-                }}>
-                  Date of Birth <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <input
-                  type="date"
-                  name="dateOfBirth"
-                  value={formData.dateOfBirth}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: `2px solid ${errors.dateOfBirth ? '#ef4444' : '#e5e7eb'}`,
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                {errors.dateOfBirth && (
-                  <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                    {errors.dateOfBirth}
-                  </p>
-                )}
+                <h2 style={styles.title}>New Client</h2>
+                <p style={styles.subtitle}>Add a new client to the system</p>
               </div>
             </div>
-          </div>
-
-          {/* Experian Information Section */}
-          <div style={{ marginBottom: '32px' }}>
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1f2937',
-              marginBottom: '16px'
-            }}>
-              Experian Account Information
-            </h3>
-            
-            <div>
-              <label style={{
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#374151',
-                display: 'block',
-                marginBottom: '4px'
-              }}>
-                Experian Login/User/Password/Security Answer/4 Digit PIN <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <textarea
-                name="experianLogin"
-                value={formData.experianLogin}
-                onChange={handleInputChange}
-                rows={4}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: `2px solid ${errors.experianLogin ? '#ef4444' : '#e5e7eb'}`,
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  boxSizing: 'border-box',
-                  resize: 'vertical'
-                }}
-                placeholder="Enter all Experian account details (Login, User, Password, Security Answer, 4-digit PIN)"
-              />
-              {errors.experianLogin && (
-                <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                  {errors.experianLogin}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Document Upload Section */}
-          <div style={{ marginBottom: '32px' }}>
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1f2937',
-              marginBottom: '16px'
-            }}>
-              Required Documents
-            </h3>
-            
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '24px'
-            }}>
-              <FileUploadBox
-                fileType="id"
-                label="ID Document"
-                acceptedFormats=".jpg,.jpeg,.png,.pdf"
-                description="JPG, PNG, or PDF format"
-              />
-              
-              <FileUploadBox
-                fileType="ssCard"
-                label="Social Security Card"
-                acceptedFormats=".pdf"
-                description="PDF format only"
-              />
-              
-              <FileUploadBox
-                fileType="creditReports"
-                label="3 Bureaus Credit Reports"
-                acceptedFormats=".pdf"
-                description="PDF format only"
-              />
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '12px',
-            paddingTop: '24px',
-            borderTop: '1px solid #e5e7eb'
-          }}>
             <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              style={{
-                padding: '12px 24px',
-                border: '2px solid #e5e7eb',
-                backgroundColor: 'white',
-                color: '#374151',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                opacity: isSubmitting ? 0.5 : 1
-              }}
+              onClick={handleClose}
+              style={styles.closeButton}
+              disabled={loading}
             >
-              Cancel
+              <X style={{ width: '20px', height: '20px' }} />
             </button>
-            
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              style={{
-                padding: '12px 24px',
-                border: 'none',
-                backgroundColor: isSubmitting ? '#9ca3af' : '#16a34a',
-                color: 'white',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              {isSubmitting ? (
-                <>
-                  <div style={{
-                    width: '16px',
-                    height: '16px',
-                    border: '2px solid white',
-                    borderTop: '2px solid transparent',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite'
-                  }} />
-                  Creating Client...
-                </>
-              ) : (
-                'Create Client'
-              )}
-            </button>
+          </div>
+
+          <div style={styles.content}>
+            {error && <div style={styles.alertError}>{error}</div>}
+            {success && <div style={styles.alertSuccess}>{success}</div>}
+
+            {loadingData ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <Loader2 style={styles.spinner} />
+                <p>Loading brokers and affiliates...</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} style={styles.form}>
+                <div style={styles.row}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>
+                      <User style={{ width: '16px', height: '16px' }} />
+                      First Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      style={styles.input}
+                      placeholder="Enter first name"
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>
+                      <User style={{ width: '16px', height: '16px' }} />
+                      Last Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      style={styles.input}
+                      placeholder="Enter last name"
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={styles.row}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>
+                      <Mail style={{ width: '16px', height: '16px' }} />
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      style={styles.input}
+                      placeholder="client@example.com"
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>
+                      <Phone style={{ width: '16px', height: '16px' }} />
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      style={styles.input}
+                      placeholder="+1-555-0123"
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={styles.row}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>
+                      <Users style={{ width: '16px', height: '16px' }} />
+                      Assigned Broker
+                    </label>
+                    <select
+                      name="brokerId"
+                      value={formData.brokerId}
+                      onChange={handleInputChange}
+                      style={styles.select}
+                      disabled={loading}
+                    >
+                      <option value="">Select a broker (optional)</option>
+                      {brokers.map(broker => (
+                        <option key={broker.id} value={broker.id}>
+                          {broker.first_name} {broker.last_name} ({broker.unique_id})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>
+                      <Building2 style={{ width: '16px', height: '16px' }} />
+                      Source Affiliate
+                    </label>
+                    <select
+                      name="affiliateId"
+                      value={formData.affiliateId}
+                      onChange={handleInputChange}
+                      style={styles.select}
+                      disabled={loading}
+                    >
+                      <option value="">Select an affiliate (optional)</option>
+                      {affiliates.map(affiliate => (
+                        <option key={affiliate.id} value={affiliate.id}>
+                          {affiliate.first_name} {affiliate.last_name} - {affiliate.company_name} ({affiliate.unique_id})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={styles.row}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>
+                      <DollarSign style={{ width: '16px', height: '16px' }} />
+                      Estimated Amount
+                    </label>
+                    <input
+                      type="number"
+                      name="estimatedAmount"
+                      value={formData.estimatedAmount}
+                      onChange={handleInputChange}
+                      style={styles.input}
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>
+                      Initial Status
+                    </label>
+                    <div style={styles.statusBadge}>
+                      New Lead - Starting pipeline stage
+                    </div>
+                  </div>
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>
+                    Notes
+                  </label>
+                  <textarea
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleInputChange}
+                    style={styles.textarea}
+                    placeholder="Additional notes about this client..."
+                    disabled={loading}
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>
+                    <Upload style={{ width: '16px', height: '16px' }} />
+                    Upload Files (JPG, PNG, PDF, DOC)
+                  </label>
+                  <div 
+                    style={styles.fileUpload}
+                    onClick={() => document.getElementById('fileInput').click()}
+                    onMouseEnter={(e) => {
+                      e.target.style.borderColor = '#2563eb';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.borderColor = '#d1d5db';
+                    }}
+                  >
+                    <Upload style={{ width: '24px', height: '24px', color: '#6b7280', margin: '0 auto 8px' }} />
+                    <p style={{ margin: 0, color: '#6b7280', fontSize: '14px' }}>
+                      Click to upload files or drag and drop
+                    </p>
+                    <p style={{ margin: '4px 0 0 0', color: '#9ca3af', fontSize: '12px' }}>
+                      Maximum 10MB per file
+                    </p>
+                  </div>
+                  <input
+                    id="fileInput"
+                    type="file"
+                    multiple
+                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                    onChange={handleFileUpload}
+                    style={styles.fileInput}
+                    disabled={loading}
+                  />
+
+                  {uploadedFiles.length > 0 && (
+                    <div style={styles.fileList}>
+                      {uploadedFiles.map((file, index) => (
+                        <div key={index} style={styles.fileItem}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <FileText style={{ width: '16px', height: '16px', color: '#6b7280' }} />
+                            <span style={{ fontSize: '14px', color: '#374151' }}>
+                              {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#dc2626',
+                              cursor: 'pointer',
+                              padding: '4px'
+                            }}
+                            disabled={loading}
+                          >
+                            <X style={{ width: '16px', height: '16px' }} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div style={styles.buttonGroup}>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    style={{
+                      ...styles.button,
+                      ...styles.cancelButton
+                    }}
+                    disabled={loading}
+                    onMouseEnter={(e) => {
+                      if (!loading) {
+                        e.target.style.backgroundColor = '#f9fafb';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!loading) {
+                        e.target.style.backgroundColor = 'white';
+                      }
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    style={{
+                      ...styles.button,
+                      ...styles.submitButton,
+                      ...(loading ? styles.submitButtonDisabled : {})
+                    }}
+                    disabled={loading}
+                    onMouseEnter={(e) => {
+                      if (!loading) {
+                        e.target.style.backgroundColor = '#15803d';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!loading) {
+                        e.target.style.backgroundColor = '#16a34a';
+                      }
+                    }}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 style={styles.spinner} />
+                        Creating Client...
+                      </>
+                    ) : (
+                      'Create Client'
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
+    </>
   );
 };
 
