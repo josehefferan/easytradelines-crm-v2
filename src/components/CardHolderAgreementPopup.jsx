@@ -5,6 +5,12 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
   const [agreementData, setAgreementData] = useState({
     cardHolderName: `${affiliateData.first_name || ''} ${affiliateData.last_name || ''}`.trim(),
     cardHolderAddress: '',
+    investorName: `${affiliateData.first_name || ''} ${affiliateData.last_name || ''}`.trim(),
+    investorAddress: '',
+    investorPhone: affiliateData.phone || '',
+    investorEmail: affiliateData.email || '',
+    cardHolderSignature: '',
+    easyTradeLinesSignature: 'Jose Hefferan',
     signatureDate: new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long', 
@@ -462,10 +468,54 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                 <p>MIAMI, FL 33126</p>
                 <br />
                 <p><strong>INVESTOR:</strong></p>
-                <p>Name: {agreementData.cardHolderName}</p>
-                <p>Address: {agreementData.cardHolderAddress}</p>
-                <p>Phone: {affiliateData.phone || ''}</p>
-                <p>Email: {affiliateData.email || ''}</p>
+                <p>
+                  Name:{' '}
+                  <span style={styles.editableField}>
+                    <input
+                      type="text"
+                      value={agreementData.investorName}
+                      onChange={(e) => handleInputChange('investorName', e.target.value)}
+                      style={styles.editableInput}
+                      placeholder="Investor Name"
+                    />
+                  </span>
+                </p>
+                <p>
+                  Address:{' '}
+                  <span style={styles.editableField}>
+                    <input
+                      type="text"
+                      value={agreementData.investorAddress}
+                      onChange={(e) => handleInputChange('investorAddress', e.target.value)}
+                      style={styles.editableInput}
+                      placeholder="Full Address"
+                    />
+                  </span>
+                </p>
+                <p>
+                  Phone:{' '}
+                  <span style={styles.editableField}>
+                    <input
+                      type="text"
+                      value={agreementData.investorPhone}
+                      onChange={(e) => handleInputChange('investorPhone', e.target.value)}
+                      style={styles.editableInput}
+                      placeholder="Phone Number"
+                    />
+                  </span>
+                </p>
+                <p>
+                  Email:{' '}
+                  <span style={styles.editableField}>
+                    <input
+                      type="email"
+                      value={agreementData.investorEmail}
+                      onChange={(e) => handleInputChange('investorEmail', e.target.value)}
+                      style={styles.editableInput}
+                      placeholder="Email Address"
+                    />
+                  </span>
+                </p>
               </div>
 
               <div style={styles.section}>
@@ -484,6 +534,64 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                   This Agreement comprises the entire agreement between the parties. All prior
                   negotiations are superseded. Card Holder may not assign this Agreement without
                   written consent of Easy Tradelines. Other provisions remain unchanged.
+                </p>
+                <br />
+                <p>
+                  Card Holder:{' '}
+                  <span style={styles.editableField}>
+                    <input
+                      type="text"
+                      value={agreementData.cardHolderSignature}
+                      onChange={(e) => handleInputChange('cardHolderSignature', e.target.value)}
+                      style={styles.editableInput}
+                      placeholder="Card Holder Signature"
+                    />
+                  </span>
+                </p>
+                <br />
+                <p>
+                  By: initial{' '}
+                  <span style={styles.editableField}>
+                    <input
+                      type="text"
+                      value={agreementData.initials}
+                      onChange={(e) => handleInputChange('initials', e.target.value)}
+                      style={styles.editableInput}
+                      placeholder="Initials"
+                      maxLength="5"
+                    />
+                  </span>{' '}
+                  Date: <strong>{agreementData.signatureDate}</strong>
+                </p>
+                <br />
+                <p><strong>EASY TRADELINES (Smart Latinos Consulting Group, DBA)</strong></p>
+                <p>
+                  By:{' '}
+                  <span style={styles.editableField}>
+                    <input
+                      type="text"
+                      value={agreementData.easyTradeLinesSignature}
+                      onChange={(e) => handleInputChange('easyTradeLinesSignature', e.target.value)}
+                      style={styles.editableInput}
+                      placeholder="Easy Tradelines Representative"
+                    />
+                  </span>{' '}
+                  Date: <strong>{agreementData.signatureDate}</strong>
+                </p>
+                <br />
+                <p>
+                  initial{' '}
+                  <span style={styles.editableField}>
+                    <input
+                      type="text"
+                      value={agreementData.initials}
+                      onChange={(e) => handleInputChange('initials', e.target.value)}
+                      style={styles.editableInput}
+                      placeholder="Initials"
+                      maxLength="5"
+                    />
+                  </span>{' '}
+                  I have read and understood the document
                 </p>
               </div>
             </>
