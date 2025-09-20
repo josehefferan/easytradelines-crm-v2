@@ -641,7 +641,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
           )}
           
           {currentStep === 'sign' && (
-            <>
+      <>
               <button
                 onClick={() => setCurrentStep('review')}
                 style={{
@@ -660,8 +660,8 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               <button
                 onClick={handleSign}
                 style={{
-                  padding: '10px
- borderRadius: '6px',
+                  padding: '10px 20px',
+                  borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: '500',
                   cursor: 'pointer',
