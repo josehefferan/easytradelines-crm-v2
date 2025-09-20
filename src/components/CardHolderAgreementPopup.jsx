@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, FileText } from 'lucide-react';
 
 const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignComplete }) => {
@@ -9,10 +9,16 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     investorAddress: '',
     investorPhone: affiliateData.phone || '',
     investorEmail: affiliateData.email || '',
-    cardHolderSignature: '',
+    cardHolderFullName: '',
     affiliateSignature: '',
+    easyTradeLinesAgent: '',
+    easyTradeLinesInitials: '',
     initials: ''
   });
+
+  const [currentStep, setCurrentStep] = useState('review'); // 'review' or 'sign'
+  const signatureCanvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -27,9 +33,48 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     }));
   };
 
+  const startDrawing = (e) => {
+    setIsDrawing(true);
+    const canvas = signatureCanvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    
+    const canvas = signatureCanvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearSignature = () => {
+    const canvas = signatureCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
   const handleSign = () => {
+    const canvas = signatureCanvasRef.current;
+    const signatureDataUrl = canvas.toDataURL();
+    
     const contractData = {
       ...formData,
+      signature_data: signatureDataUrl,
       signature_date: new Date().toISOString(),
       contract_signed: true
     };
@@ -311,11 +356,11 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
             <p>This Agreement comprises the entire agreement between the parties. All prior negotiations are superseded. Card Holder may not assign this Agreement without written consent of Easy Tradelines. Other provisions remain unchanged.</p>
             <br />
             <p>
-              Card Holder:{' '}
+              Card Holder Full Name:{' '}
               <input
                 type="text"
-                value={formData.cardHolderSignature}
-                onChange={(e) => handleInputChange('cardHolderSignature', e.target.value)}
+                value={formData.cardHolderFullName}
+                onChange={(e) => handleInputChange('cardHolderFullName', e.target.value)}
                 placeholder="CardHolder Full Name"
                 style={{
                   backgroundColor: '#fff3cd',
@@ -371,7 +416,22 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
             <br />
             <p><strong>EASY TRADELINES (Smart Latinos Consulting Group, DBA)</strong></p>
             <p>
-              By: Jose Hefferan{' '}
+              By:{' '}
+              <input
+                type="text"
+                value={formData.easyTradeLinesAgent}
+                onChange={(e) => handleInputChange('easyTradeLinesAgent', e.target.value)}
+                placeholder="EasyTradelines agent"
+                style={{
+                  backgroundColor: '#fff3cd',
+                  border: '2px solid #ffc107',
+                  borderRadius: '4px',
+                  padding: '4px 8px',
+                  margin: '0 4px',
+                  minWidth: '200px',
+                  outline: 'none'
+                }}
+              />{' '}
               Date: <strong>{currentDate}</strong>
             </p>
             <br />
@@ -379,9 +439,9 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               initial{' '}
               <input
                 type="text"
-                value={formData.initials}
-                onChange={(e) => handleInputChange('initials', e.target.value)}
-                placeholder="Initials"
+                value={formData.easyTradeLinesInitials}
+                onChange={(e) => handleInputChange('easyTradeLinesInitials', e.target.value)}
+                placeholder="EasyTradelines agent initials"
                 maxLength="5"
                 style={{
                   backgroundColor: '#fff3cd',
