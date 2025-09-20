@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, FileText } from 'lucide-react';
+import { X, FileText, Download, Edit2 } from 'lucide-react';
 
 const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignComplete, mode = 'affiliate' }) => {
   const [formData, setFormData] = useState({
@@ -15,14 +15,14 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     easyTradeLinesInitials: '',
     initials: '',
     isDraft: false,
-    completedByAffiliate: false
+    completedByAffiliate: false,
+    canEdit: true // Permitir edición
   });
 
-  // FIX: Inicializar currentStep basado en el mode prop
   const [currentStep, setCurrentStep] = useState(() => {
     if (mode === 'affiliate') return 'affiliate';
     if (mode === 'admin') return 'admin';
-    return 'review'; // default fallback
+    return 'review';
   });
 
   const signatureCanvasRef = useRef(null);
@@ -43,7 +43,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     }));
   };
 
-  // Funciones para el canvas principal
+  // Funciones de canvas (sin cambios)
   const startDrawing = (e) => {
     setIsDrawing(true);
     const canvas = signatureCanvasRef.current;
@@ -82,7 +82,6 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
-  // Funciones para el canvas del affiliate
   const startAffiliateDrawing = (e) => {
     setIsAffiliateDrawing(true);
     const canvas = affiliateCanvasRef.current;
@@ -119,6 +118,92 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  // Función para generar PDF
+  const generatePDF = () => {
+    const printContent = document.createElement('div');
+    printContent.innerHTML = `
+      <div style="font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h1 style="text-align: center; font-size: 18px; margin-bottom: 30px;">CARD HOLDER AGREEMENT</h1>
+        
+        <p>This Agreement is entered into on the <strong>${new Date().getDate()}</strong> day of <strong>${new Date().toLocaleDateString('en-US', { month: 'long' })}</strong>, <strong>${new Date().getFullYear()}</strong>, by and between Smart Latinos Consulting Group, doing business as Easy Tradelines, herein after referred to as "Easy Tradelines", and <strong>${formData.cardHolderName}</strong>, whose address is <strong>${formData.cardHolderAddress}</strong>, hereinafter called "Card Holder".</p>
+
+        <h3>1. PURPOSE</h3>
+        <p>The purpose of this Agreement is to establish the terms and conditions under which Easy Tradelines will provide authorized user tradeline services to the Card Holder for the purpose of improving the Card Holder's credit profile and credit scores.</p>
+
+        <h3>2. SERVICES PROVIDED</h3>
+        <p>Easy Tradelines agrees to add the Card Holder as an authorized user to selected credit accounts. Services include but are not limited to: account selection based on Card Holder's credit profile, application processing and management, monitoring and verification of tradeline reporting to credit bureaus, and customer support throughout the service period.</p>
+
+        <h3>3. COVENANTS AND WARRANTIES</h3>
+        <p>The Card Holder warrants that all information provided is accurate, complete, and truthful. Card Holder agrees not to use the tradeline accounts for any purchases or transactions. Easy Tradelines warrants that all tradeline accounts are in good standing, have positive payment history, and will be maintained during the agreed service period.</p>
+
+        <h3>4. COMPENSATION</h3>
+        <p>Payment terms and compensation structure are defined in the separate fee schedule provided to Card Holder. All payments are due in advance of services rendered. No refunds will be provided once tradelines begin reporting to credit bureaus unless Easy Tradelines fails to deliver agreed services.</p>
+
+        <h3>5. PERFORMANCE TIMEFRAMES</h3>
+        <p>Services will be initiated within 7-14 business days of payment receipt and completion of all required documentation. Tradeline reporting to credit bureaus typically occurs within 1-2 billing cycles of account setup. Card Holder acknowledges that credit bureau reporting timelines are beyond Easy Tradelines' direct control.</p>
+
+        <h3>6. LIABILITY LIMITATIONS</h3>
+        <p>Easy Tradelines' total liability is limited to the amount paid for services. Neither party shall be liable for indirect, consequential, special, or punitive damages. Card Holder acknowledges that credit score improvements cannot be guaranteed and results may vary.</p>
+
+        <h3>7. ELECTRONIC CONSENT</h3>
+        <p>Both parties consent to conducting business electronically and agree that electronic signatures shall have the same force and effect as original signatures. All communications may be conducted via email, and electronic records shall constitute sufficient documentation.</p>
+
+        <h3>8. NOTICE - INVESTOR INFORMATION</h3>
+        <p><strong>INVESTOR:</strong></p>
+        <p>Name: <strong>${formData.investorName}</strong></p>
+        <p>Address: <strong>${formData.investorAddress}</strong></p>
+        <p>Phone: <strong>${formData.investorPhone}</strong></p>
+        <p>Email: <strong>${formData.investorEmail}</strong></p>
+
+        <h3>9. ARBITRATION</h3>
+        <p>Any disputes arising from this Agreement that cannot be resolved through direct negotiation within 60 days shall be settled by binding arbitration in accordance with the rules of the American Arbitration Association. The arbitration shall take place in the state of Florida, and the decision of the arbitrator shall be final and binding.</p>
+
+        <h3>10. GOVERNING LAW</h3>
+        <p>This Agreement shall be governed by and construed in accordance with the laws of the State of Florida, without regard to its conflict of law principles. Any legal action must be brought in the courts of Florida.</p>
+
+        <h3>11. GENERAL PROVISIONS</h3>
+        <p>This Agreement comprises the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements. No modification of this Agreement shall be effective unless in writing and signed by both parties. Card Holder may not assign this Agreement without prior written consent of Easy Tradelines. If any provision is found unenforceable, the remainder shall remain in full force.</p>
+        
+        <div style="margin-top: 40px;">
+          <p><strong>Card Holder Full Name:</strong> ${formData.cardHolderFullName}</p>
+          <p><strong>Card Holder Signature:</strong> [Signed Electronically]</p>
+          <p><strong>Initials:</strong> ${formData.initials} &nbsp;&nbsp;&nbsp; <strong>Date:</strong> ${currentDate}</p>
+          
+          <br><br>
+          
+          <p><strong>EASY TRADELINES (Smart Latinos Consulting Group, DBA)</strong></p>
+          <p><strong>By:</strong> ${formData.easyTradeLinesAgent} &nbsp;&nbsp;&nbsp; <strong>Date:</strong> ${currentDate}</p>
+          <p><strong>Initials:</strong> ${formData.easyTradeLinesInitials} &nbsp;&nbsp;&nbsp; I have read and understood the document</p>
+        </div>
+      </div>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Card Holder Agreement - ${formData.cardHolderName}</title>
+          <style>
+            body { font-family: Arial, sans-serif; }
+            @media print {
+              body { margin: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent.innerHTML}
+          <script>
+            window.onload = function() {
+              window.print();
+              window.close();
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handleSaveDraft = () => {
@@ -204,21 +289,63 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
             <FileText size={24} />
             Card Holder Agreement
           </h2>
-          <button onClick={onClose} style={{
-            padding: '8px',
-            border: 'none',
-            backgroundColor: 'transparent',
-            cursor: 'pointer',
-            borderRadius: '6px',
-            color: '#6b7280'
-          }}>
-            <X size={20} />
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {(currentStep === 'admin' || currentStep === 'review') && (
+              <button 
+                onClick={generatePDF}
+                style={{
+                  padding: '8px 12px',
+                  border: 'none',
+                  backgroundColor: '#16a34a',
+                  color: 'white',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <Download size={16} />
+                PDF
+              </button>
+            )}
+            {formData.contract_signed && (
+              <button 
+                onClick={() => setCurrentStep('affiliate')}
+                style={{
+                  padding: '8px 12px',
+                  border: 'none',
+                  backgroundColor: '#f59e0b',
+                  color: 'white',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <Edit2 size={16} />
+                Edit
+              </button>
+            )}
+            <button onClick={onClose} style={{
+              padding: '8px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              cursor: 'pointer',
+              borderRadius: '6px',
+              color: '#6b7280'
+            }}>
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         <div style={{
           padding: '24px',
-          maxHeight: 'calc(95vh - 160px)',
+          maxHeight: 'calc(95vh - 200px)', // Aumenté el espacio para los botones
           overflowY: 'auto',
           fontSize: '14px',
           lineHeight: '1.6',
@@ -277,18 +404,40 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                 </p>
               </div>
 
-              {/* Secciones 1-7 resumidas */}
-              <div style={{ backgroundColor: '#f5f5f5', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-                <h4>Agreement Sections 1-7 (For Reference)</h4>
-                <div style={{ fontSize: '13px', color: '#666', lineHeight: '1.5' }}>
-                  <p><strong>1. PURPOSE:</strong> This agreement covers the terms and conditions for tradeline services.</p>
-                  <p><strong>2. SERVICES PROVIDED:</strong> Easy Tradelines will provide authorized user tradeline services.</p>
-                  <p><strong>3. COVENANTS AND WARRANTIES:</strong> Both parties agree to specific terms and conditions.</p>
-                  <p><strong>4. COMPENSATION:</strong> Payment terms and compensation structure are defined.</p>
-                  <p><strong>5. PERFORMANCE TIMEFRAMES:</strong> Service delivery timeframes are established.</p>
-                  <p><strong>6. LIABILITY LIMITATIONS:</strong> Liability terms and limitations are specified.</p>
-                  <p><strong>7. ELECTRONIC CONSENT:</strong> Electronic signature and consent terms are agreed upon.</p>
-                </div>
+              {/* TEXTO COMPLETO - NO RESUMIDO */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>1. PURPOSE</div>
+                <p>The purpose of this Agreement is to establish the terms and conditions under which Easy Tradelines will provide authorized user tradeline services to the Card Holder for the purpose of improving the Card Holder's credit profile and credit scores.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>2. SERVICES PROVIDED</div>
+                <p>Easy Tradelines agrees to add the Card Holder as an authorized user to selected credit accounts. Services include but are not limited to: account selection based on Card Holder's credit profile, application processing and management, monitoring and verification of tradeline reporting to credit bureaus, and customer support throughout the service period.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>3. COVENANTS AND WARRANTIES</div>
+                <p>The Card Holder warrants that all information provided is accurate, complete, and truthful. Card Holder agrees not to use the tradeline accounts for any purchases or transactions. Easy Tradelines warrants that all tradeline accounts are in good standing, have positive payment history, and will be maintained during the agreed service period.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>4. COMPENSATION</div>
+                <p>Payment terms and compensation structure are defined in the separate fee schedule provided to Card Holder. All payments are due in advance of services rendered. No refunds will be provided once tradelines begin reporting to credit bureaus unless Easy Tradelines fails to deliver agreed services.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>5. PERFORMANCE TIMEFRAMES</div>
+                <p>Services will be initiated within 7-14 business days of payment receipt and completion of all required documentation. Tradeline reporting to credit bureaus typically occurs within 1-2 billing cycles of account setup. Card Holder acknowledges that credit bureau reporting timelines are beyond Easy Tradelines' direct control.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>6. LIABILITY LIMITATIONS</div>
+                <p>Easy Tradelines' total liability is limited to the amount paid for services. Neither party shall be liable for indirect, consequential, special, or punitive damages. Card Holder acknowledges that credit score improvements cannot be guaranteed and results may vary.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>7. ELECTRONIC CONSENT</div>
+                <p>Both parties consent to conducting business electronically and agree that electronic signatures shall have the same force and effect as original signatures. All communications may be conducted via email, and electronic records shall constitute sufficient documentation.</p>
               </div>
 
               {/* Sección 8 - NOTICE */}
@@ -371,9 +520,22 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                 </div>
               </div>
 
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>9. ARBITRATION</div>
+                <p>Any disputes arising from this Agreement that cannot be resolved through direct negotiation within 60 days shall be settled by binding arbitration in accordance with the rules of the American Arbitration Association. The arbitration shall take place in the state of Florida, and the decision of the arbitrator shall be final and binding.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>10. GOVERNING LAW</div>
+                <p>This Agreement shall be governed by and construed in accordance with the laws of the State of Florida, without regard to its conflict of law principles. Any legal action must be brought in the courts of Florida.</p>
+              </div>
+
               {/* Sección 11 - Signatures */}
               <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>11. SIGNATURE SECTION</div>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>11. GENERAL PROVISIONS</div>
+                <p>This Agreement comprises the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements. No modification of this Agreement shall be effective unless in writing and signed by both parties. Card Holder may not assign this Agreement without prior written consent of Easy Tradelines. If any provision is found unenforceable, the remainder shall remain in full force.</p>
+                
+                <br />
                 <p>
                   Card Holder Full Name:{' '}
                   <input
@@ -526,23 +688,96 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
           )}
 
           {currentStep === 'review' && (
-            <div style={{
-              marginTop: '30px',
-              padding: '20px',
-              backgroundColor: '#f8fafc',
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb'
-            }}>
-              <h3>Document Review</h3>
-              <p>Please review the completed agreement before proceeding to signature.</p>
-              
-              <div style={{ backgroundColor: '#f5f5f5', padding: '15px', borderRadius: '8px', marginTop: '15px' }}>
-                <h4>Agreement Summary</h4>
-                <p><strong>Card Holder:</strong> {formData.cardHolderName}</p>
-                <p><strong>Agent:</strong> {formData.easyTradeLinesAgent}</p>
-                <p><strong>Date:</strong> {currentDate}</p>
+            <>
+              <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', textDecoration: 'underline' }}>
+                COMPLETE CARD HOLDER AGREEMENT
               </div>
-            </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <p>
+                  This Agreement is entered into on the{' '}
+                  <strong>{new Date().getDate()}</strong> day of{' '}
+                  <strong>{new Date().toLocaleDateString('en-US', { month: 'long' })}</strong>, <strong>{new Date().getFullYear()}</strong>, by and between
+                  Smart Latinos Consulting Group, doing business as Easy Tradelines, herein after
+                  referred to as "Easy Tradelines", and <strong>{formData.cardHolderName}</strong>, whose address
+                  is <strong>{formData.cardHolderAddress}</strong>, hereinafter called "Card Holder".
+                </p>
+              </div>
+
+              {/* Documento completo para revisión */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>1. PURPOSE</div>
+                <p>The purpose of this Agreement is to establish the terms and conditions under which Easy Tradelines will provide authorized user tradeline services to the Card Holder for the purpose of improving the Card Holder's credit profile and credit scores.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>2. SERVICES PROVIDED</div>
+                <p>Easy Tradelines agrees to add the Card Holder as an authorized user to selected credit accounts. Services include but are not limited to: account selection based on Card Holder's credit profile, application processing and management, monitoring and verification of tradeline reporting to credit bureaus, and customer support throughout the service period.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>3. COVENANTS AND WARRANTIES</div>
+                <p>The Card Holder warrants that all information provided is accurate, complete, and truthful. Card Holder agrees not to use the tradeline accounts for any purchases or transactions. Easy Tradelines warrants that all tradeline accounts are in good standing, have positive payment history, and will be maintained during the agreed service period.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>4. COMPENSATION</div>
+                <p>Payment terms and compensation structure are defined in the separate fee schedule provided to Card Holder. All payments are due in advance of services rendered. No refunds will be provided once tradelines begin reporting to credit bureaus unless Easy Tradelines fails to deliver agreed services.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>5. PERFORMANCE TIMEFRAMES</div>
+                <p>Services will be initiated within 7-14 business days of payment receipt and completion of all required documentation. Tradeline reporting to credit bureaus typically occurs within 1-2 billing cycles of account setup. Card Holder acknowledges that credit bureau reporting timelines are beyond Easy Tradelines' direct control.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>6. LIABILITY LIMITATIONS</div>
+                <p>Easy Tradelines' total liability is limited to the amount paid for services. Neither party shall be liable for indirect, consequential, special, or punitive damages. Card Holder acknowledges that credit score improvements cannot be guaranteed and results may vary.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>7. ELECTRONIC CONSENT</div>
+                <p>Both parties consent to conducting business electronically and agree that electronic signatures shall have the same force and effect as original signatures. All communications may be conducted via email, and electronic records shall constitute sufficient documentation.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>8. NOTICE - INVESTOR INFORMATION</div>
+                <p><strong>INVESTOR:</strong></p>
+                <div style={{ marginLeft: '20px' }}>
+                  <p>Name: <strong>{formData.investorName}</strong></p>
+                  <p>Address: <strong>{formData.investorAddress}</strong></p>
+                  <p>Phone: <strong>{formData.investorPhone}</strong></p>
+                  <p>Email: <strong>{formData.investorEmail}</strong></p>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>9. ARBITRATION</div>
+                <p>Any disputes arising from this Agreement that cannot be resolved through direct negotiation within 60 days shall be settled by binding arbitration in accordance with the rules of the American Arbitration Association. The arbitration shall take place in the state of Florida, and the decision of the arbitrator shall be final and binding.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>10. GOVERNING LAW</div>
+                <p>This Agreement shall be governed by and construed in accordance with the laws of the State of Florida, without regard to its conflict of law principles. Any legal action must be brought in the courts of Florida.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>11. GENERAL PROVISIONS</div>
+                <p>This Agreement comprises the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements. No modification of this Agreement shall be effective unless in writing and signed by both parties. Card Holder may not assign this Agreement without prior written consent of Easy Tradelines. If any provision is found unenforceable, the remainder shall remain in full force.</p>
+                
+                <div style={{ marginTop: '30px', backgroundColor: '#f8fafc', padding: '20px', borderRadius: '8px' }}>
+                  <p><strong>Card Holder Full Name:</strong> {formData.cardHolderFullName}</p>
+                  <p><strong>Card Holder Signature:</strong> ✓ Signed</p>
+                  <p><strong>Initials:</strong> {formData.initials} &nbsp;&nbsp;&nbsp; <strong>Date:</strong> {currentDate}</p>
+                  
+                  <br />
+                  
+                  <p><strong>EASY TRADELINES (Smart Latinos Consulting Group, DBA)</strong></p>
+                  <p><strong>By:</strong> {formData.easyTradeLinesAgent} &nbsp;&nbsp;&nbsp; <strong>Date:</strong> {currentDate}</p>
+                  <p><strong>Initials:</strong> {formData.easyTradeLinesInitials} &nbsp;&nbsp;&nbsp; I have read and understood the document</p>
+                </div>
+              </div>
+            </>
           )}
 
           {currentStep === 'sign' && (
@@ -622,18 +857,20 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
           )}
         </div>
 
+        {/* Footer con margen aumentado para que se vean los botones */}
         <div style={{
-          padding: '16px 24px',
+          padding: '20px 24px', // Aumenté el padding
           borderTop: '1px solid #e5e7eb',
           display: 'flex',
           justifyContent: 'space-between',
           gap: '12px',
-          backgroundColor: '#f8fafc'
+          backgroundColor: '#f8fafc',
+          minHeight: '80px' // Altura mínima garantizada
         }}>
           <button
             onClick={onClose}
             style={{
-              padding: '10px 20px',
+              padding: '12px 24px', // Botones más grandes
               borderRadius: '6px',
               fontSize: '14px',
               fontWeight: '500',
@@ -650,7 +887,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
             <button
               onClick={handleSaveDraft}
               style={{
-                padding: '10px 20px',
+                padding: '12px 24px',
                 borderRadius: '6px',
                 fontSize: '14px',
                 fontWeight: '500',
@@ -669,7 +906,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               <button
                 onClick={() => setCurrentStep('review')}
                 style={{
-                  padding: '10px 20px',
+                  padding: '12px 24px',
                   borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: '500',
@@ -679,12 +916,12 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                   color: 'white'
                 }}
               >
-                Preview
+                Preview Complete
               </button>
               <button
                 onClick={handleFinalizeDocument}
                 style={{
-                  padding: '10px 20px',
+                  padding: '12px 24px',
                   borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: '500',
@@ -704,7 +941,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               <button
                 onClick={() => setCurrentStep('admin')}
                 style={{
-                  padding: '10px 20px',
+                  padding: '12px 24px',
                   borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: '500',
@@ -719,7 +956,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               <button
                 onClick={() => setCurrentStep('sign')}
                 style={{
-                  padding: '10px 20px',
+                  padding: '12px 24px',
                   borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: '500',
@@ -739,7 +976,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               <button
                 onClick={() => setCurrentStep('review')}
                 style={{
-                  padding: '10px 20px',
+                  padding: '12px 24px',
                   borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: '500',
@@ -754,7 +991,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               <button
                 onClick={handleSign}
                 style={{
-                  padding: '10px 20px',
+                  padding: '12px 24px',
                   borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: '500',
