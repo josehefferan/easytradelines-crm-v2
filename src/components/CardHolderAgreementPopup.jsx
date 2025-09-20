@@ -515,207 +515,6 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                 </label>
               </div>
             </>
-          )} '#fff3cd',
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      margin: '0 4px',
-                      minWidth: '200px',
-                      outline: 'none'
-                    }}
-                  />
-                </p>
-                <p>
-                  Address:{' '}
-                  <input
-                    type="text"
-                    value={formData.investorAddress}
-                    onChange={(e) => handleInputChange('investorAddress', e.target.value)}
-                    placeholder="Full Address"
-                    style={{
-                      backgroundColor: '#fff3cd',
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      margin: '0 4px',
-                      minWidth: '250px',
-                      outline: 'none'
-                    }}
-                  />
-                </p>
-                <p>
-                  Phone:{' '}
-                  <input
-                    type="text"
-                    value={formData.investorPhone}
-                    onChange={(e) => handleInputChange('investorPhone', e.target.value)}
-                    placeholder="Phone Number"
-                    style={{
-                      backgroundColor: '#fff3cd',
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      margin: '0 4px',
-                      minWidth: '150px',
-                      outline: 'none'
-                    }}
-                  />
-                </p>
-                <p>
-                  Email:{' '}
-                  <input
-                    type="email"
-                    value={formData.investorEmail}
-                    onChange={(e) => handleInputChange('investorEmail', e.target.value)}
-                    placeholder="Email Address"
-                    style={{
-                      backgroundColor: '#fff3cd',
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      margin: '0 4px',
-                      minWidth: '200px',
-                      outline: 'none'
-                    }}
-                  />
-                </p>
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>9. ARBITRATION</div>
-                <p>Any disputes not resolved within 60 days shall be settled by binding arbitration.</p>
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>10. GOVERNING LAW</div>
-                <p>This Agreement shall be governed by the laws of the State of Florida.</p>
-              </div>
-
-              {/* Sección 11 - GENERAL PROVISIONS */}
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>11. GENERAL PROVISIONS</div>
-                <p>This Agreement comprises the entire agreement between the parties. All prior negotiations are superseded. Card Holder may not assign this Agreement without written consent of Easy Tradelines. Other provisions remain unchanged.</p>
-                <br />
-                <p>
-                  Card Holder Full Name:{' '}
-                  <input
-                    type="text"
-                    value={formData.cardHolderFullName}
-                    onChange={(e) => handleInputChange('cardHolderFullName', e.target.value)}
-                    placeholder="CardHolder Full Name"
-                    style={{
-                      backgroundColor: '#fff3cd',
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      margin: '0 4px',
-                      minWidth: '250px',
-                      outline: 'none'
-                    }}
-                  />
-                </p>
-                <br />
-                <p>Affiliate Signature:</p>
-                <div style={{ marginLeft: '20px', marginBottom: '15px' }}>
-                  <canvas
-                    ref={affiliateCanvasRef}
-                    width={350}
-                    height={100}
-                    style={{
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      cursor: 'crosshair',
-                      backgroundColor: '#fff3cd'
-                    }}
-                    onMouseDown={startAffiliateDrawing}
-                    onMouseMove={drawAffiliate}
-                    onMouseUp={stopAffiliateDrawing}
-                    onMouseLeave={stopAffiliateDrawing}
-                  />
-                  <br />
-                  <button
-                    type="button"
-                    onClick={clearAffiliateSignature}
-                    style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      border: 'none',
-                      backgroundColor: '#6b7280',
-                      color: 'white',
-                      marginTop: '5px'
-                    }}
-                  >
-                    Clear Signature
-                  </button>
-                </div>
-                <br />
-                <p>
-                  By: initial{' '}
-                  <input
-                    type="text"
-                    value={formData.initials}
-                    onChange={(e) => handleInputChange('initials', e.target.value)}
-                    placeholder="Initials"
-                    maxLength="5"
-                    style={{
-                      backgroundColor: '#fff3cd',
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      margin: '0 4px',
-                      minWidth: '80px',
-                      outline: 'none'
-                    }}
-                  />{' '}
-                  Date: <strong>{currentDate}</strong>
-                </p>
-                <br />
-                <p><strong>EASY TRADELINES (Smart Latinos Consulting Group, DBA)</strong></p>
-                <p>
-                  By:{' '}
-                  <input
-                    type="text"
-                    value={formData.easyTradeLinesAgent}
-                    onChange={(e) => handleInputChange('easyTradeLinesAgent', e.target.value)}
-                    placeholder="EasyTradelines agent"
-                    style={{
-                      backgroundColor: '#fff3cd',
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      margin: '0 4px',
-                      minWidth: '200px',
-                      outline: 'none'
-                    }}
-                  />{' '}
-                  Date: <strong>{currentDate}</strong>
-                </p>
-                <br />
-                <p>
-                  initial{' '}
-                  <input
-                    type="text"
-                    value={formData.easyTradeLinesInitials}
-                    onChange={(e) => handleInputChange('easyTradeLinesInitials', e.target.value)}
-                    placeholder="EasyTradelines agent initials"
-                    maxLength="5"
-                    style={{
-                      backgroundColor: '#fff3cd',
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      margin: '0 4px',
-                      minWidth: '80px',
-                      outline: 'none'
-                    }}
-                  />{' '}
-                  I have read and understood the document
-                </p>
-              </div>
-            </>
           )}
 
           {currentStep === 'sign' && (
@@ -819,6 +618,42 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
             Cancel
           </button>
           
+          {currentStep === 'affiliate' && (
+            <button
+              onClick={handleSaveDraft}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                border: 'none',
+                backgroundColor: '#16a34a',
+                color: 'white'
+              }}
+            >
+              Save as Draft
+            </button>
+          )}
+          
+          {currentStep === 'admin' && (
+            <button
+              onClick={handleFinalizeDocument}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                border: 'none',
+                backgroundColor: '#7c3aed',
+                color: 'white'
+              }}
+            >
+              Finalize Agreement
+            </button>
+          )}
+          
           {currentStep === 'review' && (
             <button
               onClick={() => setCurrentStep('sign')}
@@ -857,4 +692,24 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               <button
                 onClick={handleSign}
                 style={{
-                  padding: '10px
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  border: 'none',
+                  backgroundColor: '#7c3aed',
+                  color: 'white'
+                }}
+              >
+                Complete Agreement
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CardHolderAgreementPopup;
