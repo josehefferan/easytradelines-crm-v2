@@ -661,3 +661,24 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                 onClick={handleSign}
                 style={{
                   padding: '10px
+ borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  border: 'none',
+                  backgroundColor: '#16a34a',
+                  color: 'white'
+                }}
+                disabled={!formData.initials.trim()}
+              >
+                Sign Agreement
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CardHolderAgreementPopup;
