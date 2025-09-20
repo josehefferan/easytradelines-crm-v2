@@ -1200,7 +1200,6 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
           )}
         </div>
       </div>
-     </div>
 
         {/* Footer con margen aumentado para que se vean los botones */}
         <div style={{
