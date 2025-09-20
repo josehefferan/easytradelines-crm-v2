@@ -19,7 +19,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     completedByAffiliate: false
   });
 
-  const [currentStep, setCurrentStep] = useState(mode === 'affiliate' ? 'affiliate' : 'admin'); // 'affiliate', 'admin', or 'sign'
+  const [currentStep, setCurrentStep] = useState(mode === 'affiliate' ? 'affiliate' : 'admin');
   const signatureCanvasRef = useRef(null);
   const affiliateCanvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -206,6 +206,158 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
         </div>
 
         <div style={{
+          padding: '16px 24px',
+          borderTop: '1px solid #e5e7eb',
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: '12px',
+          backgroundColor: '#f8fafc'
+        }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              border: 'none',
+              backgroundColor: '#f3f4f6',
+              color: '#374151'
+            }}
+          >
+            Cancel
+          </button>
+          
+          {currentStep === 'affiliate' && (
+            <button
+              onClick={handleSaveDraft}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                border: 'none',
+                backgroundColor: '#16a34a',
+                color: 'white'
+              }}
+            >
+              Save as Draft
+            </button>
+          )}
+          
+          {currentStep === 'admin' && (
+            <>
+              <button
+                onClick={() => setCurrentStep('complete')}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  border: 'none',
+                  backgroundColor: '#6b7280',
+                  color: 'white'
+                }}
+              >
+                Preview Complete
+              </button>
+              <button
+                onClick={handleFinalizeDocument}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  border: 'none',
+                  backgroundColor: '#7c3aed',
+                  color: 'white'
+                }}
+              >
+                Finalize Agreement
+              </button>
+            </>
+          )}
+          
+          {currentStep === 'complete' && (
+            <>
+              <button
+                onClick={() => setCurrentStep('admin')}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  border: 'none',
+                  backgroundColor: '#6b7280',
+                  color: 'white'
+                }}
+              >
+                Back to Edit
+              </button>
+              <button
+                onClick={() => setCurrentStep('sign')}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  border: 'none',
+                  backgroundColor: '#16a34a',
+                  color: 'white'
+                }}
+              >
+                Proceed to Sign
+              </button>
+            </>
+          )}
+          
+          {currentStep === 'sign' && (
+            <>
+              <button
+                onClick={() => setCurrentStep('complete')}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  border: 'none',
+                  backgroundColor: '#6b7280',
+                  color: 'white'
+                }}
+              >
+                Back to Review
+              </button>
+              <button
+                onClick={handleSign}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  border: 'none',
+                  backgroundColor: '#7c3aed',
+                  color: 'white'
+                }}
+              >
+                Complete Agreement
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CardHolderAgreementPopup;<div style={{
           padding: '24px',
           maxHeight: 'calc(95vh - 160px)',
           overflowY: 'auto',
@@ -266,92 +418,98 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                 </p>
               </div>
 
-              {/* Secciones resumidas del 1-7 para el affiliate */}
+              {/* Secciones 1-7 resumidas para el affiliate */}
               <div style={{ backgroundColor: '#f5f5f5', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
                 <h4>Agreement Sections 1-7 (For Reference)</h4>
-                <p style={{ fontSize: '13px', color: '#666' }}>
-                  This agreement covers the terms and conditions for tradeline services, including purpose, services provided, 
-                  covenants and warranties, compensation, performance timeframes, liability limitations, and electronic consent. 
-                  The complete terms are binding upon signature.
-                </p>
+                <div style={{ fontSize: '13px', color: '#666', lineHeight: '1.5' }}>
+                  <p><strong>1. PURPOSE:</strong> This agreement covers the terms and conditions for tradeline services.</p>
+                  <p><strong>2. SERVICES PROVIDED:</strong> Easy Tradelines will provide authorized user tradeline services.</p>
+                  <p><strong>3. COVENANTS AND WARRANTIES:</strong> Both parties agree to specific terms and conditions.</p>
+                  <p><strong>4. COMPENSATION:</strong> Payment terms and compensation structure are defined.</p>
+                  <p><strong>5. PERFORMANCE TIMEFRAMES:</strong> Service delivery timeframes are established.</p>
+                  <p><strong>6. LIABILITY LIMITATIONS:</strong> Liability terms and limitations are specified.</p>
+                  <p><strong>7. ELECTRONIC CONSENT:</strong> Electronic signature and consent terms are agreed upon.</p>
+                </div>
               </div>
 
               {/* Sección 8 - NOTICE */}
               <div style={{ marginBottom: '20px' }}>
                 <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>8. NOTICE - INVESTOR INFORMATION</div>
                 <p><strong>INVESTOR:</strong></p>
-                <p>
-                  Name:{' '}
-                  <input
-                    type="text"
-                    value={formData.investorName}
-                    onChange={(e) => handleInputChange('investorName', e.target.value)}
-                    placeholder="Investor Name"
-                    style={{
-                      backgroundColor: '#fff3cd',
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      margin: '0 4px',
-                      minWidth: '200px',
-                      outline: 'none'
-                    }}
-                  />
-                </p>
-                <p>
-                  Address:{' '}
-                  <input
-                    type="text"
-                    value={formData.investorAddress}
-                    onChange={(e) => handleInputChange('investorAddress', e.target.value)}
-                    placeholder="Full Address"
-                    style={{
-                      backgroundColor: '#fff3cd',
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      margin: '0 4px',
-                      minWidth: '250px',
-                      outline: 'none'
-                    }}
-                  />
-                </p>
-                <p>
-                  Phone:{' '}
-                  <input
-                    type="text"
-                    value={formData.investorPhone}
-                    onChange={(e) => handleInputChange('investorPhone', e.target.value)}
-                    placeholder="Phone Number"
-                    style={{
-                      backgroundColor: '#fff3cd',
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      margin: '0 4px',
-                      minWidth: '150px',
-                      outline: 'none'
-                    }}
-                  />
-                </p>
-                <p>
-                  Email:{' '}
-                  <input
-                    type="email"
-                    value={formData.investorEmail}
-                    onChange={(e) => handleInputChange('investorEmail', e.target.value)}
-                    placeholder="Email Address"
-                    style={{
-                      backgroundColor: '#fff3cd',
-                      border: '2px solid #ffc107',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      margin: '0 4px',
-                      minWidth: '200px',
-                      outline: 'none'
-                    }}
-                  />
-                </p>
+                <div style={{ marginLeft: '20px' }}>
+                  <p>
+                    Name:{' '}
+                    <input
+                      type="text"
+                      value={formData.investorName}
+                      onChange={(e) => handleInputChange('investorName', e.target.value)}
+                      placeholder="Investor Name"
+                      style={{
+                        backgroundColor: '#fff3cd',
+                        border: '2px solid #ffc107',
+                        borderRadius: '4px',
+                        padding: '4px 8px',
+                        margin: '0 4px',
+                        minWidth: '200px',
+                        outline: 'none'
+                      }}
+                    />
+                  </p>
+                  <p>
+                    Address:{' '}
+                    <input
+                      type="text"
+                      value={formData.investorAddress}
+                      onChange={(e) => handleInputChange('investorAddress', e.target.value)}
+                      placeholder="Full Address"
+                      style={{
+                        backgroundColor: '#fff3cd',
+                        border: '2px solid #ffc107',
+                        borderRadius: '4px',
+                        padding: '4px 8px',
+                        margin: '0 4px',
+                        minWidth: '250px',
+                        outline: 'none'
+                      }}
+                    />
+                  </p>
+                  <p>
+                    Phone:{' '}
+                    <input
+                      type="text"
+                      value={formData.investorPhone}
+                      onChange={(e) => handleInputChange('investorPhone', e.target.value)}
+                      placeholder="Phone Number"
+                      style={{
+                        backgroundColor: '#fff3cd',
+                        border: '2px solid #ffc107',
+                        borderRadius: '4px',
+                        padding: '4px 8px',
+                        margin: '0 4px',
+                        minWidth: '150px',
+                        outline: 'none'
+                      }}
+                    />
+                  </p>
+                  <p>
+                    Email:{' '}
+                    <input
+                      type="email"
+                      value={formData.investorEmail}
+                      onChange={(e) => handleInputChange('investorEmail', e.target.value)}
+                      placeholder="Email Address"
+                      style={{
+                        backgroundColor: '#fff3cd',
+                        border: '2px solid #ffc107',
+                        borderRadius: '4px',
+                        padding: '4px 8px',
+                        margin: '0 4px',
+                        minWidth: '200px',
+                        outline: 'none'
+                      }}
+                    />
+                  </p>
+                </div>
               </div>
 
               {/* Sección 11 - Solo parte del affiliate */}
@@ -436,6 +594,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               </div>
             </>
           )}
+
           {currentStep === 'admin' && (
             <>
               <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', textDecoration: 'underline' }}>
@@ -517,6 +676,98 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
             </>
           )}
 
+          {currentStep === 'complete' && (
+            <>
+              <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', textDecoration: 'underline' }}>
+                CARD HOLDER AGREEMENT - COMPLETE DOCUMENT
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <p>
+                  This Agreement is entered into on the{' '}
+                  <strong>{new Date().getDate()}</strong> day of{' '}
+                  <strong>{new Date().toLocaleDateString('en-US', { month: 'long' })}</strong>, <strong>{new Date().getFullYear()}</strong>, by and between
+                  Smart Latinos Consulting Group, doing business as Easy Tradelines, herein after
+                  referred to as "Easy Tradelines", and <strong>{formData.cardHolderName}</strong>, whose address
+                  is <strong>{formData.cardHolderAddress}</strong>, hereinafter called "Card Holder".
+                </p>
+              </div>
+
+              {/* Secciones completas 1-7 */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>1. PURPOSE</div>
+                <p>The purpose of this Agreement is to establish the terms and conditions under which Easy Tradelines will provide authorized user tradeline services to the Card Holder.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>2. SERVICES PROVIDED</div>
+                <p>Easy Tradelines agrees to add the Card Holder as an authorized user to selected credit accounts for the purpose of improving the Card Holder's credit profile. Services include account selection, application processing, and reporting verification.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>3. COVENANTS AND WARRANTIES</div>
+                <p>The Card Holder warrants that all information provided is accurate and complete. Easy Tradelines warrants that all tradeline accounts are in good standing and will be maintained during the service period.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>4. COMPENSATION</div>
+                <p>Payment terms and compensation structure are defined in the separate fee schedule. All payments are due in advance of services rendered.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>5. PERFORMANCE TIMEFRAMES</div>
+                <p>Services will be delivered within 7-14 business days of payment receipt. Reporting to credit bureaus typically occurs within the following billing cycle.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>6. LIABILITY LIMITATIONS</div>
+                <p>Easy Tradelines' liability is limited to the amount paid for services. Neither party shall be liable for indirect, consequential, or punitive damages.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>7. ELECTRONIC CONSENT</div>
+                <p>Both parties consent to electronic signatures and agree that electronic signatures shall have the same force and effect as original signatures.</p>
+              </div>
+
+              {/* Sección 8 - NOTICE */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>8. NOTICE - INVESTOR INFORMATION</div>
+                <p><strong>INVESTOR:</strong></p>
+                <div style={{ marginLeft: '20px' }}>
+                  <p>Name: <strong>{formData.investorName}</strong></p>
+                  <p>Address: <strong>{formData.investorAddress}</strong></p>
+                  <p>Phone: <strong>{formData.investorPhone}</strong></p>
+                  <p>Email: <strong>{formData.investorEmail}</strong></p>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>9. ARBITRATION</div>
+                <p>Any disputes not resolved within 60 days shall be settled by binding arbitration in accordance with the rules of the American Arbitration Association.</p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>10. GOVERNING LAW</div>
+                <p>This Agreement shall be governed by and construed in accordance with the laws of the State of Florida.</p>
+              </div>
+
+              {/* Sección 11 - GENERAL PROVISIONS */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>11. GENERAL PROVISIONS</div>
+                <p>This Agreement comprises the entire agreement between the parties. All prior negotiations are superseded. Card Holder may not assign this Agreement without written consent of Easy Tradelines.</p>
+                <br />
+                <p>Card Holder Full Name: <strong>{formData.cardHolderFullName}</strong></p>
+                <br />
+                <p>Affiliate Signature: <em>✓ Signature completed</em></p>
+                <p>By: initial <strong>{formData.initials}</strong> Date: <strong>{currentDate}</strong></p>
+                <br />
+                <p><strong>EASY TRADELINES (Smart Latinos Consulting Group, DBA)</strong></p>
+                <p>By: <strong>{formData.easyTradeLinesAgent}</strong> Date: <strong>{currentDate}</strong></p>
+                <p>initial <strong>{formData.easyTradeLinesInitials}</strong> I have read and understood the document</p>
+              </div>
+            </>
+          )}
+
           {currentStep === 'sign' && (
             <div style={{
               marginTop: '30px',
@@ -593,123 +844,3 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
             </div>
           )}
         </div>
-
-        <div style={{
-          padding: '16px 24px',
-          borderTop: '1px solid #e5e7eb',
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: '12px',
-          backgroundColor: '#f8fafc'
-        }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '10px 20px',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              border: 'none',
-              backgroundColor: '#f3f4f6',
-              color: '#374151'
-            }}
-          >
-            Cancel
-          </button>
-          
-          {currentStep === 'affiliate' && (
-            <button
-              onClick={handleSaveDraft}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                border: 'none',
-                backgroundColor: '#16a34a',
-                color: 'white'
-              }}
-            >
-              Save as Draft
-            </button>
-          )}
-          
-          {currentStep === 'admin' && (
-            <button
-              onClick={handleFinalizeDocument}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                border: 'none',
-                backgroundColor: '#7c3aed',
-                color: 'white'
-              }}
-            >
-              Finalize Agreement
-            </button>
-          )}
-          
-          {currentStep === 'review' && (
-            <button
-              onClick={() => setCurrentStep('sign')}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                border: 'none',
-                backgroundColor: '#16a34a',
-                color: 'white'
-              }}
-            >
-              Proceed to Sign
-            </button>
-          )}
-          
-          {currentStep === 'sign' && (
-            <>
-              <button
-                onClick={() => setCurrentStep('review')}
-                style={{
-                  padding: '10px 20px',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  border: 'none',
-                  backgroundColor: '#6b7280',
-                  color: 'white'
-                }}
-              >
-                Back to Review
-              </button>
-              <button
-                onClick={handleSign}
-                style={{
-                  padding: '10px 20px',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  border: 'none',
-                  backgroundColor: '#7c3aed',
-                  color: 'white'
-                }}
-              >
-                Complete Agreement
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default CardHolderAgreementPopup;
