@@ -814,11 +814,13 @@ const NewAffiliateModal = ({ isOpen, onClose, currentUser }) => {
       </div>
 
       {/* Contract Popup */}
-      <CardHolderAgreementPopup
-        isOpen={showContractPopup}
-        onClose={() => setShowContractPopup(false)}
-        affiliateData={formData}
-        onSignComplete={handleContractSign}
+     <CardHolderAgreementPopup
+  isOpen={showContractPopup}
+  onClose={() => setShowContractPopup(false)}
+  affiliateData={formData}
+  onSignComplete={handleContractSign}
+  mode="admin"
+/>
       />
     </div>
   );
