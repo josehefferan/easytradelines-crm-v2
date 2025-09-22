@@ -364,16 +364,17 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               PDF
             </button>
             
-            {formData.contract_signed && (
-              <button 
-                onClick={() => {
-                  setCurrentStep('affiliate');
-                  setFormData(prev => ({
-                    ...prev,
-                    contract_signed: false,
-                    canEdit: true
-                  }));
-                }}
+{(formData.contract_signed || formData.isDraft) && (
+  <button 
+    onClick={() => {
+      setCurrentStep('affiliate');
+      setFormData(prev => ({
+        ...prev,
+        contract_signed: false,
+        isDraft: false,
+        canEdit: true
+      }));
+    }}
                 style={{
                   padding: '8px 12px',
                   border: 'none',
