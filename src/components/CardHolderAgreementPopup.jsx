@@ -810,7 +810,6 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                   </p>
                 </div>
               </div>
-
               {/* Vista previa de cómo aparecerá en el contrato final */}
               <div style={{ backgroundColor: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
                 <h4 style={{ margin: '0 0 10px 0' }}>Final Contract Preview</h4>
@@ -820,6 +819,15 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                   <p>initial <strong>{formData.easyTradeLinesInitials || '____'}</strong> &nbsp;&nbsp;&nbsp; I have read and understood the document</p>
                 </div>
               </div>
+              {/* Sección completa del documento final que el admin debe completar */}
+<div style={{ marginTop: '20px', backgroundColor: '#fff3cd', padding: '20px', borderRadius: '8px', border: '2px solid #ffc107' }}>
+  <h4 style={{ margin: '0 0 15px 0', color: '#1976d2' }}>Complete Final Document Section</h4>
+  <p><strong>To be filled by an EASY TRADELINES agent (Smart Latinos Consulting Group, DBA)</strong></p>
+  <br />
+  <p><strong>By:</strong> {formData.easyTradeLinesAgent || '___________________'} &nbsp;&nbsp;&nbsp; <strong>Date:</strong> {currentDate}</p>
+  <br />
+  <p><strong>initial</strong> {formData.easyTradeLinesInitials || '_______'} &nbsp;&nbsp;&nbsp; I have read and understood the document</p>
+</div>
             </>
           )}
 
