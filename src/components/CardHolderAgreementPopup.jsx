@@ -1,5 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { X, FileText, Download, Edit2 } from 'lucide-react';
+const X = () => <span style={{fontSize: '20px'}}>✕</span>;
+const FileText = () => <span style={{fontSize: '24px'}}>📄</span>;
+const Download = () => <span style={{fontSize: '16px'}}>⬇️</span>;
+const Edit2 = () => <span style={{fontSize: '16px'}}>✏️</span>;
 
 const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignComplete, mode = 'affiliate' }) => {
   const [formData, setFormData] = useState({
