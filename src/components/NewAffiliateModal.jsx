@@ -652,27 +652,44 @@ const NewAffiliateModal = ({ isOpen, onClose, currentUser }) => {
                         Review & Sign Agreement
                       </button>
                     </div>
-                  ) : (
-                    <div style={{
-                      ...styles.fileUpload,
-                      backgroundColor: '#ecfdf5',
-                      borderColor: '#10b981'
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        color: '#059669',
-                        fontWeight: '600'
-                      }}>
-                        <FileText size={20} />
-                        Agreement signed successfully
-                      </div>
-                      <p style={{fontSize: '12px', color: '#059669', marginTop: '4px'}}>
-                        Signed on {signatureData?.contractData?.signature_date}
-                      </p>
-                    </div>
+             ) : (
+  <div style={{
+    ...styles.fileUpload,
+    backgroundColor: '#ecfdf5',
+    borderColor: '#10b981'
+  }}>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px',
+      color: '#059669',
+      fontWeight: '600'
+    }}>
+      <FileText size={20} />
+      Agreement signed successfully
+    </div>
+    <p style={{fontSize: '12px', color: '#059669', marginTop: '4px'}}>
+      Signed on {signatureData?.contractData?.signature_date}
+    </p>
+    <button
+      type="button"
+      onClick={() => setShowContractPopup(true)}
+      style={{
+        padding: '6px 12px',
+        backgroundColor: '#f59e0b',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        fontSize: '12px',
+        fontWeight: '500',
+        cursor: 'pointer',
+        marginTop: '8px'
+      }}
+    >
+      Edit Agreement
+    </button>
+  </div>
                   )}
                   {errors.contract && <span style={styles.errorText}>{errors.contract}</span>}
                 </div>
