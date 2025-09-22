@@ -729,107 +729,298 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
             </>
           )}
 
-          {currentStep === 'admin' && (
-            <>
-              <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', textDecoration: 'underline' }}>
-                CARD HOLDER AGREEMENT - ADMIN COMPLETION
-              </div>
-              
-              <div style={{ backgroundColor: '#e8f5e8', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #4caf50' }}>
-                <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>Instructions for Admin</h4>
-                <p style={{ margin: '0', fontSize: '14px' }}>Complete the EasyTradelines representative information below. The admin fills the final section with agent name, date (automatic), and initials.</p>
-              </div>
+{currentStep === 'admin' && (
+  <>
+    <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', textDecoration: 'underline' }}>
+      CARD HOLDER AGREEMENT - ADMIN FULL VIEW
+    </div>
+    
+    <div style={{ backgroundColor: '#e8f5e8', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #4caf50' }}>
+      <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>Admin Full Control</h4>
+      <p style={{ margin: '0', fontSize: '14px' }}>You can edit all affiliate information and complete the admin section. All fields are editable.</p>
+    </div>
 
-              {/* Mostrar datos del affiliate completados */}
-              <div style={{ backgroundColor: '#f5f5f5', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-                <h4>Affiliate Information (Completed)</h4>
-                <p><strong>Card Holder:</strong> {formData.cardHolderName}</p>
-                <p><strong>Address:</strong> {formData.cardHolderAddress}</p>
-                <p><strong>Investor Name:</strong> {formData.investorName}</p>
-                <p><strong>Investor Address:</strong> {formData.investorAddress}</p>
-                <p><strong>Phone:</strong> {formData.investorPhone}</p>
-                <p><strong>Email:</strong> {formData.investorEmail}</p>
-                <p><strong>Card Holder Full Name:</strong> {formData.cardHolderFullName}</p>
-                <p><strong>Initials:</strong> {formData.initials}</p>
-                <p style={{ color: '#4caf50', fontWeight: '500' }}>✓ Affiliate signature completed</p>
-              </div>
+    <div style={{ marginBottom: '20px' }}>
+      <p>
+        This Agreement is entered into on the{' '}
+        <strong>{new Date().getDate()}</strong> day of{' '}
+        <strong>{new Date().toLocaleDateString('en-US', { month: 'long' })}</strong>, <strong>{new Date().getFullYear()}</strong>, by and between
+        Smart Latinos Consulting Group, doing business as Easy Tradelines, herein after
+        referred to as "Easy Tradelines", and{' '}
+        <input
+          type="text"
+          value={formData.cardHolderName}
+          onChange={(e) => handleInputChange('cardHolderName', e.target.value)}
+          placeholder="Card Holder Name"
+          style={{
+            backgroundColor: '#fff3cd',
+            border: '2px solid #ffc107',
+            borderRadius: '4px',
+            padding: '4px 8px',
+            margin: '0 4px',
+            minWidth: '200px',
+            outline: 'none'
+          }}
+        />, whose address
+        is{' '}
+        <input
+          type="text"
+          value={formData.cardHolderAddress}
+          onChange={(e) => handleInputChange('cardHolderAddress', e.target.value)}
+          placeholder="Full Address"
+          style={{
+            backgroundColor: '#fff3cd',
+            border: '2px solid #ffc107',
+            borderRadius: '4px',
+            padding: '4px 8px',
+            margin: '0 4px',
+            minWidth: '250px',
+            outline: 'none'
+          }}
+        />, hereinafter called "Card Holder".
+      </p>
+    </div>
 
-              {/* Sección SOLO para Admin - Campos específicos requeridos */}
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '15px', fontSize: '16px' }}>EASY TRADELINES COMPLETION SECTION</div>
-                
-                <div style={{ backgroundColor: '#fff3cd', padding: '20px', borderRadius: '8px', border: '2px solid #ffc107' }}>
-                  <p><strong>EASY TRADELINES (Smart Latinos Consulting Group, DBA)</strong></p>
-                  
-                  <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', fontWeight: '500', marginBottom: '5px' }}>
-                      Agent Name <span style={{ color: '#ef4444' }}>*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.easyTradeLinesAgent}
-                      onChange={(e) => handleInputChange('easyTradeLinesAgent', e.target.value)}
-                      placeholder="Enter EasyTradelines agent name"
-                      style={{
-                        backgroundColor: 'white',
-                        border: '2px solid #ffc107',
-                        borderRadius: '4px',
-                        padding: '8px 12px',
-                        width: '100%',
-                        maxWidth: '300px',
-                        outline: 'none',
-                        fontSize: '14px'
-                      }}
-                    />
-                  </div>
+    {/* Todas las secciones del documento - solo títulos y texto, sin repetir todo */}
+    <div style={{ marginBottom: '20px' }}>
+      <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>1. PURPOSE OF THE AGREEMENT</div>
+      <p>Easy Tradelines and Card Holder have entered into this Agreement to set forth the terms and conditions under which Easy Tradelines will facilitate a third-party's (the "Third-Party") temporary designation on the Card Holder's credit lines/trade-lines as an authorized user for the sole purpose of attempting to increase the Third-Party's FICO score.</p>
+      <p>Cardholder hereby agrees to be bound to the following terms and conditions regarding all services rendered by Easy Tradelines.</p>
+    </div>
 
-                  <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', fontWeight: '500', marginBottom: '5px' }}>
-                      Agent Initials <span style={{ color: '#ef4444' }}>*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.easyTradeLinesInitials}
-                      onChange={(e) => handleInputChange('easyTradeLinesInitials', e.target.value)}
-                      placeholder="Agent initials"
-                      maxLength="5"
-                      style={{
-                        backgroundColor: 'white',
-                        border: '2px solid #ffc107',
-                        borderRadius: '4px',
-                        padding: '8px 12px',
-                        width: '100px',
-                        outline: 'none',
-                        fontSize: '14px'
-                      }}
-                    />
-                  </div>
+    {/* Saltar al final - Sección 8 NOTICE con campos editables */}
+    <div style={{ marginBottom: '20px' }}>
+      <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>8. NOTICE</div>
+      <p><strong>EASY TRADELINES (Smart Latinos Consulting Group, DBA)</strong></p>
+      <p>777 NW 72ND AVE</p>
+      <p>STE 2008</p>
+      <p>MIAMI, FL 33126</p>
+      <br />
+      <p><strong>INVESTOR:</strong></p>
+      <div style={{ marginLeft: '20px' }}>
+        <p>
+          Name:{' '}
+          <input
+            type="text"
+            value={formData.investorName}
+            onChange={(e) => handleInputChange('investorName', e.target.value)}
+            placeholder="Investor Name"
+            style={{
+              backgroundColor: '#fff3cd',
+              border: '2px solid #ffc107',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              margin: '0 4px',
+              minWidth: '200px',
+              outline: 'none'
+            }}
+          />
+        </p>
+        <p>
+          Address:{' '}
+          <input
+            type="text"
+            value={formData.investorAddress}
+            onChange={(e) => handleInputChange('investorAddress', e.target.value)}
+            placeholder="Full Address"
+            style={{
+              backgroundColor: '#fff3cd',
+              border: '2px solid #ffc107',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              margin: '0 4px',
+              minWidth: '250px',
+              outline: 'none'
+            }}
+          />
+        </p>
+        <p>
+          Phone:{' '}
+          <input
+            type="text"
+            value={formData.investorPhone}
+            onChange={(e) => handleInputChange('investorPhone', e.target.value)}
+            placeholder="Phone Number"
+            style={{
+              backgroundColor: '#fff3cd',
+              border: '2px solid #ffc107',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              margin: '0 4px',
+              minWidth: '150px',
+              outline: 'none'
+            }}
+          />
+        </p>
+        <p>
+          Email:{' '}
+          <input
+            type="email"
+            value={formData.investorEmail}
+            onChange={(e) => handleInputChange('investorEmail', e.target.value)}
+            placeholder="Email Address"
+            style={{
+              backgroundColor: '#fff3cd',
+              border: '2px solid #ffc107',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              margin: '0 4px',
+              minWidth: '200px',
+              outline: 'none'
+            }}
+          />
+        </p>
+      </div>
+    </div>
 
-                  <p style={{ fontSize: '12px', color: '#8b5a00', marginTop: '10px' }}>
-                    These fields will complete the final signature section of the contract.
-                  </p>
-                </div>
-              </div>
-              {/* Vista previa de cómo aparecerá en el contrato final */}
-              <div style={{ backgroundColor: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                <h4 style={{ margin: '0 0 10px 0' }}>Final Contract Preview</h4>
-                <div style={{ fontSize: '13px', fontFamily: 'monospace', color: '#374151' }}>
-                  <p>EASY TRADELINES (Smart Latinos Consulting Group, DBA)</p>
-                  <p>By: <strong>{formData.easyTradeLinesAgent || '_____________________'}</strong> &nbsp;&nbsp;&nbsp; Date: <strong>{currentDate}</strong></p>
-                  <p>initial <strong>{formData.easyTradeLinesInitials || '____'}</strong> &nbsp;&nbsp;&nbsp; I have read and understood the document</p>
-                </div>
-              </div>
-              {/* Sección completa del documento final que el admin debe completar */}
-<div style={{ marginTop: '20px', backgroundColor: '#fff3cd', padding: '20px', borderRadius: '8px', border: '2px solid #ffc107' }}>
-  <h4 style={{ margin: '0 0 15px 0', color: '#1976d2' }}>Complete Final Document Section</h4>
-  <p><strong>To be filled by an EASY TRADELINES agent (Smart Latinos Consulting Group, DBA)</strong></p>
-  <br />
-  <p><strong>By:</strong> {formData.easyTradeLinesAgent || '___________________'} &nbsp;&nbsp;&nbsp; <strong>Date:</strong> {currentDate}</p>
-  <br />
-  <p><strong>initial</strong> {formData.easyTradeLinesInitials || '_______'} &nbsp;&nbsp;&nbsp; I have read and understood the document</p>
-</div>
-            </>
-          )}
+    {/* Sección 11 - Firma del Affiliate */}
+    <div style={{ marginBottom: '20px' }}>
+      <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>11. GENERAL PROVISIONS</div>
+      <p>This Agreement comprises the entire agreement between the parties. All prior negotiations are superseded. Card Holder may not assign this Agreement without written consent of Easy Tradelines. Other provisions remain unchanged.</p>
+      
+      <br />
+      <p>
+        Card Holder:{' '}
+        <input
+          type="text"
+          value={formData.cardHolderFullName}
+          onChange={(e) => handleInputChange('cardHolderFullName', e.target.value)}
+          placeholder="Card Holder Full Name"
+          style={{
+            backgroundColor: '#fff3cd',
+            border: '2px solid #ffc107',
+            borderRadius: '4px',
+            padding: '4px 8px',
+            margin: '0 4px',
+            minWidth: '250px',
+            outline: 'none'
+          }}
+        />
+      </p>
+      
+      <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+        <p><strong>AFFILIATE SIGNATURE SECTION</strong></p>
+        <canvas
+          ref={affiliateCanvasRef}
+          width={350}
+          height={100}
+          style={{
+            border: '2px solid #ffc107',
+            borderRadius: '4px',
+            cursor: 'crosshair',
+            backgroundColor: '#fff3cd',
+            marginLeft: '20px'
+          }}
+          onMouseDown={startAffiliateDrawing}
+          onMouseMove={drawAffiliate}
+          onMouseUp={stopAffiliateDrawing}
+          onMouseLeave={stopAffiliateDrawing}
+        />
+        <br />
+        <button
+          type="button"
+          onClick={clearAffiliateSignature}
+          style={{
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            border: 'none',
+            backgroundColor: '#6b7280',
+            color: 'white',
+            marginTop: '5px',
+            marginLeft: '20px'
+          }}
+        >
+          Clear Signature
+        </button>
+      </div>
+
+      <p>
+        By: initial{' '}
+        <input
+          type="text"
+          value={formData.initials}
+          onChange={(e) => handleInputChange('initials', e.target.value)}
+          placeholder="Initials"
+          maxLength="5"
+          style={{
+            backgroundColor: '#fff3cd',
+            border: '2px solid #ffc107',
+            borderRadius: '4px',
+            padding: '4px 8px',
+            margin: '0 4px',
+            minWidth: '80px',
+            outline: 'none'
+          }}
+        />{' '}
+        Date: <strong>{currentDate}</strong>
+      </p>
+    </div>
+
+    {/* Sección del Admin */}
+    <div style={{ marginTop: '30px', backgroundColor: '#e3f2fd', padding: '20px', borderRadius: '8px', border: '2px solid #2196f3' }}>
+      <h4 style={{ margin: '0 0 15px 0', color: '#1976d2' }}>ADMIN COMPLETION SECTION</h4>
+      
+      <div style={{ backgroundColor: '#fff3cd', padding: '20px', borderRadius: '8px', border: '2px solid #ffc107', marginBottom: '15px' }}>
+        <p><strong>EASY TRADELINES (Smart Latinos Consulting Group, DBA)</strong></p>
+        
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', fontWeight: '500', marginBottom: '5px' }}>
+            Agent Name <span style={{ color: '#ef4444' }}>*</span>
+          </label>
+          <input
+            type="text"
+            value={formData.easyTradeLinesAgent}
+            onChange={(e) => handleInputChange('easyTradeLinesAgent', e.target.value)}
+            placeholder="Enter EasyTradelines agent name"
+            style={{
+              backgroundColor: 'white',
+              border: '2px solid #ffc107',
+              borderRadius: '4px',
+              padding: '8px 12px',
+              width: '100%',
+              maxWidth: '300px',
+              outline: 'none',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', fontWeight: '500', marginBottom: '5px' }}>
+            Agent Initials <span style={{ color: '#ef4444' }}>*</span>
+          </label>
+          <input
+            type="text"
+            value={formData.easyTradeLinesInitials}
+            onChange={(e) => handleInputChange('easyTradeLinesInitials', e.target.value)}
+            placeholder="Agent initials"
+            maxLength="5"
+            style={{
+              backgroundColor: 'white',
+              border: '2px solid #ffc107',
+              borderRadius: '4px',
+              padding: '8px 12px',
+              width: '100px',
+              outline: 'none',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Preview de la sección final */}
+      <div style={{ backgroundColor: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>Final Document Preview</h4>
+        <p><strong>To be filled by an EASY TRADELINES agent (Smart Latinos Consulting Group, DBA)</strong></p>
+        <p><strong>By:</strong> {formData.easyTradeLinesAgent || '___________________'} &nbsp;&nbsp;&nbsp; <strong>Date:</strong> {currentDate}</p>
+        <p><strong>initial</strong> {formData.easyTradeLinesInitials || '_______'} &nbsp;&nbsp;&nbsp; I have read and understood the document</p>
+      </div>
+    </div>
+  </>
+)}
 
           {currentStep === 'review' && (
             <>
