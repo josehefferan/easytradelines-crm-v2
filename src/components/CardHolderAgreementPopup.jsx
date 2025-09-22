@@ -143,7 +143,6 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     onSignComplete({ contractData: finalData, isFinalized: true });
   };
 
-  // CORRIGIDO: Función handleSign para permitir re-edición
   const handleSign = () => {
     const canvas = signatureCanvasRef.current;
     const affiliateCanvas = affiliateCanvasRef.current;
@@ -156,14 +155,13 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
       affiliate_signature_data: affiliateSignatureDataUrl,
       signature_date: new Date().toISOString(),
       contract_signed: true,
-      canEdit: true // Mantener capacidad de editar
+      canEdit: true
     };
     
     setFormData(prev => ({ ...prev, contract_signed: true }));
     onSignComplete({ contractData });
   };
 
-  // CORRIGIDO: Función de PDF con texto completo
   const generatePDF = () => {
     const printContent = document.createElement('div');
     printContent.innerHTML = `
@@ -183,31 +181,48 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
 
         <h3>3. COVENANTS, REPRESENTATIONS, AND WARRANTIES</h3>
         <p><strong>Easy Tradeline Card Holders covenants, represents and warrants the following:</strong></p>
+        
         <p>Cardholder shall provide all information requested by Easy Tradelines and that all such information is true, complete and correct in all respects.</p>
+        
         <p>Cardholder authorizes Easy Tradelines to obtain from Equifax, Experian, and TransUnion, or any their respective affiliates (together, the "Credit Bureaus"), and, if necessary, from their respective subscribers, all credit and transaction information regarding Cardholder's credit history, credit transactions of record, and credit scores. This information may include, but is not necessarily limited to, review of credit reports, credit history, credit files, credit transactions and any other credit-related record.</p>
+        
         <p>Cardholder represents, warrants and agrees that he/she shall not attempt to contact nor have any direct contact with any Third-Party. If Cardholder is contacted directly by any Third-Party, Cardholder shall not communicate with the Third-Party and shall immediately contact Easy Tradelines advising them of the contact.</p>
+        
         <p>Cardholder acknowledges that all information provided to it by Easy Tradelines with respect to a Third-Party is confidential, and Cardholder agrees that it shall keep all such information confidential by taking appropriate measures to ensure against the unauthorized release or reproduction of or access to the information and to destroy or return to Easy Tradelines such information as soon as practicable after the Third-Party has been added as an additional authorized user of the applicable tradeline. In the event that Cardholder receives any request for information provided to it by Easy Tradelines by means of a subpoena or other valid legal process, the Cardholder shall not provide any such information without and until it has notified Easy Tradelines of the request in writing at least five (5) business days before responding to such request by providing the information.</p>
+        
         <p>Cardholder shall promptly notify Easy Tradelines of any material change in its name or contact information, including, but not limited to, any change in telephone numbers, mail addresses, or email addresses.</p>
+        
         <p>Cardholder shall promptly notify Easy Tradelines of any material change to its tradelines, including, but not limited to, any changes in payment due dates, credit limits, or outstanding balances on these trade-lines. In addition, Cardholder shall promptly notify Easy Tradelines of any event of default, or other event, that if not cured within the terms and conditions of any trade-line, would constitute an event of default under any trade-line.</p>
+        
         <p>For so long as any Third-Party is an authorized user of any tradeline, Cardholder agrees that it will maintain an outstanding balance on the tradeline that is less than 10% of the maximum credit made available by the lender under such tradeline, and that it will make timely payment in accordance with the terms and conditions of the tradeline.</p>
+        
         <p>Cardholder shall add a Third-Party as an authorized user to the applicable tradeline within 48 hours of receiving all information from Easy Tradelines. Unless a different time period is requested by Easy Tradelines, Cardholder agrees to keep Third-Party as an authorized user on its tradeline for a minimum of one-billing cycle or thirty (30) days.</p>
+        
         <p>Cardholder shall not provide a Third-Party with the ability to access the trade-line in any manner, including, but not limited to, by providing a check, credit card, an account number, or any authorization code.</p>
+        
         <p>For so long as this Agreement is in effect, Cardholder shall not enter into any agreement authorizing the use of the tradeline by any party other than a Third-Party without obtaining the prior written consent of Easy Tradelines.</p>
+        
         <p>Cardholder shall rely solely on the information provided by Easy Tradelines in authorizing a Third-Party as an additional user of the tradeline, and shall not undertake any independent review of or make any request for information regarding the Third-Party, without obtaining the prior written consent of Easy Tradelines.</p>
 
         <h3>3.2 Easy Tradelines' Covenants, Representations, and Warranties</h3>
         <p><strong>Easy Tradelines covenants, represents and warrants the following:</strong></p>
+        
         <p>Easy Tradelines shall be solely responsible for obtaining and assessing information from prospective Third-Parties referred to the Cardholder.</p>
+        
         <p>Prior to its agreement to add a Third-Party as an authorized user of a tradeline, the Cardholder will be notified by Easy Tradelines of the fee it will receive in exchange for Cardholder's agreement to add a Third-Party as an authorized user on the tradeline.</p>
+        
         <p>Easy Tradelines shall not provide a Third-Party with the ability to access a Cardholder's tradeline in any manner, including, but not limited to, by providing any credit card numbers, account numbers, or any authorization code(s).</p>
+        
         <p>Easy Tradelines is not a credit repair company in that it does not attempt to correct inaccurate information on behalf of the Third-Party, does not submit or attempt to resolve disputes on behalf of the Client, and does not attempt to improve a client's credit record or history.</p>
 
         <h3>4. COMPENSATION</h3>
         <p>In exchange for Cardholder's agreement to add a Third-Party as an authorized user of any trade-line, Cardholder shall receive a fee in an amount to be determined by Easy Tradelines. The fee paid by Easy Tradelines shall be determined by Easy Tradelines in its sole discretion after its assessment of relevant factors, including, without limitation, the Cardholder's creditworthiness, the status of the tradeline, and the potential value of any improvement in a Third-Party's credit scores as a result of being added as an authorized user on the Cardholder's tradeline.</p>
+        
         <p><strong>4.2</strong> No fee shall be paid to the Cardholder for its agreement to add a Third-Party to a tradeline until and unless the addition of the Third-Party as an authorized user of the Cardholder's trade-line has been reflected on the credit report of the Third-Party issued by Equifax, Experian, and Trans Union.</p>
 
         <h3>5. TIME FOR PERFORMANCE OF SERVICES</h3>
         <p>Following the execution of this Agreement by the parties, Easy Tradelines shall begin using its best efforts to identify Third-Parties who would benefit from being added as an authorized user on the Cardholder's tradeline.</p>
+        
         <p>This Agreement shall continue until such time as it is terminated by either party. Either party may terminate this Agreement by providing not less than thirty (30) days written notice to the other, provided however, if a Third-Party is an authorized user of a trade-line at the time the Cardholder gives notice of its intent to terminate, the Agreement shall not terminate with respect to any such Third-Party until and unless the addition of such Third-Party as an authorized user of the Cardholder's tradeline has been reflected on the credit report of the Third-Party issued by Equifax, Experian, and Trans Union.</p>
 
         <h3>6. LIMITATION OF LIABILITY</h3>
@@ -346,7 +361,6 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               PDF
             </button>
             
-            {/* CORRIGIDO: Botón Edit que funciona */}
             {formData.contract_signed && (
               <button 
                 onClick={() => {
@@ -719,7 +733,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               
               <div style={{ backgroundColor: '#e8f5e8', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #4caf50' }}>
                 <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>Instructions for Admin</h4>
-                <p style={{ margin: '0', fontSize: '14px' }}>Complete the EasyTradelines representative information below. Only the agent name and initials are required for the final signature section.</p>
+                <p style={{ margin: '0', fontSize: '14px' }}>Complete the EasyTradelines representative information below. The admin fills the final section with agent name, date (automatic), and initials.</p>
               </div>
 
               {/* Mostrar datos del affiliate completados */}
@@ -805,7 +819,6 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
             </>
           )}
 
-          {/* CORRIGIDO: Sección 'review' con campos editables para admin */}
           {currentStep === 'review' && (
             <>
               <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', textDecoration: 'underline' }}>
@@ -912,7 +925,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                 <p>This Agreement shall be governed by the laws of the State of Florida.</p>
               </div>
 
-              {/* CORRIGIDO: Sección 11 con campos editables para admin */}
+              {/* Sección 11 con campos editables para admin */}
               <div style={{ marginBottom: '20px' }}>
                 <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>11. GENERAL PROVISIONS</div>
                 <p>This Agreement comprises the entire agreement between the parties. All prior negotiations are superseded. Card Holder may not assign this Agreement without written consent of Easy Tradelines. Other provisions remain unchanged.</p>
@@ -924,7 +937,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                   
                   <br />
                   
-                  {/* CORRIGIDO: Sección editable para admin en review */}
+                  {/* Sección editable para admin en review */}
                   <div style={{ backgroundColor: '#fff3cd', padding: '15px', borderRadius: '6px', border: '2px solid #ffc107' }}>
                     <p><strong>EASY TRADELINES (Smart Latinos Consulting Group, DBA)</strong></p>
                     
@@ -972,7 +985,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
             </>
           )}
 
-{currentStep === 'sign' && (
+          {currentStep === 'sign' && (
             <div style={{
               marginTop: '30px',
               padding: '20px',
@@ -1047,6 +1060,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               </p>
             </div>
           )}
+        </div>
 
         {/* Footer con margen aumentado para que se vean los botones */}
         <div style={{
@@ -1198,3 +1212,10 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
               </button>
             </>
           )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CardHolderAgreementPopup;
