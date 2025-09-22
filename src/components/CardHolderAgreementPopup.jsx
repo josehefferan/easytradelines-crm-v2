@@ -265,9 +265,9 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
           
           <br><br>
           
-          <p><strong>EASY TRADELINES (Smart Latinos Consulting Group, DBA)</strong></p>
-          <p><strong>By:</strong> ${formData.easyTradeLinesAgent} &nbsp;&nbsp;&nbsp; <strong>Date:</strong> ${currentDate}</p>
-          <p><strong>initial</strong> ${formData.easyTradeLinesInitials} &nbsp;&nbsp;&nbsp; I have read and understood the document</p>
+        <p><strong>To be filled by an EASY TRADELINES agent (Smart Latinos Consulting Group, DBA)</strong></p><br>
+        <p><strong>By:</strong> ___________________ &nbsp;&nbsp;&nbsp; <strong>Date:</strong> ${currentDate}</p><br>
+        <p><strong>initial</strong> _______ &nbsp;&nbsp;&nbsp; I have read and understood the document</p>
         </div>
       </div>
     `;
