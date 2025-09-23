@@ -151,6 +151,7 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
 
   // Generar y descargar PDF
   const downloadPDF = () => {
+    alert("PDF function started");
     const pdf = new jsPDF('p', 'mm', 'letter');
     
     // Configuración
