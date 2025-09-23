@@ -501,7 +501,7 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
             <button 
               onClick={downloadPDF}
               style={styles.downloadButton}
-              disabled={!isSigned || (isAdmin && !adminSignature)}
+              disabled={!isSigned}
             >
               <Download size={16} />
               Download PDF
