@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, UserCheck, Mail, Phone, Building, Globe, User, FileText } from 'lucide-react';
+import { X, Upload, UserCheck, Mail, Phone, Building, Globe, User, FileText, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ContractSignaturePopup from './ContractSignaturePopup';
 
