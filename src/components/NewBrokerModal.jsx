@@ -619,6 +619,23 @@ const NewBrokerModal = ({ isOpen, onClose, currentUser }) => {
                       <p style={{fontSize: '12px', color: '#059669', marginTop: '4px'}}>
                         Signed on {signatureData?.contractData?.signature_date}
                       </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowContractPopup(true)}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#f59e0b',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          marginTop: '8px'
+                        }}
+                      >
+                        View/Edit Contract
+                      </button>
                     </div>
                   )}
                   {errors.contract && <span style={styles.errorText}>{errors.contract}</span>}
