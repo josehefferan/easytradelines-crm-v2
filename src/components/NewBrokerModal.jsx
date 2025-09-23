@@ -706,6 +706,7 @@ const NewBrokerModal = ({ isOpen, onClose, currentUser }) => {
         onClose={() => setShowContractPopup(false)}
         brokerData={formData}
         onSignComplete={handleContractSign}
+        currentUser={currentUser}
       />
     </div>
   );
