@@ -4,6 +4,7 @@ import { X, CreditCard, Building2, Calendar, MapPin, DollarSign } from 'lucide-r
 const CardRegistrationModal = ({ isOpen, onClose, currentUser, onSubmit }) => {
   const [formData, setFormData] = useState({
     bank: '',
+    customBank: '', // Campo para banco personalizado
     account_limit: '',
     open_date_month: '',
     open_date_year: '',
@@ -21,6 +22,7 @@ const CardRegistrationModal = ({ isOpen, onClose, currentUser, onSubmit }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [showCustomBank, setShowCustomBank] = useState(false);
   const isAdmin = currentUser?.role === 'admin';
 
   const banks = [
@@ -39,10 +41,30 @@ const CardRegistrationModal = ({ isOpen, onClose, currentUser, onSubmit }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Manejo especial para el banco
+    if (name === 'bank') {
+      if (value === 'Other') {
+        setShowCustomBank(true);
+        setFormData(prev => ({
+          ...prev,
+          bank: value,
+          customBank: ''
+        }));
+      } else {
+        setShowCustomBank(false);
+        setFormData(prev => ({
+          ...prev,
+          bank: value,
+          customBank: ''
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
     
     if (errors[name]) {
       setErrors(prev => ({
@@ -55,7 +77,13 @@ const CardRegistrationModal = ({ isOpen, onClose, currentUser, onSubmit }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.bank) newErrors.bank = 'Bank is required';
+    // Validación del banco
+    if (!formData.bank) {
+      newErrors.bank = 'Bank is required';
+    } else if (formData.bank === 'Other' && !formData.customBank) {
+      newErrors.customBank = 'Please enter the bank name';
+    }
+    
     if (!formData.account_limit) newErrors.account_limit = 'Account limit is required';
     if (!formData.open_date_month) newErrors.open_date_month = 'Open month is required';
     if (!formData.open_date_year) newErrors.open_date_year = 'Open year is required';
@@ -90,9 +118,13 @@ const CardRegistrationModal = ({ isOpen, onClose, currentUser, onSubmit }) => {
     if (!validateForm()) return;
 
     try {
+      // Determinar el nombre final del banco
+      const finalBankName = formData.bank === 'Other' ? formData.customBank : formData.bank;
+      
       // Formatear datos antes de enviar
       const submitData = {
         ...formData,
+        bank: finalBankName, // Usar el nombre final del banco
         account_limit: parseFloat(formData.account_limit),
         statement_date: parseInt(formData.statement_date),
         default_cycles: parseInt(formData.default_cycles),
@@ -101,6 +133,9 @@ const CardRegistrationModal = ({ isOpen, onClose, currentUser, onSubmit }) => {
         open_date: `${formData.open_date_month} ${formData.open_date_year}`,
         created_at: new Date().toISOString()
       };
+
+      // Remover el campo customBank antes de enviar
+      delete submitData.customBank;
 
       if (onSubmit) {
         await onSubmit(submitData);
@@ -178,62 +213,21 @@ const CardRegistrationModal = ({ isOpen, onClose, currentUser, onSubmit }) => {
             </h3>
             
             <div style={{ display: 'grid', gap: '16px' }}>
-             {/* Bank */}
-<div>
-  <label style={{ 
-    display: 'block', 
-    fontSize: '14px', 
-    fontWeight: '500',
-    marginBottom: '6px',
-    color: '#374151'
-  }}>
-    Bank <span style={{ color: '#ef4444' }}>*</span>
-  </label>
-  <select
-    name="bank"
-    value={formData.bank}
-    onChange={handleInputChange}
-    style={{
-      width: '100%',
-      padding: '8px 12px',
-      border: errors.bank ? '1px solid #ef4444' : '1px solid #d1d5db',
-      borderRadius: '6px',
-      fontSize: '14px'
-    }}
-  >
-    <option value="">Select Bank</option>
-    {banks.map(bank => (
-      <option key={bank} value={bank}>{bank}</option>
-    ))}
-  </select>
-  {errors.bank && (
-    <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-      {errors.bank}
-    </p>
-  )}
-</div>
-      type="text"
-      name="bank"
-      value={formData.bank}
-      onChange={handleInputChange}
-      placeholder="Enter bank name"
-      style={{
-        width: '100%',
-        padding: '8px 12px',
-        border: errors.bank ? '1px solid #ef4444' : '1px solid #d1d5db',
-        borderRadius: '6px',
-        fontSize: '14px',
-        marginTop: '8px'
-      }}
-    />
-  )}
-  
-  {errors.bank && (
-    <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-      {errors.bank}
-    </p>
-  )}
-</div>
+              {/* Bank */}
+              <div>
+                <label style={{ 
+                  display: 'block', 
+                  fontSize: '14px', 
+                  fontWeight: '500',
+                  marginBottom: '6px',
+                  color: '#374151'
+                }}>
+                  Bank <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <select
+                  name="bank"
+                  value={formData.bank}
+                  onChange={handleInputChange}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -247,9 +241,34 @@ const CardRegistrationModal = ({ isOpen, onClose, currentUser, onSubmit }) => {
                     <option key={bank} value={bank}>{bank}</option>
                   ))}
                 </select>
+                
+                {/* Campo personalizado para Other */}
+                {showCustomBank && (
+                  <input
+                    type="text"
+                    name="customBank"
+                    value={formData.customBank}
+                    onChange={handleInputChange}
+                    placeholder="Enter bank name"
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: errors.customBank ? '1px solid #ef4444' : '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      marginTop: '8px'
+                    }}
+                  />
+                )}
+                
                 {errors.bank && (
                   <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
                     {errors.bank}
+                  </p>
+                )}
+                {errors.customBank && (
+                  <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    {errors.customBank}
                   </p>
                 )}
               </div>
