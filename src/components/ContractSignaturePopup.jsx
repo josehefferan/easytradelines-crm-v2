@@ -9,6 +9,9 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
   const [adminInitials, setAdminInitials] = useState('');
   const [brokerName, setBrokerName] = useState('');
   const [brokerInitials, setBrokerInitials] = useState('');
+  const [isLocked, setIsLocked] = useState(false);  
+const [lockedBy, setLockedBy] = useState('');    
+const [lockedDate, setLockedDate] = useState(null); 
   const canvasRef = useRef(null);
   const adminCanvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -23,7 +26,20 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
       day: 'numeric'
     });
   };
-
+  
+  const handleLockToggle = () => {
+  const newLockState = !isLocked;
+  setIsLocked(newLockState);
+  setLockedBy(newLockState ? (currentUser?.email || 'Admin') : '');
+  setLockedDate(newLockState ? new Date().toISOString() : null);
+  
+  if (newLockState) {
+    alert('Contract has been locked. No further edits are allowed.');
+  } else {
+    alert('Contract has been unlocked for editing.');
+  }
+};
+  
   useEffect(() => {
     if (isOpen && canvasRef.current) {
       initCanvas(canvasRef);
@@ -550,8 +566,46 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
             </div>
           </div>
           <div style={styles.headerButtons}>
-            <button 
-              onClick={downloadBlankPDF}
+  {/* Indicador de bloqueo */}
+  {isLocked && (
+    <div style={{
+      padding: '4px 8px',
+      backgroundColor: '#fef2f2',
+      border: '1px solid #ef4444',
+      borderRadius: '4px',
+      fontSize: '12px',
+      color: '#991b1b',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px'
+    }}>
+      🔒 LOCKED
+    </div>
+  )}
+  
+  {/* Botón de Lock/Unlock para admin */}
+  {isAdmin && (
+    <button 
+      onClick={handleLockToggle}
+      style={{
+        padding: '8px 12px',
+        border: 'none',
+        backgroundColor: isLocked ? '#dc2626' : '#eab308',
+        color: 'white',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px'
+      }}
+    >
+      {isLocked ? '🔓 Unlock' : '🔒 Lock'}
+    </button>
+  )}
+  
+  <button 
+    onClick={downloadBlankPDF}}
               style={styles.blankButton}
             >
               <FileText size={16} />
@@ -784,14 +838,15 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
                         type="text"
                         placeholder="Broker Full Name"
                         value={brokerName}
-                        onChange={(e) => setBrokerName(e.target.value)}
+                        disabled={isLocked}
+                        onChange={(e) => !isLocked && setBrokerName(e.target.value)}
                         style={styles.input}
                       />
                       <input
                         type="text"
                         placeholder="Broker Initials"
                         value={brokerInitials}
-                        onChange={(e) => setBrokerInitials(e.target.value)}
+                        onChange={(e) => !isLocked && setBrokerInitials(e.target.value)}
                         style={styles.input}
                         maxLength={4}
                       />
@@ -804,14 +859,15 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
                       width={300}
                       height={120}
                       style={styles.signatureCanvas}
-                      onMouseDown={startDrawing}
-                      onMouseMove={draw}
-                      onMouseUp={stopDrawing}
-                      onMouseLeave={stopDrawing}
+                      onMouseDown={(e) => !isLocked && startDrawing(e)}
+                      onMouseMove={(e) => !isLocked && draw(e)}
+                      onMouseUp={() => !isLocked && stopDrawing()}
+                      onMouseLeave={() => !isLocked && stopDrawing()}
                     />
                     <div style={styles.signatureButtons}>
                       <button
                         onClick={clearSignature}
+                        disabled={isLocked}
                         style={{...styles.button, ...styles.clearButton}}
                       >
                         Clear
@@ -862,14 +918,14 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
                           type="text"
                           placeholder="Admin Name"
                           value={adminName}
-                          onChange={(e) => setAdminName(e.target.value)}
+                          onChange={(e) => !isLocked && setAdminName(e.target.value)}
                           style={styles.input}
                         />
                         <input
                           type="text"
                           placeholder="Admin Initials"
                           value={adminInitials}
-                          onChange={(e) => setAdminInitials(e.target.value)}
+                          onChange={(e) => !isLocked && setAdminInitials(e.target.value)}
                           style={styles.input}
                           maxLength={4}
                         />
@@ -882,10 +938,10 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
                         width={300}
                         height={120}
                         style={styles.signatureCanvas}
-                        onMouseDown={startAdminDrawing}
-                        onMouseMove={drawAdmin}
-                        onMouseUp={stopAdminDrawing}
-                        onMouseLeave={stopAdminDrawing}
+                        onMouseDown={(e) => !isLocked && startAdminDrawing(e)}
+                        onMouseMove={(e) => !isLocked && drawAdmin(e)}
+                        onMouseUp={() => !isLocked && stopAdminDrawing()}
+                        onMouseLeave={() => !isLocked && stopAdminDrawing()}
                       />
                       <div style={styles.signatureButtons}>
                         <button
