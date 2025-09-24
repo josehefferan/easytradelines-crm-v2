@@ -605,7 +605,7 @@ const [lockedDate, setLockedDate] = useState(null);
   )}
   
   <button 
-    onClick={downloadBlankPDF}}
+    onClick={downloadBlankPDF}
               style={styles.blankButton}
             >
               <FileText size={16} />
