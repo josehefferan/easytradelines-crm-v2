@@ -334,8 +334,7 @@ const [lockedDate, setLockedDate] = useState(null);
         </div>
       </div>
     `;
-        </p>
-        
+    
         <!-- Aquí van todas las secciones 1-13 como las tienes -->
         
         <div style="margin-top: 50px; page-break-before: always;">
