@@ -5,7 +5,7 @@ const Download = () => <span style={{fontSize: '16px'}}>⬇️</span>;
 const Edit2 = () => <span style={{fontSize: '16px'}}>✏️</span>;
 
 const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignComplete, mode = 'affiliate' }) => {
-  const [formData, setFormData] = useState({
+ const [formData, setFormData] = useState({
     cardHolderName: `${affiliateData.first_name || ''} ${affiliateData.last_name || ''}`.trim(),
     cardHolderAddress: '',
     investorName: `${affiliateData.first_name || ''} ${affiliateData.last_name || ''}`.trim(),
@@ -20,7 +20,10 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     isDraft: false,
     completedByAffiliate: false,
     contract_signed: false,
-    canEdit: true
+    canEdit: true,
+    isLocked: false,      // <- AGREGAR
+    lockedBy: '',         // <- AGREGAR  
+    lockedDate: null      // <- AGREGAR
   });
 
   const [currentStep, setCurrentStep] = useState(() => {
@@ -41,10 +44,30 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
   });
 
   const handleInputChange = (field, value) => {
+    if (formData.isLocked) {
+      alert('This contract is locked and cannot be edited.');
+      return;
+    }
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleLockToggle = () => {
+    const newLockState = !formData.isLocked;
+    setFormData(prev => ({
+      ...prev,
+      isLocked: newLockState,
+      lockedBy: newLockState ? currentUser?.email || 'Admin' : '',
+      lockedDate: newLockState ? new Date().toISOString() : null
+    }));
+    
+    if (newLockState) {
+      alert('Contract has been locked. No further edits are allowed.');
+    } else {
+      alert('Contract has been unlocked for editing.');
+    }
   };
 
   // Funciones de canvas para firma
@@ -444,10 +467,48 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
             <FileText />
             Card Holder Agreement
           </h2>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button 
-              onClick={generateBlankPDF}
-              style={{
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+  {/* Indicador de bloqueo */}
+  {formData.isLocked && (
+    <div style={{
+      padding: '4px 8px',
+      backgroundColor: '#fef2f2',
+      border: '1px solid #ef4444',
+      borderRadius: '4px',
+      fontSize: '12px',
+      color: '#991b1b',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px'
+    }}>
+      🔒 LOCKED
+    </div>
+  )}
+  
+  {/* Botón de Lock/Unlock para admin */}
+  {currentStep === 'admin' && (
+    <button 
+      onClick={handleLockToggle}
+      style={{
+        padding: '8px 12px',
+        border: 'none',
+        backgroundColor: formData.isLocked ? '#dc2626' : '#eab308',
+        color: 'white',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px'
+      }}
+    >
+      {formData.isLocked ? '🔓 Unlock' : '🔒 Lock'}
+    </button>
+  )}
+  
+  <button 
+    onClick={generateBlankPDF}
+    style={{
                 padding: '8px 12px',
                 border: 'none',
                 backgroundColor: '#6b7280',
@@ -533,9 +594,10 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                     type="text"
                     value={formData.cardHolderName}
                     onChange={(e) => handleInputChange('cardHolderName', e.target.value)}
+                    disabled={formData.isLocked}
                     placeholder="Card Holder Name"
                     style={{
-                      backgroundColor: '#fff3cd',
+                      backgroundColor: formData.isLocked ? '#e5e7eb' : '#fff3cd',,
                       border: '2px solid #ffc107',
                       borderRadius: '4px',
                       padding: '4px 8px',
@@ -765,10 +827,22 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                 <div style={{ marginTop: '20px', marginBottom: '20px' }}>
                   <p><strong>CLICK HERE TO SIGN</strong></p>
                   <canvas
-                    ref={affiliateCanvasRef}
-                    width={350}
-                    height={100}
-                    style={{
+  ref={affiliateCanvasRef}
+  width={350}
+  height={100}
+  style={{
+    border: '2px solid #ffc107',
+    borderRadius: '4px',
+    cursor: formData.isLocked ? 'not-allowed' : 'crosshair',  // MODIFICAR
+    backgroundColor: formData.isLocked ? '#e5e7eb' : '#fff3cd',  // MODIFICAR
+    marginLeft: '20px',
+    opacity: formData.isLocked ? 0.6 : 1  // AGREGAR
+  }}
+  onMouseDown={formData.isLocked ? null : startAffiliateDrawing}  // MODIFICAR
+  onMouseMove={formData.isLocked ? null : drawAffiliate}  // MODIFICAR
+  onMouseUp={formData.isLocked ? null : stopAffiliateDrawing}  // MODIFICAR
+  onMouseLeave={formData.isLocked ? null : stopAffiliateDrawing}  // MODIFICAR
+/>
                       border: '2px solid #ffc107',
                       borderRadius: '4px',
                       cursor: 'crosshair',
@@ -850,9 +924,10 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
           type="text"
           value={formData.cardHolderName}
           onChange={(e) => handleInputChange('cardHolderName', e.target.value)}
+          disabled={formData.isLocked}
           placeholder="Card Holder Name"
           style={{
-            backgroundColor: '#fff3cd',
+            backgroundColor: formData.isLocked ? '#e5e7eb' : '#fff3cd',
             border: '2px solid #ffc107',
             borderRadius: '4px',
             padding: '4px 8px',
@@ -999,11 +1074,23 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
       
       <div style={{ marginTop: '20px', marginBottom: '20px' }}>
         <p><strong>AFFILIATE SIGNATURE SECTION</strong></p>
-        <canvas
-          ref={affiliateCanvasRef}
-          width={350}
-          height={100}
-          style={{
+      <canvas
+  ref={affiliateCanvasRef}
+  width={350}
+  height={100}
+  style={{
+    border: '2px solid #ffc107',
+    borderRadius: '4px',
+    cursor: formData.isLocked ? 'not-allowed' : 'crosshair',  // MODIFICAR
+    backgroundColor: formData.isLocked ? '#e5e7eb' : '#fff3cd',  // MODIFICAR
+    marginLeft: '20px',
+    opacity: formData.isLocked ? 0.6 : 1  // AGREGAR
+  }}
+  onMouseDown={formData.isLocked ? null : startAffiliateDrawing}  // MODIFICAR
+  onMouseMove={formData.isLocked ? null : drawAffiliate}  // MODIFICAR
+  onMouseUp={formData.isLocked ? null : stopAffiliateDrawing}  // MODIFICAR
+  onMouseLeave={formData.isLocked ? null : stopAffiliateDrawing}  // MODIFICAR
+/>
             border: '2px solid #ffc107',
             borderRadius: '4px',
             cursor: 'crosshair',
