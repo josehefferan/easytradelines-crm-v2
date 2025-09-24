@@ -597,7 +597,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
                     disabled={formData.isLocked}
                     placeholder="Card Holder Name"
                     style={{
-                      backgroundColor: formData.isLocked ? '#e5e7eb' : '#fff3cd',,
+                      backgroundColor: formData.isLocked ? '#e5e7eb' : '#fff3cd',
                       border: '2px solid #ffc107',
                       borderRadius: '4px',
                       padding: '4px 8px',
