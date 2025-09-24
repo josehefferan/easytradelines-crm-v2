@@ -156,9 +156,45 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
     setAdminSignature(adminSignatureDataUrl);
   };
 
-  // Generar y descargar PDF
-  const downloadPDF = () => {
-    window.print();
+ // Generar y descargar PDF
+const downloadPDF = () => {
+  // Crear elemento con solo el contenido del contrato (sin firmas)
+  const element = document.createElement('div');
+  element.innerHTML = `
+    <div style="padding: 40px; font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; color: #000;">
+      <h1 style="text-align: center; font-size: 18px; margin-bottom: 30px; text-transform: uppercase;">EASY TRADELINES RESELLER AGREEMENT</h1>
+      
+      <p style="text-align: center; margin-bottom: 30px;">
+        This Agreement is entered into on <strong>${getCurrentDate()}</strong>, by and between 
+        <strong>SMART LATINOS CONSULTING GROUP LLC</strong>, doing business as Easy Tradelines, 
+        hereinafter referred to as "Easy Tradelines", and 
+        <strong>${brokerData.first_name} ${brokerData.last_name}</strong> 
+        whose company is <strong>${brokerData.company_name}</strong>, 
+        hereinafter called "Reseller".
+      </p>
+      
+      <h2 style="font-size: 14px; font-weight: bold; margin: 20px 0 10px 0;">PURPOSE OF THE AGREEMENT</h2>
+      <p><strong>1.1</strong> Easy Tradelines and Reseller have entered into this Agreement to set forth the terms and conditions under which Easy Tradelines will enable the Reseller to access Easy Tradelines portfolio of third party trade-lines for the sole purpose of attempting to increase the FICO score of Reseller's customers (the Clients).</p>
+      <p><strong>1.2</strong> Reseller hereby agrees to be bound to the following terms and conditions regarding all services rendered by Easy Tradelines under this Agreement.</p>
+      
+      <h2 style="font-size: 14px; font-weight: bold; margin: 20px 0 10px 0;">SERVICES</h2>
+      <p><strong>2.1</strong> Easy Tradelines will perform the following services for the benefit of the Reseller:</p>
+      <p style="margin-left: 20px;"><strong>a)</strong> Easy Tradeline will make available to Reseller certain credit facilities of third party investors who have agreed to permit Clients to be added as an authorized user to one or more of the Investor's credit facilities (the "Services").</p>
+      
+      <!-- Agregar el resto del contenido completo aquí -->
+    </div>
+  `;
+
+  const options = {
+    margin: 0.5,
+    filename: \`Easy_Tradelines_Agreement_\${brokerData.first_name}_\${brokerData.last_name}.pdf\`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+
+  html2pdf().set(options).from(element).save();
+};
   };
 
   if (!isOpen) return null;
