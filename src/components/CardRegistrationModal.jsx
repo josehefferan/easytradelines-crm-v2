@@ -179,20 +179,65 @@ const CardRegistrationModal = ({ isOpen, onClose, currentUser, onSubmit }) => {
             
             <div style={{ display: 'grid', gap: '16px' }}>
               {/* Bank */}
-              <div>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '14px', 
-                  fontWeight: '500',
-                  marginBottom: '6px',
-                  color: '#374151'
-                }}>
-                  Bank <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <select
-                  name="bank"
-                  value={formData.bank}
-                  onChange={handleInputChange}
+<div>
+  <label style={{ 
+    display: 'block', 
+    fontSize: '14px', 
+    fontWeight: '500',
+    marginBottom: '6px',
+    color: '#374151'
+  }}>
+    Bank <span style={{ color: '#ef4444' }}>*</span>
+  </label>
+  <select
+    name="bank"
+    value={formData.bank === 'Other' || !banks.includes(formData.bank) ? 'Other' : formData.bank}
+    onChange={(e) => {
+      if (e.target.value === 'Other') {
+        setFormData(prev => ({ ...prev, bank: '' }));
+      } else {
+        handleInputChange(e);
+      }
+    }}
+    style={{
+      width: '100%',
+      padding: '8px 12px',
+      border: errors.bank ? '1px solid #ef4444' : '1px solid #d1d5db',
+      borderRadius: '6px',
+      fontSize: '14px'
+    }}
+  >
+    <option value="">Select Bank</option>
+    {banks.map(bank => (
+      <option key={bank} value={bank}>{bank}</option>
+    ))}
+  </select>
+  
+  {/* Campo manual para Other */}
+  {(formData.bank === '' || !banks.includes(formData.bank)) && formData.bank !== undefined && (
+    <input
+      type="text"
+      name="bank"
+      value={formData.bank}
+      onChange={handleInputChange}
+      placeholder="Enter bank name"
+      style={{
+        width: '100%',
+        padding: '8px 12px',
+        border: errors.bank ? '1px solid #ef4444' : '1px solid #d1d5db',
+        borderRadius: '6px',
+        fontSize: '14px',
+        marginTop: '8px'
+      }}
+    />
+  )}
+  
+  {errors.bank && (
+    <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+      {errors.bank}
+    </p>
+  )}
+</div>
                   style={{
                     width: '100%',
                     padding: '8px 12px',
