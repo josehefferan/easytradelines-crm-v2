@@ -838,10 +838,10 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     marginLeft: '20px',
     opacity: formData.isLocked ? 0.6 : 1  // AGREGAR
   }}
-  onMouseDown={formData.isLocked ? null : startAffiliateDrawing}  // MODIFICAR
-  onMouseMove={formData.isLocked ? null : drawAffiliate}  // MODIFICAR
-  onMouseUp={formData.isLocked ? null : stopAffiliateDrawing}  // MODIFICAR
-  onMouseLeave={formData.isLocked ? null : stopAffiliateDrawing}  // MODIFICAR
+  onMouseDown={(e) => !formData.isLocked && startAffiliateDrawing(e)}
+  onMouseMove={(e) => !formData.isLocked && drawAffiliate(e)}
+  onMouseUp={() => !formData.isLocked && stopAffiliateDrawing()}
+  onMouseLeave={() => !formData.isLocked && stopAffiliateDrawing()}
 />
                       border: '2px solid #ffc107',
                       borderRadius: '4px',
