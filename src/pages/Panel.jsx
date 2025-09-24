@@ -16,11 +16,13 @@ import {
   Filter, 
   UserCheck, 
   Building2 
+  CreditCard
 } from 'lucide-react';
 import { supabase } from "../lib/supabase";
 import NewClientModal from '../components/NewClientModal';
 import NewBrokerModal from '../components/NewBrokerModal';
 import NewAffiliateModal from '../components/NewAffiliateModal';
+import CardRegistrationModal from '../components/CardRegistrationModal';
 import ClientManagement from '../components/ClientManagement'; // ← NUEVO IMPORT
 
 const ModernCRMPanel = () => {
@@ -36,6 +38,8 @@ const ModernCRMPanel = () => {
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
   const [isNewBrokerModalOpen, setIsNewBrokerModalOpen] = useState(false);
   const [isNewAffiliateModalOpen, setIsNewAffiliateModalOpen] = useState(false);
+  const [isNewAffiliateModalOpen, setIsNewAffiliateModalOpen] = useState(false);
+  const [isCardRegistrationModalOpen, setIsCardRegistrationModalOpen] = useState(false); // AGREGAR ESTA LÍNEA
 
   const [clients] = useState([
     {
@@ -250,6 +254,17 @@ const ModernCRMPanel = () => {
         hoverColor: '#6d28d9',
         onClick: () => setIsNewAffiliateModalOpen(true)
       });
+      // Botón Card Registration - visible para admin y affiliates
+  if (currentUser.role === 'admin' || currentUser.role === 'affiliate') {
+    buttons.push({
+     key: 'card',
+     label: 'Card Registration',
+     icon: CreditCard,
+     color: '#ea580c',
+     hoverColor: '#dc2626',
+     onClick: () => setIsCardRegistrationModalOpen(true)
+  });
+}
     }
 
     return buttons;
@@ -790,6 +805,16 @@ const ModernCRMPanel = () => {
         onClose={() => setIsNewAffiliateModalOpen(false)}
         currentUser={currentUser}
       />
+      <CardRegistrationModal 
+        isOpen={isCardRegistrationModalOpen}
+        onClose={() => setIsCardRegistrationModalOpen(false)}
+        currentUser={currentUser}
+         onSubmit={(data) => {
+    console.log('Card registered:', data);
+    // Aquí puedes agregar la lógica para guardar en Supabase
+    setIsCardRegistrationModalOpen(false);
+  }}
+/>
     </div>
   );
 };
