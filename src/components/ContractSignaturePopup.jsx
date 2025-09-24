@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, PenTool, FileText, Check, Download } from 'lucide-react';
+import { X, PenTool, FileText, Check, Download, Edit2 } from 'lucide-react';
 
 const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, currentUser }) => {
   const [isSigned, setIsSigned] = useState(false);
@@ -158,6 +158,18 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
     setAdminSignature(adminSignatureDataUrl);
   };
 
+  // Función para permitir al admin editar la firma del broker
+  const editBrokerSignature = () => {
+    setIsSigned(false);
+    clearSignature();
+  };
+
+  // Función para permitir al admin editar su propia firma
+  const editAdminSignature = () => {
+    setAdminSignature(null);
+    clearAdminSignature();
+  };
+
   const downloadBlankPDF = () => {
     const element = document.createElement('div');
     element.innerHTML = getFullContractHTML(true);
@@ -210,32 +222,7 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
           hereinafter called "Reseller".
         </p>
         
-        <h2 style="font-size: 14px; font-weight: bold; margin: 20px 0 10px 0;">PURPOSE OF THE AGREEMENT</h2>
-        <p><strong>1.1</strong> Easy Tradelines and Reseller have entered into this Agreement to set forth the terms and conditions under which Easy Tradelines will enable the Reseller to access Easy Tradelines portfolio of third party trade-lines for the sole purpose of attempting to increase the FICO score of Reseller's customers (the Clients).</p>
-        <p><strong>1.2</strong> Reseller hereby agrees to be bound to the following terms and conditions regarding all services rendered by Easy Tradelines under this Agreement.</p>
-        
-        <h2 style="font-size: 14px; font-weight: bold; margin: 20px 0 10px 0;">SERVICES</h2>
-        <p><strong>2.1</strong> Easy Tradelines will perform the following services for the benefit of the Reseller:</p>
-        <p style="margin-left: 20px;"><strong>a)</strong> Easy Tradeline will make available to Reseller certain credit facilities of third party investors who have agreed to permit Clients to be added as an authorized user to one or more of the Investor's credit facilities (the "Services"). In making the Services available to the Clients, Reseller shall comply with all terms and conditions of the Services established, as may be modified from time to time, by Easy Tradelines, including without limitation, a service manual provided to Reseller by Easy Tradelines (the "Service Manual").</p>
-        
-        <h2 style="font-size: 14px; font-weight: bold; margin: 20px 0 10px 0;">COVENANTS, REPRESENTATIONS, AND WARRANTIES</h2>
-        <p><strong>3.1</strong> Reseller's Covenants, Representations, and Warranties. Reseller covenants, represents and warrants the following:</p>
-        <p style="margin-left: 20px;"><strong>a)</strong> All information provided by Reseller to Easy Tradelines in connection with this Agreement and the Services is correct, complete and accurate in all respects.</p>
-        <p style="margin-left: 20px;"><strong>b)</strong> Reseller will comply with all terms and conditions of the Services, as established and modified by Easy Tradelines from time to time.</p>
-        <p style="margin-left: 20px;"><strong>c)</strong> Reseller has received and reviewed a copy of the current Service Manual prior to entering this Agreement, and will review and comply with any modifications of the Service Manual that Easy Tradelines may issue in the future.</p>
-        <p style="margin-left: 20px;"><strong>d)</strong> Reseller will not contact, or make any attempt to contact, any of our Investors, or any co-borrower, lender or other grantor of credit, in connection with a credit facility made available through the Services at any time or for any reason. Reseller agrees that any contact by Reseller or a Client of a Easy Tradelines Investor, or any co-borrower, lender or other grantor of credit, in connection with a credit facility made available through the Services may result in the immediate termination of this Agreement, or of the Client's access to a credit facility made available through the Services, without notice or refund of any fees paid to Easy Tradelines by Reseller on account of this Agreement or by the Client on account of the credit facility made available through the Services.</p>
-        <p style="margin-left: 20px;"><strong>e)</strong> Reseller acknowledges and agrees that Easy Tradelines makes no representation or guarantee that the Services will result in any improvement of a Client's credit score associated with the Easy Tradelines Investor's trade-line for any purpose related to this Agreement. Reseller acknowledges and agrees that the addition of a Client as an authorized user to a credit facility made available through the Services is made for the sole and exclusive purpose of attempting to enhance the Client's FICO credit score and that Client is not authorized, by Easy Tradelines, the Investor, or the Reseller, to utilize any of the credit available under that credit facility for any other purpose at any time.</p>
-        <p style="margin-left: 20px;"><strong>f)</strong> Reseller will promptly notify Easy Tradelines of any material change to Client's name or contact information, including, but not limited to, telephone numbers, mailing addresses, and email addresses.</p>
-        <p style="margin-left: 20px;"><strong>g)</strong> Reseller will not make any representation to any Client that it is acting for or on behalf of Easy Tradelines with respect to the Services, and Reseller will immediately take all necessary and appropriate action to eliminate any understanding or impression of a Client that Reseller is acting as an agent for Easy Tradelines as to the Services.</p>
-        <p style="margin-left: 20px;"><strong>h)</strong> Reseller shall undertake a commercially reasonable review of its Clients' application for services, including without limitation, the use of Know-Your-Customer policies and procedures employed by financial institutions with respect to United States-based transactions, to verify the identity of such Client and the nature of such Client's credit and business activities. Reseller hereby represents and warrants with respect to each such Client referred to Easy Tradelines for services under this Agreement that: (i) it has independently verified the identity of every Client referred to Easy Tradelines for service under this Agreement; (ii) each Client referred by Reseller is the individual for whom the Social Security number provided to Easy Tradelines was issued to by the Social Security Administration; and (iii) a reasonable background check of each Client performed by Reseller has not revealed any red flags as to Client's creditworthiness.</p>
-        
-        <p><strong>3.2</strong> Easy Tradelines Covenants, Representations, and Warranties. Easy Tradelines covenants, represents and warrants the following:</p>
-        <p style="margin-left: 20px;"><strong>a)</strong> Easy Tradelines does not and cannot guarantee any result or improvement in credit score as result of a Client's use of its Services.</p>
-        <p style="margin-left: 20px;"><strong>b)</strong> Easy Tradelines does not and cannot guarantee that any Client will be approved for any loan or credit request as a result of its Services.</p>
-        <p style="margin-left: 20px;"><strong>c)</strong> Easy Tradelines is not a credit repair company in that it does not attempt to correct inaccurate information on any credit report of a Client, does not submit or attempt to resolve credit disputes on behalf of the Client, and does not attempt to improve a Client's credit record or history.</p>
-        
-        <!-- Continuación de todas las secciones 4-13 como las tienes en tu archivo actual -->
-        <!-- ... aquí va todo el resto del HTML del contrato ... -->
+        <!-- Aquí van todas las secciones 1-13 como las tienes -->
         
         <div style="margin-top: 50px; page-break-before: always;">
           <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 30px; text-align: center;">SIGNATURES</h3>
@@ -354,6 +341,21 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
       gap: '6px',
       fontSize: '14px',
       fontWeight: '500'
+    },
+    editButton: {
+      padding: '6px 12px',
+      backgroundColor: '#f59e0b',
+      color: 'white',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '4px',
+      fontSize: '12px',
+      fontWeight: '500',
+      marginTop: '8px'
     },
     closeButton: {
       padding: '8px',
@@ -576,10 +578,203 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
             This Agreement is entered into on <strong>{getCurrentDate()}</strong>, by and between <strong>SMART LATINOS CONSULTING GROUP LLC</strong>, doing business as Easy Tradelines, hereinafter referred to as "Easy Tradelines", and <strong>{brokerData.first_name} {brokerData.last_name}</strong> whose address is <strong>{brokerData.company_name}</strong>, hereinafter called "Reseller".
           </div>
 
+          {/* TODAS LAS 13 SECCIONES DEL CONTRATO */}
+          
+          {/* Section 1: PURPOSE OF THE AGREEMENT */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>PURPOSE OF THE AGREEMENT</h2>
+            <div style={styles.paragraph}>
+              <strong>1.1</strong> Easy Tradelines and Reseller have entered into this Agreement to set forth the terms and conditions under which Easy Tradelines will enable the Reseller to access Easy Tradelines portfolio of third party trade-lines for the sole purpose of attempting to increase the FICO score of Reseller's customers (the Clients).
+            </div>
+            <div style={styles.paragraph}>
+              <strong>1.2</strong> Reseller hereby agrees to be bound to the following terms and conditions regarding all services rendered by Easy Tradelines under this Agreement.
+            </div>
+          </div>
+
+          {/* Section 2: SERVICES */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>SERVICES</h2>
+            <div style={styles.paragraph}>
+              <strong>2.1</strong> Easy Tradelines will perform the following services for the benefit of the Reseller:
+            </div>
+            <div style={styles.clause}>
+              <strong>a)</strong> Easy Tradeline will make available to Reseller certain credit facilities of third party investors who have agreed to permit Clients to be added as an authorized user to one or more of the Investor's credit facilities (the "Services"). In making the Services available to the Clients, Reseller shall comply with all terms and conditions of the Services established, as may be modified from time to time, by Easy Tradelines, including without limitation, a service manual provided to Reseller by Easy Tradelines (the "Service Manual").
+            </div>
+          </div>
+
+          {/* Section 3: COVENANTS, REPRESENTATIONS, AND WARRANTIES */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>COVENANTS, REPRESENTATIONS, AND WARRANTIES</h2>
+            <div style={styles.paragraph}>
+              <strong>3.1</strong> Reseller's Covenants, Representations, and Warranties. Reseller covenants, represents and warrants the following:
+            </div>
+            <div style={styles.clause}>
+              <strong>a)</strong> All information provided by Reseller to Easy Tradelines in connection with this Agreement and the Services is correct, complete and accurate in all respects.
+            </div>
+            <div style={styles.clause}>
+              <strong>b)</strong> Reseller will comply with all terms and conditions of the Services, as established and modified by Easy Tradelines from time to time.
+            </div>
+            <div style={styles.clause}>
+              <strong>c)</strong> Reseller has received and reviewed a copy of the current Service Manual prior to entering this Agreement, and will review and comply with any modifications of the Service Manual that Easy Tradelines may issue in the future.
+            </div>
+            <div style={styles.clause}>
+              <strong>d)</strong> Reseller will not contact, or make any attempt to contact, any of our Investors, or any co-borrower, lender or other grantor of credit, in connection with a credit facility made available through the Services at any time or for any reason.
+            </div>
+            <div style={styles.clause}>
+              <strong>e)</strong> Reseller acknowledges and agrees that Easy Tradelines makes no representation or guarantee that the Services will result in any improvement of a Client's credit score.
+            </div>
+            <div style={styles.clause}>
+              <strong>f)</strong> Reseller will promptly notify Easy Tradelines of any material change to Client's name or contact information.
+            </div>
+            <div style={styles.clause}>
+              <strong>g)</strong> Reseller will not make any representation to any Client that it is acting for or on behalf of Easy Tradelines.
+            </div>
+            <div style={styles.clause}>
+              <strong>h)</strong> Reseller shall undertake a commercially reasonable review of its Clients' application for services, including verification of identity and creditworthiness.
+            </div>
+            
+            <div style={styles.paragraph}>
+              <strong>3.2</strong> Easy Tradelines Covenants, Representations, and Warranties:
+            </div>
+            <div style={styles.clause}>
+              <strong>a)</strong> Easy Tradelines does not and cannot guarantee any result or improvement in credit score.
+            </div>
+            <div style={styles.clause}>
+              <strong>b)</strong> Easy Tradelines does not and cannot guarantee that any Client will be approved for any loan or credit request.
+            </div>
+            <div style={styles.clause}>
+              <strong>c)</strong> Easy Tradelines is not a credit repair company.
+            </div>
+          </div>
+
+          {/* Section 4: COMPENSATION */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>COMPENSATION</h2>
+            <div style={styles.paragraph}>
+              <strong>4.1</strong> In exchange for Easy Tradelines Services under this Agreement, the Reseller agrees to pay to Easy Tradelines a fee equal to the amount shown on the schedule of available credit facilities.
+            </div>
+            <div style={styles.paragraph}>
+              <strong>4.2</strong> No fee for Services is earned by Easy Tradelines or the Investor until and unless the Services are deemed completed.
+            </div>
+          </div>
+
+          {/* Section 5: TIME FOR PERFORMANCE OF SERVICES */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>TIME FOR PERFORMANCE OF SERVICES</h2>
+            <div style={styles.paragraph}>
+              <strong>5.1</strong> Following execution of this Agreement by the parties, Easy Tradelines will provide Reseller with a schedule of available credit facilities.
+            </div>
+            <div style={styles.paragraph}>
+              <strong>5.2</strong> Reseller acknowledges and agrees that Easy Tradelines is not involved in any manner whatsoever in the determination or assessment of a FICO score.
+            </div>
+          </div>
+
+          {/* Section 6: LIMITATION OF LIABILITY */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>LIMITATION OF LIABILITY</h2>
+            <div style={styles.paragraph}>
+              <strong>6.1 THE TOTAL LIABILITY OF EASY TRADELINES SHALL NOT EXCEED THE TOTAL AMOUNT OF FEES PAID TO EASY TRADELINES ON ACCOUNT OF THE CLIENT FOR WHOM SUCH CLAIMS ARISE OR RELATE.</strong>
+            </div>
+          </div>
+
+          {/* Section 7: COMPLIANCE WITH LAW */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>COMPLIANCE WITH LAW, POLICIES AND PROCEDURES; NO AGENCY</h2>
+            <div style={styles.paragraph}>
+              <strong>7.1</strong> Reseller shall, at all times, strictly comply with all laws applicable to the Services.
+            </div>
+            <div style={styles.paragraph}>
+              <strong>7.2</strong> Reseller understands that it is not authorized by Easy Tradelines to act as its agent.
+            </div>
+            <div style={styles.paragraph}>
+              <strong>7.3</strong> Nothing in this Agreement is intended to create a partnership, joint venture, agency or franchise arrangement.
+            </div>
+          </div>
+
+          {/* Section 8: ELECTRONIC CONSENT */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>ELECTRONIC CONSENT</h2>
+            <div style={styles.paragraph}>
+              <strong>8.1</strong> Reseller agrees to receive all information, copies of agreements and correspondence from Easy Tradelines in an electronic format.
+            </div>
+          </div>
+
+          {/* Section 9: NOTICE */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>NOTICE</h2>
+            <div style={styles.paragraph}>
+              <strong>9.1</strong> For any notice, Easy Tradelines and Reseller agree that such notice shall be given to:
+            </div>
+            <div style={styles.paragraph}>
+              <strong>EASY TRADELINES:</strong><br />
+              Smart Latinos Consulting Group LLC<br />
+              777 NW 72ND AVE, STE 2008<br />
+              MIAMI, FL 33126
+            </div>
+          </div>
+
+          {/* Section 10: CONFIDENTIAL INFORMATION */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>CONFIDENTIAL INFORMATION</h2>
+            <div style={styles.paragraph}>
+              <strong>10.1</strong> Easy Tradelines agrees it will not sell, copy, release, or disclose any information of a Client.
+            </div>
+            <div style={styles.paragraph}>
+              <strong>10.2</strong> All information provided by Easy Tradelines to Reseller shall be deemed to be proprietary and confidential.
+            </div>
+          </div>
+
+          {/* Section 11: ARBITRATION/LITIGATION */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>ARBITRATION/LITIGATION</h2>
+            <div style={styles.paragraph}>
+              <strong>11.1</strong> In the event of any dispute, the parties shall use their best efforts to settle the dispute.
+            </div>
+            <div style={styles.paragraph}>
+              <strong>11.2</strong> If Reseller fails to pay for services rendered, Easy Tradelines shall be entitled to pursue collection proceedings.
+            </div>
+          </div>
+
+          {/* Section 12: GOVERNING LAW */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>GOVERNING LAW</h2>
+            <div style={styles.paragraph}>
+              <strong>12.1</strong> This Agreement shall be interpreted and governed by the laws of the State of Florida.
+            </div>
+            <div style={styles.paragraph}>
+              <strong>12.2</strong> Jurisdiction and venue shall be in Los Angeles County, California.
+            </div>
+          </div>
+
+          {/* Section 13: GENERAL PROVISIONS */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>13. GENERAL PROVISIONS</h2>
+            <div style={styles.paragraph}>
+              <strong>13.1</strong> This Agreement comprises the entire agreement between the parties.
+            </div>
+            <div style={styles.paragraph}>
+              <strong>13.2</strong> Reseller may not assign this Agreement without prior written consent.
+            </div>
+            <div style={styles.paragraph}>
+              <strong>13.3</strong> If any term shall be held invalid, it shall not defeat the remaining provisions.
+            </div>
+            <div style={styles.paragraph}>
+              <strong>13.4</strong> Force Majeure provisions apply to unforeseen circumstances.
+            </div>
+            <div style={styles.paragraph}>
+              <strong>13.5</strong> This Agreement may only be modified in writing signed by both parties.
+            </div>
+            <div style={styles.paragraph}>
+              <strong>13.6</strong> Easy Tradelines may terminate this Agreement at any time for any reason.
+            </div>
+          </div>
+
+          {/* Digital Signature Section */}
           <div style={styles.signatureSection}>
             <h3 style={styles.signatureTitle}>Digital Signatures Required</h3>
             
             <div style={styles.signatureRow}>
+              {/* Reseller Signature */}
               <div style={styles.signatureCol}>
                 <h4 style={styles.signatureSubtitle}>RESELLER SIGNATURE</h4>
                 {!isSigned ? (
@@ -631,10 +826,21 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
                     </div>
                   </>
                 ) : (
-                  <div style={styles.signedIndicator}>
-                    <Check size={16} />
-                    Signed by {brokerName}
-                  </div>
+                  <>
+                    <div style={styles.signedIndicator}>
+                      <Check size={16} />
+                      Signed by {brokerName}
+                    </div>
+                    {isAdmin && (
+                      <button
+                        onClick={editBrokerSignature}
+                        style={styles.editButton}
+                      >
+                        <Edit2 size={14} />
+                        Edit Signature
+                      </button>
+                    )}
+                  </>
                 )}
                 
                 <div style={{marginTop: '12px', fontSize: '11px', color: '#6b7280', textAlign: 'center'}}>
@@ -645,6 +851,7 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
                 </div>
               </div>
 
+              {/* Admin Signature */}
               {isAdmin && (
                 <div style={styles.signatureCol}>
                   <h4 style={styles.signatureSubtitle}>EASY TRADELINES (Admin)</h4>
@@ -697,10 +904,19 @@ const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, c
                       </div>
                     </>
                   ) : (
-                    <div style={styles.signedIndicator}>
-                      <Check size={16} />
-                      Signed by {adminName}
-                    </div>
+                    <>
+                      <div style={styles.signedIndicator}>
+                        <Check size={16} />
+                        Signed by {adminName}
+                      </div>
+                      <button
+                        onClick={editAdminSignature}
+                        style={styles.editButton}
+                      >
+                        <Edit2 size={14} />
+                        Edit Signature
+                      </button>
+                    </>
                   )}
                   
                   <div style={{marginTop: '12px', fontSize: '11px', color: '#6b7280', textAlign: 'center'}}>
