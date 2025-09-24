@@ -15,7 +15,7 @@ import {
   Plus, 
   Filter, 
   UserCheck, 
-  Building2 
+  Building2, 
   CreditCard
 } from 'lucide-react';
 import { supabase } from "../lib/supabase";
