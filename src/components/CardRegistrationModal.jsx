@@ -178,7 +178,7 @@ const CardRegistrationModal = ({ isOpen, onClose, currentUser, onSubmit }) => {
             </h3>
             
             <div style={{ display: 'grid', gap: '16px' }}>
-              {/* Bank */}
+             {/* Bank */}
 <div>
   <label style={{ 
     display: 'block', 
@@ -191,14 +191,8 @@ const CardRegistrationModal = ({ isOpen, onClose, currentUser, onSubmit }) => {
   </label>
   <select
     name="bank"
-    value={formData.bank === 'Other' || !banks.includes(formData.bank) ? 'Other' : formData.bank}
-    onChange={(e) => {
-      if (e.target.value === 'Other') {
-        setFormData(prev => ({ ...prev, bank: '' }));
-      } else {
-        handleInputChange(e);
-      }
-    }}
+    value={formData.bank}
+    onChange={handleInputChange}
     style={{
       width: '100%',
       padding: '8px 12px',
@@ -212,10 +206,12 @@ const CardRegistrationModal = ({ isOpen, onClose, currentUser, onSubmit }) => {
       <option key={bank} value={bank}>{bank}</option>
     ))}
   </select>
-  
-  {/* Campo manual para Other */}
-  {(formData.bank === '' || !banks.includes(formData.bank)) && formData.bank !== undefined && (
-    <input
+  {errors.bank && (
+    <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+      {errors.bank}
+    </p>
+  )}
+</div>
       type="text"
       name="bank"
       value={formData.bank}
