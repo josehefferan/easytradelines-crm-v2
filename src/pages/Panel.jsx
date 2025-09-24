@@ -38,7 +38,6 @@ const ModernCRMPanel = () => {
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
   const [isNewBrokerModalOpen, setIsNewBrokerModalOpen] = useState(false);
   const [isNewAffiliateModalOpen, setIsNewAffiliateModalOpen] = useState(false);
-  const [isNewAffiliateModalOpen, setIsNewAffiliateModalOpen] = useState(false);
   const [isCardRegistrationModalOpen, setIsCardRegistrationModalOpen] = useState(false); // AGREGAR ESTA LÍNEA
 
   const [clients] = useState([
