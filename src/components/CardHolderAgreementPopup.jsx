@@ -59,7 +59,7 @@ const CardHolderAgreementPopup = ({ isOpen, onClose, affiliateData = {}, onSignC
     setFormData(prev => ({
       ...prev,
       isLocked: newLockState,
-      lockedBy: newLockState ? currentUser?.email || 'Admin' : '',
+      lockedBy: newLockState ? (affiliateData?.email || 'Admin') : '',
       lockedDate: newLockState ? new Date().toISOString() : null
     }));
     
