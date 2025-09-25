@@ -362,14 +362,34 @@ const NewBrokerModal = ({ isOpen, onClose, currentUser }) => {
               <p style={styles.subtitle}>Add a new broker to the system</p>
             </div>
           </div>
-          <button
-            onClick={handleClose}
-            style={styles.closeButton}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            <X style={{ width: '20px', height: '20px' }} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="submit"
+              onClick={handleSubmit}
+              disabled={loading || !contractSigned}
+              style={{
+                padding: '6px 12px',
+                backgroundColor: contractSigned && !loading ? '#16a34a' : '#9ca3af',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '500',
+                cursor: contractSigned && !loading ? 'pointer' : 'not-allowed',
+                transition: 'all 0.2s'
+              }}
+            >
+              {loading ? 'Submitting...' : 'Submit'}
+            </button>
+            <button
+              onClick={handleClose}
+              style={styles.closeButton}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+          </div>
         </div>
 
         <div style={styles.content}>
