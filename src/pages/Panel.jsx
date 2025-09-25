@@ -23,7 +23,8 @@ import NewClientModal from '../components/NewClientModal';
 import NewBrokerModal from '../components/NewBrokerModal';
 import NewAffiliateModal from '../components/NewAffiliateModal';
 import CardRegistrationModal from '../components/CardRegistrationModal';
-import ClientManagement from '../components/ClientManagement'; // ← NUEVO IMPORT
+import ClientManagement from '../components/ClientManagement'; 
+import BrokerManagement from '../components/BrokerManagement';
 import AffiliatesInhouseView from '../components/AffiliatesInhouseView';
 
 const ModernCRMPanel = () => {
@@ -778,7 +779,9 @@ const ModernCRMPanel = () => {
             <p style={{ color: '#6b7280', fontSize: '16px' }}>
               {selectedView === 'pipeline' && 'Kanban pipeline view - Coming soon'}
               {selectedView === 'archive' && 'Archived clients management - Coming soon'}
-              {selectedView === 'brokers' && currentUser.role === 'admin' && 'Broker management and history - Admin only'}
+              {selectedView === 'brokers' && currentUser.role === 'admin' && (
+  <BrokerManagement currentUser={currentUser} />
+)}
               {selectedView === 'affiliates' && currentUser.role === 'admin' && (
   <AffiliatesInhouseView currentUser={currentUser} />
 )}
