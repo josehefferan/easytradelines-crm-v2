@@ -1,43 +1,146 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, Filter, MoreHorizontal, Mail, Phone, DollarSign, Calendar, Archive, Eye, Edit } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { 
+  Users, 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  Eye, 
+  Edit,
+  Trash2,
+  UserCheck,
+  AlertTriangle,
+  Building2,
+  Mail,
+  Phone,
+  Calendar,
+  TrendingUp,
+  DollarSign,
+  CreditCard,
+  Archive,
+  Shield
+} from 'lucide-react';
+import { supabase } from "../lib/supabase";
 
-const ClientManagement = () => {
+const ClientManagement = ({ currentUser }) => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [showActions, setShowActions] = useState(null);
+  const [filter, setFilter] = useState('all');
 
-  const statusConfig = {
-    new_lead: { label: 'New Lead', color: '#3b82f6', bgColor: '#eff6ff', textColor: '#1e40af' },
-    contacted: { label: 'Contacted', color: '#f59e0b', bgColor: '#fffbeb', textColor: '#d97706' },
-    qualification: { label: 'Qualification', color: '#8b5cf6', bgColor: '#f3f4f6', textColor: '#7c3aed' },
-    proposal: { label: 'Proposal', color: '#06b6d4', bgColor: '#ecfeff', textColor: '#0891b2' },
-    negotiation: { label: 'Negotiation', color: '#f97316', bgColor: '#fff7ed', textColor: '#ea580c' },
-    approved: { label: 'Approved', color: '#10b981', bgColor: '#ecfdf5', textColor: '#059669' },
-    active: { label: 'Active', color: '#059669', bgColor: '#d1fae5', textColor: '#047857' },
-    blacklist: { label: 'Blacklist', color: '#ef4444', bgColor: '#fef2f2', textColor: '#dc2626' }
+  // Estados del pipeline para clientes según tu definición
+  const clientStatusConfig = {
+    new_lead: {
+      label: 'Nuevo Cliente',
+      color: '#6b7280',
+      bgColor: '#f9fafb',
+      textColor: '#374151',
+      icon: Users,
+      nextStatus: 'contacted',
+      stage: 1
+    },
+    contacted: {
+      label: 'Contactado',
+      color: '#f59e0b', 
+      bgColor: '#fef3c7',
+      textColor: '#92400e',
+      icon: Phone,
+      nextStatus: 'qualification',
+      stage: 2
+    },
+    qualification: {
+      label: 'En Calificación',
+      color: '#f59e0b',
+      bgColor: '#fef3c7', 
+      textColor: '#92400e',
+      icon: Eye,
+      nextStatus: 'proposal',
+      stage: 2
+    },
+    proposal: {
+      label: 'Propuesta Enviada',
+      color: '#eab308',
+      bgColor: '#fefce8',
+      textColor: '#a16207',
+      icon: Mail,
+      nextStatus: 'negotiation',
+      stage: 3
+    },
+    negotiation: {
+      label: 'En Negociación',
+      color: '#eab308',
+      bgColor: '#fefce8',
+      textColor: '#a16207',
+      icon: TrendingUp,
+      nextStatus: 'approved',
+      stage: 3
+    },
+    approved: {
+      label: 'Aprobado',
+      color: '#10b981',
+      bgColor: '#d1fae5',
+      textColor: '#065f46',
+      icon: CheckCircle,
+      nextStatus: 'active',
+      stage: 4
+    },
+    active: {
+      label: 'Tradeline Activa',
+      color: '#22c55e',
+      bgColor: '#dcfce7',
+      textColor: '#166534',
+      icon: CreditCard,
+      nextStatus: null,
+      stage: 5
+    },
+    vigencia_60: {
+      label: 'Vigencia 60 días',
+      color: '#84cc16',
+      bgColor: '#ecfccb',
+      textColor: '#365314',
+      icon: Clock,
+      nextStatus: 'expired',
+      stage: 5
+    },
+    expired: {
+      label: 'Tradeline Caducada',
+      color: '#16a34a',
+      bgColor: '#f0fdf4',
+      textColor: '#14532d',
+      icon: Archive,
+      nextStatus: null,
+      stage: 6
+    },
+    blacklist: {
+      label: 'Blacklist',
+      color: '#000000',
+      bgColor: '#f3f4f6',
+      textColor: '#111827',
+      icon: Shield,
+      nextStatus: null,
+      stage: 7
+    }
   };
 
-  // Cargar clientes desde Supabase
+  // Cargar datos
   useEffect(() => {
     fetchClients();
   }, []);
 
   const fetchClients = async () => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('clients')
         .select(`
           *,
-          broker:broker_id(first_name, last_name),
-          affiliate:affiliate_id(first_name, last_name)
+          brokers (
+            id,
+            custom_id,
+            first_name,
+            last_name
+          )
         `)
         .eq('archived', false)
         .order('created_at', { ascending: false });
-
+      
       if (error) throw error;
       setClients(data || []);
     } catch (error) {
@@ -47,403 +150,461 @@ const ClientManagement = () => {
     }
   };
 
-  // Filtrar clientes
-  const filteredClients = clients.filter(client => {
-    const matchesSearch = 
-      client.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.phone?.includes(searchTerm);
-    
-    const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  // Cambiar estado del cliente - solo admins pueden cambiar estados
+  const updateClientStatus = async (clientId, newStatus) => {
+    if (currentUser.role !== 'admin') {
+      alert('Only admins can change client status');
+      return;
+    }
 
-  // Archivar cliente
-  const archiveClient = async (clientId) => {
     try {
       const { error } = await supabase
         .from('clients')
         .update({ 
-          archived: true, 
-          archive_date: new Date().toISOString(),
-          original_status: clients.find(c => c.id === clientId)?.status
+          status: newStatus,
+          last_activity: new Date().toISOString()
         })
         .eq('id', clientId);
 
       if (error) throw error;
       
       // Actualizar estado local
-      setClients(clients.filter(c => c.id !== clientId));
-      setShowActions(null);
+      setClients(clients.map(client => 
+        client.id === clientId 
+          ? { ...client, status: newStatus, last_activity: new Date().toISOString() }
+          : client
+      ));
+      
+      alert(`Client status updated to ${clientStatusConfig[newStatus]?.label || newStatus}`);
     } catch (error) {
-      console.error('Error archiving client:', error);
+      console.error('Error updating client status:', error);
+      alert('Error updating client status');
     }
   };
 
-  // Formatear fecha
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  // Mover a blacklist - solo admins
+  const moveToBlacklist = async (clientId) => {
+    if (currentUser.role !== 'admin') {
+      alert('Only admins can move clients to blacklist');
+      return;
+    }
+
+    const confirmed = confirm('Are you sure you want to move this client to blacklist? This action should be used carefully.');
+    if (!confirmed) return;
+
+    await updateClientStatus(clientId, 'blacklist');
   };
 
-  // Formatear monto
-  const formatAmount = (amount) => {
-    if (!amount) return '$0';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+  // Filtrar clientes
+  const filteredClients = clients.filter(client => {
+    if (filter === 'all') return true;
+    if (filter === 'my_clients' && currentUser.role === 'broker') {
+      return client.assigned_broker_id === currentUser.id;
+    }
+    return client.status === filter;
+  });
+
+  // Estadísticas
+  const getStats = () => {
+    const stats = {
+      total: clients.length,
+      new_lead: clients.filter(c => c.status === 'new_lead').length,
+      contacted: clients.filter(c => c.status === 'contacted').length,
+      approved: clients.filter(c => c.status === 'approved').length,
+      active: clients.filter(c => c.status === 'active').length,
+      blacklist: clients.filter(c => c.status === 'blacklist').length
+    };
+    return stats;
+  };
+
+  const stats = getStats();
+
+  // Obtener información de quién creó el cliente
+  const getCreatorInfo = (client) => {
+    if (client.created_by_type === 'admin') {
+      return `Created by ${client.created_by}`;
+    } else if (client.created_by_type === 'broker' && client.brokers) {
+      return `Created by Broker ${client.brokers.first_name} ${client.brokers.last_name} (${client.brokers.custom_id})`;
+    } else if (client.brokers) {
+      return `Assigned to Broker ${client.brokers.first_name} ${client.brokers.last_name} (${client.brokers.custom_id})`;
+    }
+    return client.created_by || 'System';
   };
 
   const styles = {
     container: {
-      padding: '32px',
-      backgroundColor: '#f8fafc',
-      minHeight: '100vh'
+      padding: '24px'
     },
     header: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       marginBottom: '32px'
     },
     title: {
       fontSize: '32px',
       fontWeight: 'bold',
-      color: '#1e293b',
-      margin: '0 0 8px 0'
-    },
-    subtitle: {
-      fontSize: '16px',
-      color: '#64748b',
+      color: '#1f2937',
       margin: 0
     },
-    controls: {
-      display: 'flex',
+    subtitle: {
+      color: '#6b7280',
+      marginTop: '4px',
+      fontSize: '16px'
+    },
+    statsGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
       gap: '16px',
+      marginBottom: '32px'
+    },
+    statCard: {
+      backgroundColor: 'white',
+      borderRadius: '12px',
+      padding: '16px',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+      border: '1px solid #e5e7eb',
+      textAlign: 'center'
+    },
+    statLabel: {
+      fontSize: '12px',
+      color: '#6b7280',
+      margin: 0,
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px'
+    },
+    statValue: {
+      fontSize: '20px',
+      fontWeight: 'bold',
+      color: '#1f2937',
+      margin: '8px 0 0 0'
+    },
+    filtersContainer: {
+      display: 'flex',
+      gap: '8px',
       marginBottom: '24px',
       flexWrap: 'wrap'
     },
-    searchContainer: {
-      position: 'relative',
-      flex: '1',
-      minWidth: '250px'
-    },
-    searchInput: {
-      width: '100%',
-      padding: '12px 12px 12px 40px',
-      border: '1px solid #e2e8f0',
-      borderRadius: '8px',
-      fontSize: '14px',
-      outline: 'none',
-      transition: 'border-color 0.2s'
-    },
-    searchIcon: {
-      position: 'absolute',
-      left: '12px',
-      top: '50%',
-      transform: 'translateY(-50%)',
-      color: '#64748b'
-    },
-    select: {
-      padding: '12px 16px',
-      border: '1px solid #e2e8f0',
-      borderRadius: '8px',
-      fontSize: '14px',
+    filterButton: {
+      padding: '6px 12px',
+      borderRadius: '6px',
+      border: '1px solid #d1d5db',
       backgroundColor: 'white',
       cursor: 'pointer',
-      outline: 'none'
+      fontSize: '13px',
+      transition: 'all 0.2s',
+      fontWeight: '500'
     },
-    card: {
+    filterButtonActive: {
+      backgroundColor: '#3b82f6',
+      color: 'white',
+      borderColor: '#3b82f6'
+    },
+    clientsGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
+      gap: '20px'
+    },
+    clientCard: {
       backgroundColor: 'white',
       borderRadius: '12px',
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-      overflow: 'hidden'
-    },
-    cardHeader: {
-      padding: '24px',
-      borderBottom: '1px solid #e2e8f0',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px'
-    },
-    cardTitle: {
-      fontSize: '20px',
-      fontWeight: '600',
-      color: '#1e293b',
-      margin: 0
-    },
-    cardIcon: {
-      color: '#6366f1'
-    },
-    table: {
-      width: '100%',
-      borderCollapse: 'collapse'
-    },
-    th: {
-      padding: '16px 24px',
-      textAlign: 'left',
-      fontWeight: '600',
-      color: '#374151',
-      borderBottom: '1px solid #e5e7eb',
-      backgroundColor: '#f9fafb'
-    },
-    td: {
-      padding: '16px 24px',
-      borderBottom: '1px solid #e5e7eb',
-      verticalAlign: 'middle'
-    },
-    clientName: {
-      fontWeight: '600',
-      color: '#1e293b',
-      marginBottom: '4px'
-    },
-    clientContact: {
-      fontSize: '14px',
-      color: '#64748b',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
-      marginBottom: '2px'
-    },
-    statusBadge: {
-      padding: '4px 12px',
-      borderRadius: '20px',
-      fontSize: '12px',
-      fontWeight: '500',
-      display: 'inline-block'
-    },
-    amount: {
-      fontWeight: '600',
-      color: '#059669'
-    },
-    actionButton: {
-      position: 'relative'
-    },
-    actionIcon: {
-      padding: '8px',
-      borderRadius: '6px',
-      border: 'none',
-      backgroundColor: 'transparent',
-      cursor: 'pointer',
-      color: '#64748b',
+      padding: '20px',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+      border: '1px solid #e5e7eb',
       transition: 'all 0.2s'
     },
-    actionMenu: {
-      position: 'absolute',
-      right: '0',
-      top: '100%',
-      backgroundColor: 'white',
-      border: '1px solid #e2e8f0',
-      borderRadius: '8px',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-      minWidth: '150px',
-      zIndex: 1000
+    clientHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: '16px'
     },
-    actionItem: {
-      padding: '12px 16px',
+    clientInfo: {
+      flex: 1
+    },
+    clientName: {
+      fontSize: '18px',
+      fontWeight: '600',
+      color: '#1f2937',
+      margin: 0
+    },
+    clientId: {
+      fontSize: '13px',
+      color: '#6b7280',
+      fontFamily: 'monospace',
+      marginTop: '4px'
+    },
+    statusBadge: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '6px 12px',
+      borderRadius: '20px',
+      fontSize: '11px',
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px'
+    },
+    clientDetails: {
+      marginBottom: '16px'
+    },
+    detailItem: {
       display: 'flex',
       alignItems: 'center',
       gap: '8px',
-      cursor: 'pointer',
-      transition: 'background-color 0.2s',
-      fontSize: '14px',
-      color: '#374151',
+      marginBottom: '6px',
+      fontSize: '13px',
+      color: '#6b7280'
+    },
+    creatorInfo: {
+      fontSize: '12px',
+      color: '#059669',
+      fontWeight: '500',
+      marginTop: '8px',
+      padding: '6px 10px',
+      backgroundColor: '#f0fdf4',
+      borderRadius: '6px'
+    },
+    actionsContainer: {
+      display: 'flex',
+      gap: '6px',
+      flexWrap: 'wrap'
+    },
+    actionButton: {
+      padding: '6px 10px',
+      borderRadius: '6px',
       border: 'none',
-      backgroundColor: 'transparent',
-      width: '100%',
-      textAlign: 'left'
+      fontSize: '11px',
+      fontWeight: '500',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+      transition: 'all 0.2s'
     },
-    loadingContainer: {
-      padding: '60px',
-      textAlign: 'center',
-      color: '#64748b'
+    primaryButton: {
+      backgroundColor: '#3b82f6',
+      color: 'white'
     },
-    emptyContainer: {
-      padding: '60px',
-      textAlign: 'center',
-      color: '#64748b'
-    },
-    emptyTitle: {
-      fontSize: '18px',
-      fontWeight: '600',
-      marginBottom: '8px',
+    secondaryButton: {
+      backgroundColor: '#f3f4f6',
       color: '#374151'
     },
-    emptyText: {
-      fontSize: '14px',
-      marginBottom: '16px'
+    dangerButton: {
+      backgroundColor: '#ef4444',
+      color: 'white'
+    },
+    successButton: {
+      backgroundColor: '#10b981',
+      color: 'white'
+    },
+    warningButton: {
+      backgroundColor: '#f59e0b',
+      color: 'white'
     }
   };
 
   if (loading) {
     return (
-      <div style={styles.container}>
-        <div style={styles.loadingContainer}>
-          <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>
-            Loading clients...
-          </div>
-          <div>Please wait while we fetch your client data.</div>
-        </div>
+      <div style={{ ...styles.container, textAlign: 'center', padding: '60px' }}>
+        <Clock style={{ width: '48px', height: '48px', color: '#6b7280' }} />
+        <p style={{ marginTop: '16px', color: '#6b7280' }}>Loading clients...</p>
       </div>
     );
   }
 
   return (
     <div style={styles.container}>
+      {/* Header */}
       <div style={styles.header}>
-        <h1 style={styles.title}>Client Management</h1>
-        <p style={styles.subtitle}>Manage all clients and tradelines</p>
+        <div>
+          <h2 style={styles.title}>Client Pipeline Management</h2>
+          <p style={styles.subtitle}>Track clients through all pipeline stages</p>
+        </div>
       </div>
 
-      <div style={styles.controls}>
-        <div style={styles.searchContainer}>
-          <Search style={styles.searchIcon} size={20} />
-          <input
-            type="text"
-            placeholder="Search clients by name, email, or phone..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={styles.searchInput}
-          />
+      {/* Stats */}
+      <div style={styles.statsGrid}>
+        <div style={styles.statCard}>
+          <p style={styles.statLabel}>Total Clients</p>
+          <p style={styles.statValue}>{stats.total}</p>
         </div>
-        
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          style={styles.select}
+        <div style={styles.statCard}>
+          <p style={styles.statLabel}>New Leads</p>
+          <p style={styles.statValue}>{stats.new_lead}</p>
+        </div>
+        <div style={styles.statCard}>
+          <p style={styles.statLabel}>Contacted</p>
+          <p style={styles.statValue}>{stats.contacted}</p>
+        </div>
+        <div style={styles.statCard}>
+          <p style={styles.statLabel}>Approved</p>
+          <p style={styles.statValue}>{stats.approved}</p>
+        </div>
+        <div style={styles.statCard}>
+          <p style={styles.statLabel}>Active</p>
+          <p style={styles.statValue}>{stats.active}</p>
+        </div>
+        <div style={styles.statCard}>
+          <p style={styles.statLabel}>Blacklist</p>
+          <p style={styles.statValue}>{stats.blacklist}</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div style={styles.filtersContainer}>
+        <button
+          onClick={() => setFilter('all')}
+          style={{
+            ...styles.filterButton,
+            ...(filter === 'all' ? styles.filterButtonActive : {})
+          }}
         >
-          <option value="all">All Statuses</option>
-          {Object.entries(statusConfig).map(([status, config]) => (
-            <option key={status} value={status}>{config.label}</option>
-          ))}
-        </select>
-      </div>
-
-      <div style={styles.card}>
-        <div style={styles.cardHeader}>
-          <Users style={styles.cardIcon} size={24} />
-          <h2 style={styles.cardTitle}>
-            Clients ({filteredClients.length})
-          </h2>
-        </div>
-
-        {filteredClients.length === 0 ? (
-          <div style={styles.emptyContainer}>
-            <div style={styles.emptyTitle}>
-              {searchTerm || statusFilter !== 'all' ? 'No clients found' : 'No clients yet'}
-            </div>
-            <div style={styles.emptyText}>
-              {searchTerm || statusFilter !== 'all' 
-                ? 'Try adjusting your search or filter criteria.'
-                : 'Create your first client to get started.'
-              }
-            </div>
-          </div>
-        ) : (
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Client</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Broker</th>
-                <th style={styles.th}>Affiliate</th>
-                <th style={styles.th}>Amount</th>
-                <th style={styles.th}>Created</th>
-                <th style={styles.th}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredClients.map((client) => (
-                <tr key={client.id}>
-                  <td style={styles.td}>
-                    <div style={styles.clientName}>
-                      {client.first_name} {client.last_name}
-                    </div>
-                    <div style={styles.clientContact}>
-                      <Mail size={14} />
-                      {client.email}
-                    </div>
-                    <div style={styles.clientContact}>
-                      <Phone size={14} />
-                      {client.phone}
-                    </div>
-                  </td>
-                  <td style={styles.td}>
-                    <span
-                      style={{
-                        ...styles.statusBadge,
-                        backgroundColor: statusConfig[client.status]?.bgColor || '#f3f4f6',
-                        color: statusConfig[client.status]?.textColor || '#374151'
-                      }}
-                    >
-                      {statusConfig[client.status]?.label || client.status}
-                    </span>
-                  </td>
-                  <td style={styles.td}>
-                    {client.broker ? (
-                      `${client.broker.first_name} ${client.broker.last_name}`
-                    ) : (
-                      <span style={{ color: '#9ca3af' }}>Unassigned</span>
-                    )}
-                  </td>
-                  <td style={styles.td}>
-                    {client.affiliate ? (
-                      `${client.affiliate.first_name} ${client.affiliate.last_name}`
-                    ) : (
-                      <span style={{ color: '#9ca3af' }}>None</span>
-                    )}
-                  </td>
-                  <td style={styles.td}>
-                    <div style={styles.amount}>
-                      {formatAmount(client.estimated_amount)}
-                    </div>
-                  </td>
-                  <td style={styles.td}>
-                    {formatDate(client.created_at)}
-                  </td>
-                  <td style={styles.td}>
-                    <div style={styles.actionButton}>
-                      <button
-                        style={{
-                          ...styles.actionIcon,
-                          backgroundColor: showActions === client.id ? '#f1f5f9' : 'transparent'
-                        }}
-                        onClick={() => setShowActions(showActions === client.id ? null : client.id)}
-                      >
-                        <MoreHorizontal size={16} />
-                      </button>
-                      
-                      {showActions === client.id && (
-                        <div style={styles.actionMenu}>
-                          <button style={styles.actionItem}>
-                            <Eye size={16} />
-                            View Details
-                          </button>
-                          <button style={styles.actionItem}>
-                            <Edit size={16} />
-                            Edit Client
-                          </button>
-                          <button 
-                            style={{ ...styles.actionItem, color: '#dc2626' }}
-                            onClick={() => archiveClient(client.id)}
-                          >
-                            <Archive size={16} />
-                            Archive
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          All Clients
+        </button>
+        {currentUser.role === 'broker' && (
+          <button
+            onClick={() => setFilter('my_clients')}
+            style={{
+              ...styles.filterButton,
+              ...(filter === 'my_clients' ? styles.filterButtonActive : {})
+            }}
+          >
+            My Clients
+          </button>
         )}
+        {Object.entries(clientStatusConfig).map(([status, config]) => (
+          <button
+            key={status}
+            onClick={() => setFilter(status)}
+            style={{
+              ...styles.filterButton,
+              ...(filter === status ? styles.filterButtonActive : {})
+            }}
+          >
+            {config.label}
+          </button>
+        ))}
       </div>
+
+      {/* Clients Grid */}
+      <div style={styles.clientsGrid}>
+        {filteredClients.map(client => {
+          const statusConfig = clientStatusConfig[client.status] || clientStatusConfig.new_lead;
+          const StatusIcon = statusConfig.icon;
+
+          return (
+            <div 
+              key={client.id} 
+              style={{
+                ...styles.clientCard,
+                borderLeft: `4px solid ${statusConfig.color}`
+              }}
+            >
+              {/* Header */}
+              <div style={styles.clientHeader}>
+                <div style={styles.clientInfo}>
+                  <h3 style={styles.clientName}>
+                    {client.first_name} {client.last_name}
+                  </h3>
+                  <p style={styles.clientId}>ID: {client.custom_id}</p>
+                </div>
+                <div
+                  style={{
+                    ...styles.statusBadge,
+                    backgroundColor: statusConfig.bgColor,
+                    color: statusConfig.textColor
+                  }}
+                >
+                  <StatusIcon style={{ width: '12px', height: '12px' }} />
+                  {statusConfig.label}
+                </div>
+              </div>
+
+              {/* Details */}
+              <div style={styles.clientDetails}>
+                <div style={styles.detailItem}>
+                  <Mail style={{ width: '14px', height: '14px' }} />
+                  {client.email}
+                </div>
+                <div style={styles.detailItem}>
+                  <Phone style={{ width: '14px', height: '14px' }} />
+                  {client.phone || 'No phone'}
+                </div>
+                <div style={styles.detailItem}>
+                  <Calendar style={{ width: '14px', height: '14px' }} />
+                  Created: {new Date(client.created_at).toLocaleDateString()}
+                </div>
+                <div style={styles.detailItem}>
+                  <Clock style={{ width: '14px', height: '14px' }} />
+                  Last activity: {client.last_activity ? new Date(client.last_activity).toLocaleDateString() : 'No activity'}
+                </div>
+
+                {/* Creator Info */}
+                <div style={styles.creatorInfo}>
+                  {getCreatorInfo(client)}
+                </div>
+              </div>
+
+              {/* Actions - Solo admins pueden cambiar estados */}
+              {currentUser.role === 'admin' && (
+                <div style={styles.actionsContainer}>
+                  {/* Botón siguiente estado */}
+                  {statusConfig.nextStatus && (
+                    <button
+                      onClick={() => updateClientStatus(client.id, statusConfig.nextStatus)}
+                      style={{...styles.actionButton, ...styles.successButton}}
+                    >
+                      <CheckCircle style={{ width: '12px', height: '12px' }} />
+                      Move to {clientStatusConfig[statusConfig.nextStatus]?.label}
+                    </button>
+                  )}
+                  
+                  {/* Botón blacklist */}
+                  {client.status !== 'blacklist' && (
+                    <button
+                      onClick={() => moveToBlacklist(client.id)}
+                      style={{...styles.actionButton, ...styles.dangerButton}}
+                    >
+                      <Shield style={{ width: '12px', height: '12px' }} />
+                      Blacklist
+                    </button>
+                  )}
+
+                  <button
+                    style={{...styles.actionButton, ...styles.secondaryButton}}
+                  >
+                    <Eye style={{ width: '12px', height: '12px' }} />
+                    Details
+                  </button>
+                </div>
+              )}
+              
+              {/* Solo vista para brokers */}
+              {currentUser.role === 'broker' && (
+                <div style={styles.actionsContainer}>
+                  <button
+                    style={{...styles.actionButton, ...styles.secondaryButton}}
+                  >
+                    <Eye style={{ width: '12px', height: '12px' }} />
+                    View Details
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {filteredClients.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '60px', color: '#6b7280' }}>
+          <AlertTriangle style={{ width: '48px', height: '48px', margin: '0 auto 16px' }} />
+          <h3 style={{ margin: '0 0 8px 0' }}>No clients found</h3>
+          <p style={{ margin: 0 }}>
+            {filter === 'all' ? 'No clients registered yet' : `No clients with status "${filter}"`}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
