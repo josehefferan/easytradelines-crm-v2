@@ -65,31 +65,6 @@ export default function Login() {
   }
 };
 
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-
-    try {
-      if (isResetMode) {
-        // Manejo de reset de contraseña
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/reset-password`,
-        });
-
-        if (error) {
-          setMessage(`Error: ${error.message}`);
-        } else {
-          setMessage("Password reset email sent! Check your inbox.");
-        }
-      } else if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/panel`
-          }
-        });
 
         if (error) {
           setMessage(`Error: ${error.message}`);
