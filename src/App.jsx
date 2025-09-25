@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login.jsx";
 import Panel from "./pages/Panel.jsx";
 import MiCuenta from "./pages/MiCuenta.jsx";
+import BrokerPanel from "./pages/BrokerPanel.jsx";
 import RequireAuth from "./lib/RequireAuth.jsx";
 
 export default function App() {
@@ -23,6 +24,14 @@ export default function App() {
           element={
             <RequireAuth>
               <MiCuenta />
+            </RequireAuth>
+          } 
+        />
+        <Route 
+          path="/broker/panel" 
+          element={
+            <RequireAuth>
+              <BrokerPanel />
             </RequireAuth>
           } 
         />
