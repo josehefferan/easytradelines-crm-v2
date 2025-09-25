@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   TrendingUp, 
@@ -26,7 +26,6 @@ import CardRegistrationModal from '../components/CardRegistrationModal';
 import ClientManagement from '../components/ClientManagement'; 
 import BrokerManagement from '../components/BrokerManagement';
 import AffiliatesInhouseView from '../components/AffiliatesInhouseView';
-import React, { useState, useEffect } from 'react';
 
 const ModernCRMPanel = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -66,14 +65,6 @@ const ModernCRMPanel = () => {
       window.location.href = '/login';
     }
   };
-
-  const [selectedView, setSelectedView] = useState('dashboard');
-  
-  // Estados para los modales
-  const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
-  const [isNewBrokerModalOpen, setIsNewBrokerModalOpen] = useState(false);
-  const [isNewAffiliateModalOpen, setIsNewAffiliateModalOpen] = useState(false);
-  const [isCardRegistrationModalOpen, setIsCardRegistrationModalOpen] = useState(false); // AGREGAR ESTA LÍNEA
 
   const [clients] = useState([
     {
