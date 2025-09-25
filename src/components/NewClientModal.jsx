@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, User, Mail, Phone, MapPin, Calendar, Shield, Eye, EyeOff } from 'lucide-react';
+import { X, Upload, User, Mail, Phone, MapPin, Calendar, Shield, Eye, EyeOff, Send } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const NewClientModal = ({ isOpen, onClose, currentUser }) => {
@@ -103,6 +103,22 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
         created_by: currentUser?.email || 'system'
       };
 
+      // Si el usuario es un broker, asignar automáticamente el client a este broker
+      if (currentUser?.role === 'broker') {
+        // Primero obtener el broker_id desde la tabla brokers
+        const { data: brokerData, error: brokerError } = await supabase
+          .from('brokers')
+          .select('id')
+          .eq('email', currentUser.email)
+          .single();
+
+        if (brokerError) {
+          console.error('Error finding broker:', brokerError);
+        } else if (brokerData) {
+          clientData.assigned_broker_id = brokerData.id;
+        }
+      }
+
       // Solo agregar notes si el usuario es admin
       if (currentUser?.role === 'admin' && formData.notes.trim()) {
         clientData.notes = formData.notes.trim();
@@ -118,7 +134,7 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       // TODO: Implementar subida de archivos aquí
       // Los archivos se subirían a Supabase Storage y se guardarían las URLs
 
-      alert('Client created successfully!');
+      alert('Client application submitted successfully!');
       handleClose();
     } catch (error) {
       console.error('Error creating client:', error);
@@ -206,6 +222,12 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     headerContent: {
       display: 'flex',
       alignItems: 'center',
+      gap: '12px',
+      flex: 1
+    },
+    headerActions: {
+      display: 'flex',
+      alignItems: 'center',
       gap: '12px'
     },
     title: {
@@ -227,6 +249,25 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       borderRadius: '6px',
       color: '#6b7280',
       transition: 'all 0.2s'
+    },
+    submitButtonHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '10px 16px',
+      backgroundColor: '#16a34a',
+      color: 'white',
+      border: 'none',
+      borderRadius: '8px',
+      fontSize: '14px',
+      fontWeight: '600',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+    },
+    submitButtonHeaderDisabled: {
+      backgroundColor: '#9ca3af',
+      cursor: 'not-allowed'
     },
     content: {
       padding: '24px',
@@ -372,7 +413,10 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     },
     submitButton: {
       backgroundColor: '#16a34a',
-      color: 'white'
+      color: 'white',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
     },
     submitButtonDisabled: {
       backgroundColor: '#9ca3af',
@@ -394,18 +438,33 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
           <div style={styles.headerContent}>
             <User style={{ width: '24px', height: '24px', color: '#16a34a' }} />
             <div>
-              <h2 style={styles.title}>New Client</h2>
+              <h2 style={styles.title}>New Client Application</h2>
               <p style={styles.subtitle}>Add a new client to the system</p>
             </div>
           </div>
-          <button
-            onClick={handleClose}
-            style={styles.closeButton}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            <X style={{ width: '20px', height: '20px' }} />
-          </button>
+          <div style={styles.headerActions}>
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              style={{
+                ...styles.submitButtonHeader,
+                ...(loading ? styles.submitButtonHeaderDisabled : {})
+              }}
+              onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = '#15803d')}
+              onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = '#16a34a')}
+            >
+              <Send size={16} />
+              {loading ? 'SUBMITTING...' : 'SUBMIT CLIENT APPLICATION'}
+            </button>
+            <button
+              onClick={handleClose}
+              style={styles.closeButton}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+          </div>
         </div>
 
         <div style={styles.content}>
@@ -791,7 +850,8 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
               ...(loading ? styles.submitButtonDisabled : styles.submitButton)
             }}
           >
-            {loading ? 'Creating Client...' : 'Create Client'}
+            <Send size={16} />
+            {loading ? 'Submitting Application...' : 'Submit Client Application'}
           </button>
         </div>
       </div>
