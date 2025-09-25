@@ -64,10 +64,6 @@ export default function Login() {
     setLoading(false);
   }
 };
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
 
   const handleAuth = async (e) => {
     e.preventDefault();
