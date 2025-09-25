@@ -31,40 +31,45 @@ const BrokerPanel = () => {
     loadBrokerData();
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error || !session) {
-        console.log('No session found');
-        navigate('/login');
-        return;
-      }
-
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', session.user.email)
-        .single();
-
-      if (userError || !userData) {
-        console.error('Error fetching user:', userError);
-        navigate('/login');
-        return;
-      }
-
-      if (userData.role !== 'broker') {
-        console.log('User is not a broker, redirecting...');
-        navigate('/login');
-        return;
-      }
-
-      setCurrentUser(userData);
-    } catch (error) {
-      console.error('Auth check error:', error);
+const checkAuth = async () => {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error || !session) {
+      console.log('No session found');
       navigate('/login');
+      return;
     }
-  };
+
+    // Buscar en la tabla brokers en lugar de users
+    const { data: brokerData, error: brokerError } = await supabase
+      .from('brokers')
+      .select('*')
+      .eq('email', session.user.email)
+      .single();
+
+    if (brokerError || !brokerData) {
+      console.error('Not a broker or error:', brokerError);
+      navigate('/mi-cuenta'); // Redirigir a mi-cuenta si no es broker
+      return;
+    }
+
+    // Verificar que el broker esté activo
+    if (brokerData.status !== 'active') {
+      console.log('Broker not active');
+      navigate('/mi-cuenta');
+      return;
+    }
+
+    setCurrentUser({
+      ...brokerData,
+      role: 'broker'
+    });
+  } catch (error) {
+    console.error('Auth check error:', error);
+    navigate('/login');
+  }
+};
 
   const loadBrokerData = async () => {
     try {
