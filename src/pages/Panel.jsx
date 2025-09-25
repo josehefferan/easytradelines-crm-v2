@@ -26,13 +26,46 @@ import CardRegistrationModal from '../components/CardRegistrationModal';
 import ClientManagement from '../components/ClientManagement'; 
 import BrokerManagement from '../components/BrokerManagement';
 import AffiliatesInhouseView from '../components/AffiliatesInhouseView';
+import React, { useState, useEffect } from 'react';
 
 const ModernCRMPanel = () => {
-  const [currentUser] = useState({
-    role: 'admin',
-    name: 'Jose Hefferan',
-    email: 'josehefferan@gmail.com'
-  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  const [selectedView, setSelectedView] = useState('dashboard');
+  
+  // Estados para los modales (mantén estos como están)
+  const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
+  const [isNewBrokerModalOpen, setIsNewBrokerModalOpen] = useState(false);
+  const [isNewAffiliateModalOpen, setIsNewAffiliateModalOpen] = useState(false);
+  const [isCardRegistrationModalOpen, setIsCardRegistrationModalOpen] = useState(false);
+
+  // Agregar useEffect para cargar el usuario
+  useEffect(() => {
+    checkUser();
+  }, []);
+
+  const checkUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        window.location.href = '/login';
+        return;
+      }
+
+      setCurrentUser({
+        role: 'admin',
+        name: user.email.split('@')[0],
+        email: user.email
+      });
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading user:', error);
+      window.location.href = '/login';
+    }
+  };
 
   const [selectedView, setSelectedView] = useState('dashboard');
   
@@ -520,6 +553,22 @@ const ModernCRMPanel = () => {
     }
   };
 
+     if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
+        Loading...
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return null;
+  }
   return (
     <div style={styles.container}>
       {/* Sidebar */}
