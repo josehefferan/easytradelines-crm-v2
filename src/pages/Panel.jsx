@@ -53,17 +53,17 @@ const ModernCRMPanel = () => {
       return;
     }
 
-    // Primero verificar si es admin (tabla users)
-    const { data: userData, error: userError } = await supabase
-      .from('users')
+    // Verificar si es admin usando la tabla admin_emails
+    const { data: adminData, error: adminError } = await supabase
+      .from('admin_emails')
       .select('*')
       .eq('email', user.email)
       .single();
     
-    if (!userError && userData && userData.role === 'admin') {
+    if (!adminError && adminData) {
       setCurrentUser({
         role: 'admin',
-        name: userData.name || user.email.split('@')[0],
+        name: user.email.split('@')[0],
         email: user.email
       });
       setLoading(false);
@@ -84,6 +84,24 @@ const ModernCRMPanel = () => {
         email: user.email,
         brokerId: brokerData.id,
         brokerNumber: brokerData.broker_number
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Verificar si es affiliate
+    const { data: affiliateData, error: affiliateError } = await supabase
+      .from('affiliates')
+      .select('*')
+      .eq('email', user.email)
+      .single();
+    
+    if (!affiliateError && affiliateData) {
+      setCurrentUser({
+        role: 'affiliate',
+        name: affiliateData.company_name || user.email.split('@')[0],
+        email: user.email,
+        affiliateId: affiliateData.id
       });
       setLoading(false);
       return;
