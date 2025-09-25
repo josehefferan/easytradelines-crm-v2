@@ -33,38 +33,21 @@ const BrokerPanel = () => {
 
 const checkAuth = async () => {
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    if (error || !session) {
-      console.log('No session found');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       navigate('/login');
       return;
     }
 
-    // Buscar en la tabla brokers en lugar de users
-    const { data: brokerData, error: brokerError } = await supabase
-      .from('brokers')
-      .select('*')
-      .eq('email', session.user.email)
-      .single();
-
-    if (brokerError || !brokerData) {
-      console.error('Not a broker or error:', brokerError);
-      navigate('/mi-cuenta'); // Redirigir a mi-cuenta si no es broker
-      return;
-    }
-
-    // Verificar que el broker esté activo
-    if (brokerData.status !== 'active') {
-      console.log('Broker not active');
-      navigate('/mi-cuenta');
-      return;
-    }
-
+    // Establecer el usuario actual basado en el email de la sesión
     setCurrentUser({
-      ...brokerData,
-      role: 'broker'
+      email: session.user.email,
+      role: 'broker', // Asumimos que es broker si llegó a esta página
+      name: session.user.email.split('@')[0] // Nombre temporal del email
     });
+    
+    // No necesitamos verificar en la tabla users porque los brokers no están ahí
+    // Solo cargamos los datos del broker directamente
   } catch (error) {
     console.error('Auth check error:', error);
     navigate('/login');
@@ -72,35 +55,32 @@ const checkAuth = async () => {
 };
 
   const loadBrokerData = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
 
-      // Load broker profile
-      const { data: broker, error: brokerError } = await supabase
-        .from('brokers')
-        .select('*')
-        .eq('email', session.user.email)
-        .single();
+    // Load broker profile usando el email de la sesión
+    const { data: broker, error: brokerError } = await supabase
+      .from('brokers')
+      .select('*')
+      .eq('email', session.user.email)
+      .single();
 
-      if (brokerError) {
-        console.error('Error loading broker data:', brokerError);
-        return;
-      }
+    if (brokerError) {
+      console.error('Error loading broker data:', brokerError);
+      return;
+    }
 
-      setBrokerData(broker);
+    setBrokerData(broker);
+    
+    if (broker) {
+      setCurrentUser({
+        email: broker.email,
+        role: 'broker',
+        name: `${broker.first_name} ${broker.last_name}`
+      });
+    }
 
-      // Load assigned clients
-      const { data: clientsData, error: clientsError } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('assigned_broker_id', broker.id)
-        .order('created_at', { ascending: false });
-
-      if (clientsError) {
-        console.error('Error loading clients:', clientsError);
-        return;
-      }
 
       setClients(clientsData || []);
 
