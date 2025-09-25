@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
@@ -8,63 +8,33 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
-  const [isResetMode, setIsResetMode] = useState(false); // Nueva estado para modo reset
+  const [isResetMode, setIsResetMode] = useState(false);
   const navigate = useNavigate();
 
   const handleAuth = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setMessage("");
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
 
-  try {
-    if (isResetMode) {
-      // Manejo de reset de contraseña
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+    try {
+      if (isResetMode) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
 
-      if (error) {
-        setMessage(`Error: ${error.message}`);
-      } else {
-        setMessage("Password reset email sent! Check your inbox.");
-      }
-    } else if (isSignUp) {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/panel`
+        if (error) {
+          setMessage(`Error: ${error.message}`);
+        } else {
+          setMessage("Password reset email sent! Check your inbox.");
         }
-      });
-
-      if (error) {
-        setMessage(`Error: ${error.message}`);
-      } else if (data.user && !data.session) {
-        setMessage("Check your email for the confirmation link!");
-      } else if (data.session) {
-        setMessage("Account created successfully!");
-      }
-    } else {
-      // LOGIN - CAMBIO PRINCIPAL AQUÍ
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        setMessage(`Error: ${error.message}`);
-      } else {
-        // TODOS VAN AL MISMO PANEL
-        navigate('/panel');
-      }
-    }
-  } catch (error) {
-    setMessage(`Unexpected error: ${error.message}`);
-  } finally {
-    setLoading(false);
-  }
-};
-
+      } else if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/panel`
+          }
+        });
 
         if (error) {
           setMessage(`Error: ${error.message}`);
@@ -74,13 +44,16 @@ export default function Login() {
           setMessage("Account created successfully!");
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        // LOGIN - Todos van al mismo panel
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) {
           setMessage(`Error: ${error.message}`);
+        } else {
+          navigate('/panel');
         }
       }
     } catch (error) {
@@ -90,30 +63,22 @@ export default function Login() {
     }
   };
 
-  // SVG recreation of the EasyTradelines logo
   const LogoSVG = () => (
     <svg width="120" height="60" viewBox="0 0 120 60" style={{ marginBottom: '16px' }}>
-      {/* Chart bars */}
       <rect x="8" y="35" width="12" height="20" fill="#FF6B35" rx="2"/>
       <rect x="24" y="25" width="12" height="30" fill="#FFB800" rx="2"/>
       <rect x="40" y="15" width="12" height="40" fill="#7CB342" rx="2"/>
-      
-      {/* Growth arrow */}
       <path d="M45 8 L65 8 L60 3 M65 8 L60 13" 
             stroke="#2E7D32" 
             strokeWidth="3" 
             fill="none" 
             strokeLinecap="round" 
             strokeLinejoin="round"/>
-      
-      {/* Text - EASY */}
       <text x="75" y="25" 
             fill="#2E7D32" 
             fontSize="14" 
             fontWeight="bold" 
             fontFamily="Arial, sans-serif">EASY</text>
-      
-      {/* Text - TRADELINES */}
       <text x="75" y="42" 
             fill="#2E7D32" 
             fontSize="14" 
@@ -122,14 +87,12 @@ export default function Login() {
     </svg>
   );
 
-  // Función para determinar el texto del título
   const getTitle = () => {
     if (isResetMode) return "Reset your password";
     if (isSignUp) return "Create your account";
     return "Welcome back";
   };
 
-  // Función para determinar el botón principal
   const getButtonText = () => {
     if (loading) return "Processing...";
     if (isResetMode) return "Send Reset Email";
@@ -156,7 +119,6 @@ export default function Login() {
         maxWidth: '420px',
         border: '1px solid rgba(255, 255, 255, 0.2)'
       }}>
-        {/* Header with Real Logo */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <LogoSVG />
           <h1 style={{
@@ -185,7 +147,6 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleAuth}>
           <div style={{ marginBottom: '20px' }}>
             <label style={{
@@ -227,7 +188,6 @@ export default function Login() {
             />
           </div>
 
-          {/* Password field - solo mostrar si no está en modo reset */}
           {!isResetMode && (
             <div style={{ marginBottom: '24px' }}>
               <label style={{
@@ -271,7 +231,6 @@ export default function Login() {
             </div>
           )}
 
-          {/* Forgot Password Link - solo mostrar en modo login */}
           {!isSignUp && !isResetMode && (
             <div style={{ textAlign: 'right', marginBottom: '20px' }}>
               <button
@@ -348,7 +307,6 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Navigation Links */}
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           {isResetMode ? (
             <button
@@ -401,7 +359,6 @@ export default function Login() {
           )}
         </div>
 
-        {/* Message */}
         {message && (
           <div style={{
             padding: '14px',
@@ -417,7 +374,6 @@ export default function Login() {
           </div>
         )}
 
-        {/* Admin Info */}
         <div style={{
           backgroundColor: '#f0f9f0',
           border: '2px solid #c8e6c9',
@@ -430,7 +386,6 @@ export default function Login() {
           <div>Use josehefferan@gmail.com to access the administrative panel</div>
         </div>
 
-        {/* Footer */}
         <div style={{ 
           textAlign: 'center', 
           marginTop: '20px',
