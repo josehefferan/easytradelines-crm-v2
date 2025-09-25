@@ -45,26 +45,63 @@ const ModernCRMPanel = () => {
   }, []);
 
   const checkUser = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        window.location.href = '/login';
-        return;
-      }
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
 
+    // Primero verificar si es admin (tabla users)
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', user.email)
+      .single();
+    
+    if (!userError && userData && userData.role === 'admin') {
       setCurrentUser({
         role: 'admin',
-        name: user.email.split('@')[0],
+        name: userData.name || user.email.split('@')[0],
         email: user.email
       });
-      
       setLoading(false);
-    } catch (error) {
-      console.error('Error loading user:', error);
-      window.location.href = '/login';
+      return;
     }
-  };
+
+    // Verificar si es broker (tabla brokers)
+    const { data: brokerData, error: brokerError } = await supabase
+      .from('brokers')
+      .select('*')
+      .eq('email', user.email)
+      .single();
+    
+    if (!brokerError && brokerData && brokerData.status === 'active') {
+      setCurrentUser({
+        role: 'broker',
+        name: `${brokerData.first_name} ${brokerData.last_name}`,
+        email: user.email,
+        brokerId: brokerData.id,
+        brokerNumber: brokerData.broker_number
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Por defecto, usuario viewer
+    setCurrentUser({
+      role: 'viewer',
+      name: user.email.split('@')[0],
+      email: user.email
+    });
+    
+    setLoading(false);
+  } catch (error) {
+    console.error('Error loading user:', error);
+    window.location.href = '/login';
+  }
+};
 
   const [clients] = useState([
     {
