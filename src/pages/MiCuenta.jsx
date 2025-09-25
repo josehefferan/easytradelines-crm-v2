@@ -10,23 +10,74 @@ export default function MiCuenta() {
   }, []);
 
   const loadProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
+    let profile = null;
+    
+    // 1. Verificar si es admin (por email específico)
+    if (user.email === 'josehefferan@gmail.com' || user.email.includes('@easytradelines.com')) {
+      profile = {
+        id: user.id,
+        email: user.email,
+        role: 'admin',
+        unique_id: 'ADMIN-001',
+        is_active: true,
+        first_name: 'Jose',
+        last_name: 'Hefferan',
+        created_at: user.created_at
+      };
+    } else {
+      // 2. Buscar en tabla brokers
+      const { data: brokerData } = await supabase
+        .from('brokers')
+        .select('*')
+        .eq('email', user.email)
         .single();
 
-      setMe(profile);
-    } catch (error) {
-      console.error("Error loading profile:", error);
-    } finally {
-      setLoading(false);
+      if (brokerData) {
+        profile = {
+          ...brokerData,
+          role: 'broker',
+          unique_id: brokerData.custom_id,
+          is_active: brokerData.status === 'active'
+        };
+      } else {
+        // 3. Buscar en tabla clients
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('email', user.email)
+          .single();
+
+        if (clientData) {
+          profile = {
+            ...clientData,
+            role: 'client', 
+            unique_id: clientData.custom_id,
+            is_active: clientData.status !== 'blacklist'
+          };
+        } else {
+          // 4. Fallback a tabla profiles
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          profile = profileData;
+        }
+      }
     }
-  };
+
+    setMe(profile);
+  } catch (error) {
+    console.error("Error loading profile:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
