@@ -851,4 +851,6 @@ const ModernCRMPanel = () => {
   );
 };
 
+};
+
 export default ModernCRMPanel;
