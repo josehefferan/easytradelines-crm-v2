@@ -871,10 +871,13 @@ const ModernCRMPanel = () => {
         )}
 
         {/* Other Views (excluyendo 'clients' que ya tiene su propio componente) */}
-        {selectedView !== 'dashboard' && selectedView !== 'clients' && (
-          <div style={styles.card}>
-            <p style={{ color: '#6b7280', fontSize: '16px' }}>
-              {selectedView === 'pipeline' && 'Kanban pipeline view - Coming soon'}
+        {selectedView === 'pipeline' && (
+  <Pipeline currentUser={currentUser} />
+)}
+
+{selectedView !== 'dashboard' && selectedView !== 'clients' && selectedView !== 'pipeline' && (
+  <div style={styles.card}>
+    <p style={{ color: '#6b7280', fontSize: '16px' }}>
               {selectedView === 'archive' && 'Archived clients management - Coming soon'}
               {selectedView === 'brokers' && currentUser.role === 'admin' && (
                 <BrokerManagement currentUser={currentUser} />
