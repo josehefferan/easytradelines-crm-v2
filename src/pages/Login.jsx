@@ -11,41 +11,59 @@ export default function Login() {
   const [isResetMode, setIsResetMode] = useState(false); // Nueva estado para modo reset
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        
-        if (profile?.role === 'admin') {
-          navigate("/panel");
-        } else {
-          navigate("/mi-cuenta");
-        }
-      }
-    };
-    checkUser();
+  const handleAuth = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setMessage("");
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        setTimeout(async () => {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", session.user.id)
-            .single();
-          
-          if (profile?.role === 'admin') {
-            navigate("/panel");
-          } else {
-            navigate("/mi-cuenta");
-          }
-        }, 1000);
+  try {
+    if (isResetMode) {
+      // Manejo de reset de contraseña
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        setMessage(`Error: ${error.message}`);
+      } else {
+        setMessage("Password reset email sent! Check your inbox.");
       }
+    } else if (isSignUp) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/panel`
+        }
+      });
+
+      if (error) {
+        setMessage(`Error: ${error.message}`);
+      } else if (data.user && !data.session) {
+        setMessage("Check your email for the confirmation link!");
+      } else if (data.session) {
+        setMessage("Account created successfully!");
+      }
+    } else {
+      // LOGIN - CAMBIO PRINCIPAL AQUÍ
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setMessage(`Error: ${error.message}`);
+      } else {
+        // TODOS VAN AL MISMO PANEL
+        navigate('/panel');
+      }
+    }
+  } catch (error) {
+    setMessage(`Unexpected error: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
     });
 
     return () => subscription.unsubscribe();
