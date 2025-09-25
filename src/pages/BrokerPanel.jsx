@@ -7,7 +7,7 @@ import {
   Calendar, DollarSign, Target, Award
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import NewClientModal from '../NewClientModal'; // Importar el modal
+import NewClientModal from '../NewClientModal';
 
 const BrokerPanel = () => {
   const navigate = useNavigate();
@@ -24,8 +24,6 @@ const BrokerPanel = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Estado para el modal de nuevo cliente
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
 
   useEffect(() => {
