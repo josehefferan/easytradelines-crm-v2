@@ -266,7 +266,6 @@ const ModernCRMPanel = () => {
      onClick: () => setIsCardRegistrationModalOpen(true)
   });
 }
-    }
 
     return buttons;
   };
