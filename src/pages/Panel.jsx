@@ -33,7 +33,7 @@ const ModernCRMPanel = () => {
   
   const [selectedView, setSelectedView] = useState('dashboard');
   
-  // Estados para los modales (mantén estos como están)
+  // Estados para los modales
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
   const [isNewBrokerModalOpen, setIsNewBrokerModalOpen] = useState(false);
   const [isNewAffiliateModalOpen, setIsNewAffiliateModalOpen] = useState(false);
@@ -228,7 +228,7 @@ const ModernCRMPanel = () => {
       { id: 'reports', label: 'Reports', icon: Eye }
     ];
 
-    if (currentUser.role === 'admin') {
+    if (currentUser && currentUser.role === 'admin') {
       baseItems.push(
         { id: 'brokers', label: 'Brokers', icon: UserCheck },
         { id: 'affiliates', label: 'Affiliates & Inhouse', icon: Building2 }
@@ -247,8 +247,6 @@ const ModernCRMPanel = () => {
   };
 
   // Función para determinar qué botones mostrar según la vista actual
-  const getHeaderButtons = () => {
-    // Función para determinar qué botones mostrar según la vista actual
   const getHeaderButtons = () => {
     const buttons = [];
     
@@ -423,7 +421,6 @@ const ModernCRMPanel = () => {
       marginTop: '4px',
       fontSize: '16px'
     },
-    // Nuevo estilo para el contenedor de botones
     buttonsContainer: {
       display: 'flex',
       gap: '12px',
@@ -548,7 +545,7 @@ const ModernCRMPanel = () => {
     }
   };
 
-     if (loading) {
+  if (loading) {
     return (
       <div style={{ 
         display: 'flex', 
@@ -564,6 +561,7 @@ const ModernCRMPanel = () => {
   if (!currentUser) {
     return null;
   }
+
   return (
     <div style={styles.container}>
       {/* Sidebar */}
@@ -824,11 +822,11 @@ const ModernCRMPanel = () => {
               {selectedView === 'pipeline' && 'Kanban pipeline view - Coming soon'}
               {selectedView === 'archive' && 'Archived clients management - Coming soon'}
               {selectedView === 'brokers' && currentUser.role === 'admin' && (
-  <BrokerManagement currentUser={currentUser} />
-)}
+                <BrokerManagement currentUser={currentUser} />
+              )}
               {selectedView === 'affiliates' && currentUser.role === 'admin' && (
-  <AffiliatesInhouseView currentUser={currentUser} />
-)}
+                <AffiliatesInhouseView currentUser={currentUser} />
+              )}
               {selectedView === 'reports' && 'Reports and analytics dashboard - Coming soon'}
               {selectedView === 'settings' && 'System settings and configuration - Coming soon'}
             </p>
@@ -854,6 +852,7 @@ const ModernCRMPanel = () => {
         onClose={() => setIsNewAffiliateModalOpen(false)}
         currentUser={currentUser}
       />
+      
       <CardRegistrationModal 
         isOpen={isCardRegistrationModalOpen}
         onClose={() => setIsCardRegistrationModalOpen(false)}
