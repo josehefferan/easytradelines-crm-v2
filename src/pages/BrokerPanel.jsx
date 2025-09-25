@@ -7,7 +7,7 @@ import {
   Calendar, DollarSign, Target, Award
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import NewClientModal from '../NewClientModal';
+import NewClientModal from '../components/NewClientModal';
 
 const BrokerPanel = () => {
   const navigate = useNavigate();
