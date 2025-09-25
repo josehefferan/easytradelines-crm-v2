@@ -26,6 +26,7 @@ import CardRegistrationModal from '../components/CardRegistrationModal';
 import ClientManagement from '../components/ClientManagement'; 
 import BrokerManagement from '../components/BrokerManagement';
 import AffiliatesInhouseView from '../components/AffiliatesInhouseView';
+import Pipeline from '../components/Pipeline';
 
 const ModernCRMPanel = () => {
   const [currentUser, setCurrentUser] = useState(null);
