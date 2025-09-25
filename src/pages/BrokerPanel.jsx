@@ -6,7 +6,7 @@ import {
   Clock, CheckCircle, AlertCircle, TrendingUp,
   Calendar, DollarSign, Target, Award
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../lib/supabase';
 import NewClientModal from '../NewClientModal';
 
 const BrokerPanel = () => {
