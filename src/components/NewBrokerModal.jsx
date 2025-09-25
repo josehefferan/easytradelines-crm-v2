@@ -95,7 +95,7 @@ const NewBrokerModal = ({ isOpen, onClose, currentUser }) => {
         alt_contact_name: formData.alt_contact_name.trim(),
         alt_contact_phone: formData.alt_contact_phone.trim(),
         cc_poc_email: formData.cc_poc_email.toLowerCase().trim(),
-        status: 'active',
+        status: 'pending',
         active: true,
         created_by: currentUser?.email || 'system',
         registration_type: 'admin_created'
