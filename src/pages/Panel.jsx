@@ -846,11 +846,11 @@ const ModernCRMPanel = () => {
     } catch (error) {
       console.error('Error registering card:', error);
       alert('Error registering card. Please try again.');
-    }
-  }}
-/>
-    </div>
-  );
-};
+   }
+        }}
+      />
+    </div>  
+  );       
+};   
 
 export default ModernCRMPanel;
