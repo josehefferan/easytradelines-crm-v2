@@ -811,47 +811,44 @@ const ModernCRMPanel = () => {
         currentUser={currentUser}
       />
       <CardRegistrationModal 
-  isOpen={isCardRegistrationModalOpen}
-  onClose={() => setIsCardRegistrationModalOpen(false)}
-  currentUser={currentUser}
-  onSubmit={async (data) => {
-    try {
-      // Guardar en Supabase
-      const { data: newCard, error } = await supabase
-        .from('cards')
-        .insert([{
-          bank: data.bank,
-          account_limit: data.account_limit,
-          open_date: data.open_date,
-          statement_date: data.statement_date,
-          card_address: data.card_address,
-          default_cycles: data.default_cycles,
-          default_spots: data.default_spots,
-          payout: data.payout,
-          owner_type: data.owner_type,
-          owner_id: currentUser.id || null,
-          registered_by: currentUser.email,
-          status: 'active'
-        }])
-        .select()
-        .single();
+        isOpen={isCardRegistrationModalOpen}
+        onClose={() => setIsCardRegistrationModalOpen(false)}
+        currentUser={currentUser}
+        onSubmit={async (data) => {
+          try {
+            // Guardar en Supabase
+            const { data: newCard, error } = await supabase
+              .from('cards')
+              .insert([{
+                bank: data.bank,
+                account_limit: data.account_limit,
+                open_date: data.open_date,
+                statement_date: data.statement_date,
+                card_address: data.card_address,
+                default_cycles: data.default_cycles,
+                default_spots: data.default_spots,
+                payout: data.payout,
+                owner_type: data.owner_type,
+                owner_id: currentUser.id || null,
+                registered_by: currentUser.email,
+                status: 'active'
+              }])
+              .select()
+              .single();
 
-      if (error) throw error;
+            if (error) throw error;
 
-      alert('Card registered successfully!');
-      setIsCardRegistrationModalOpen(false);
-      
-      // Opcional: Recargar datos o actualizar estado local
-      // fetchCards(); 
-      
-    } catch (error) {
-      console.error('Error registering card:', error);
-      alert('Error registering card. Please try again.');
-   }
+            alert('Card registered successfully!');
+            setIsCardRegistrationModalOpen(false);
+            
+          } catch (error) {
+            console.error('Error registering card:', error);
+            alert('Error registering card. Please try again.');
+          }
         }}
       />
-    </div>  
-  );       
-};   
+    </div>
+  );
+};
 
 export default ModernCRMPanel;
