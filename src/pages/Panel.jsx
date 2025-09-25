@@ -248,52 +248,56 @@ const ModernCRMPanel = () => {
 
   // Función para determinar qué botones mostrar según la vista actual
   const getHeaderButtons = () => {
-    const getHeaderButtons = () => {
-  const buttons = [];
-  
-  // Botón New Client - siempre visible
-  buttons.push({
-    key: 'client',
-    label: 'New Client',
-    icon: Users,
-    color: '#16a34a',
-    hoverColor: '#15803d',
-    onClick: () => setIsNewClientModalOpen(true)
-  });
-
-  // Botones adicionales solo para admin
-  if (currentUser.role === 'admin') {
-    buttons.push({
-      key: 'broker',
-      label: 'New Broker',
-      icon: UserCheck,
-      color: '#2563eb',
-      hoverColor: '#1d4ed8',
-      onClick: () => setIsNewBrokerModalOpen(true)
-    });
-
-    buttons.push({
-      key: 'affiliate',
-      label: 'New Affiliate',
-      icon: Building2,
-      color: '#7c3aed',
-      hoverColor: '#6d28d9',
-      onClick: () => setIsNewAffiliateModalOpen(true)
-    });
+    // Función para determinar qué botones mostrar según la vista actual
+  const getHeaderButtons = () => {
+    const buttons = [];
     
-    // Botón Card Registration - solo para admin
+    // Solo agregar botones si currentUser existe
+    if (!currentUser) return buttons;
+    
+    // Botón New Client - siempre visible
     buttons.push({
-      key: 'card',
-      label: 'Card Registration',
-      icon: CreditCard,
-      color: '#ea580c',
-      hoverColor: '#dc2626',
-      onClick: () => setIsCardRegistrationModalOpen(true)
+      key: 'client',
+      label: 'New Client',
+      icon: Users,
+      color: '#16a34a',
+      hoverColor: '#15803d',
+      onClick: () => setIsNewClientModalOpen(true)
     });
-  }
 
-  return buttons;
-};
+    // Botones adicionales solo para admin
+    if (currentUser && currentUser.role === 'admin') {
+      buttons.push({
+        key: 'broker',
+        label: 'New Broker',
+        icon: UserCheck,
+        color: '#2563eb',
+        hoverColor: '#1d4ed8',
+        onClick: () => setIsNewBrokerModalOpen(true)
+      });
+
+      buttons.push({
+        key: 'affiliate',
+        label: 'New Affiliate',
+        icon: Building2,
+        color: '#7c3aed',
+        hoverColor: '#6d28d9',
+        onClick: () => setIsNewAffiliateModalOpen(true)
+      });
+      
+      // Botón Card Registration - solo para admin
+      buttons.push({
+        key: 'card',
+        label: 'Card Registration',
+        icon: CreditCard,
+        color: '#ea580c',
+        hoverColor: '#dc2626',
+        onClick: () => setIsCardRegistrationModalOpen(true)
+      });
+    }
+
+    return buttons;
+  };
 
   // Inline Styles
   const styles = {
@@ -889,8 +893,6 @@ const ModernCRMPanel = () => {
       />
     </div>
   );
-};
-
 };
 
 export default ModernCRMPanel;
