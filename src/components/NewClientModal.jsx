@@ -93,26 +93,36 @@ const generateClientNumber = async () => {
   const day = String(today.getDate()).padStart(2, '0');
   const dateStr = `${year}${month}${day}`;
   
-  // Buscar todos los clientes que empiecen con C-YYYYMMDD
   const prefix = `C-${dateStr}`;
+  console.log('Buscando clientes con prefijo:', prefix);
   
   const { data: todaysClients, error } = await supabase
     .from('clients')
     .select('unique_id')
-    .like('unique_id', `${prefix}-%`)
-    .order('unique_id', { ascending: false })
-    .limit(1);
+    .like('unique_id', `${prefix}%`)
+    .order('unique_id', { ascending: false });
 
+  console.log('Clientes encontrados:', todaysClients);
+  console.log('Error si hay:', error);
+  
   let nextNumber = 1;
   if (todaysClients && todaysClients.length > 0) {
-    const lastId = todaysClients[0].unique_id;
-    // Extraer el número final después del último guión
-    const parts = lastId.split('-');
-    const lastNumber = parseInt(parts[parts.length - 1]) || 0;
-    nextNumber = lastNumber + 1;
+    // Buscar el número más alto
+    let maxNumber = 0;
+    todaysClients.forEach(client => {
+      if (client.unique_id) {
+        const parts = client.unique_id.split('-');
+        const num = parseInt(parts[parts.length - 1]) || 0;
+        console.log('Procesando:', client.unique_id, 'Número extraído:', num);
+        if (num > maxNumber) maxNumber = num;
+      }
+    });
+    nextNumber = maxNumber + 1;
   }
 
-  return `${prefix}-${String(nextNumber).padStart(4, '0')}`;
+  const newId = `${prefix}-${String(nextNumber).padStart(4, '0')}`;
+  console.log('ID final generado:', newId);
+  return newId;
 };
 
     const clientNumber = await generateClientNumber();
