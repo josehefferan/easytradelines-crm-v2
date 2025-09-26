@@ -24,50 +24,50 @@ const Pipeline = ({ currentUser }) => {
   const [dragOverColumn, setDragOverColumn] = useState(null);
 
   // Configuración de columnas del pipeline
-  const columns = [
-    {
-      id: 'nuevo_lead',
-      title: 'New Leads',
-      color: '#3b82f6',
-      bgColor: '#eff6ff',
-      icon: Plus
-    },
-    {
-      id: 'contactado',
-      title: 'Contacted',
-      color: '#eab308',
-      bgColor: '#fefce8',
-      icon: Users
-    },
-    {
-      id: 'en_validacion',
-      title: 'In Validation',
-      color: '#a855f7',
-      bgColor: '#faf5ff',
-      icon: Clock
-    },
-    {
-      id: 'aprobado',
-      title: 'Approved',
-      color: '#22c55e',
-      bgColor: '#f0fdf4',
-      icon: CheckCircle
-    },
-    {
-      id: 'activo',
-      title: 'Active',
-      color: '#10b981',
-      bgColor: '#ecfdf5',
-      icon: CheckCircle
-    },
-    {
-      id: 'rechazado',
-      title: 'Rejected',
-      color: '#ef4444',
-      bgColor: '#fef2f2',
-      icon: XCircle
-    }
-  ];
+ const columns = [
+  {
+    id: 'new_lead',  // Cambiado de 'nuevo_lead'
+    title: 'New Leads',
+    color: '#3b82f6',
+    bgColor: '#eff6ff',
+    icon: Plus
+  },
+  {
+    id: 'contacted',  // Cambiado de 'contactado'
+    title: 'Contacted',
+    color: '#eab308',
+    bgColor: '#fefce8',
+    icon: Users
+  },
+  {
+    id: 'qualification',  // Cambiado de 'en_validacion'
+    title: 'Qualification',
+    color: '#a855f7',
+    bgColor: '#faf5ff',
+    icon: Clock
+  },
+  {
+    id: 'approved',  // Cambiado de 'aprobado'
+    title: 'Approved',
+    color: '#22c55e',
+    bgColor: '#f0fdf4',
+    icon: CheckCircle
+  },
+  {
+    id: 'active',  // Cambiado de 'activo'
+    title: 'Active',
+    color: '#10b981',
+    bgColor: '#ecfdf5',
+    icon: CheckCircle
+  },
+  {
+    id: 'rejected',  // Cambiado de 'rechazado'
+    title: 'Rejected',
+    color: '#ef4444',
+    bgColor: '#fef2f2',
+    icon: XCircle
+  }
+];
 
   useEffect(() => {
     loadClients();
