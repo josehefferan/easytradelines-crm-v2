@@ -871,27 +871,32 @@ const ModernCRMPanel = () => {
           <ClientManagement />
         )}
 
-        {/* Other Views (excluyendo 'clients' que ya tiene su propio componente) */}
-        {selectedView === 'pipeline' && (
+        {/* NUEVA SECCIÓN: ClientManagement Component */}
+{selectedView === 'clients' && (
+  <ClientManagement currentUser={currentUser} />
+)}
+
+{/* Pipeline View */}
+{selectedView === 'pipeline' && (
   <Pipeline currentUser={currentUser} />
 )}
 
+{/* Other Views */}
 {selectedView !== 'dashboard' && selectedView !== 'clients' && selectedView !== 'pipeline' && (
   <div style={styles.card}>
     <p style={{ color: '#6b7280', fontSize: '16px' }}>
-              {selectedView === 'archive' && 'Archived clients management - Coming soon'}
-              {selectedView === 'brokers' && currentUser.role === 'admin' && (
-                <BrokerManagement currentUser={currentUser} />
-              )}
-              {selectedView === 'affiliates' && currentUser.role === 'admin' && (
-                <AffiliatesInhouseView currentUser={currentUser} />
-              )}
-              {selectedView === 'reports' && 'Reports and analytics dashboard - Coming soon'}
-              {selectedView === 'settings' && 'System settings and configuration - Coming soon'}
-            </p>
-          </div>
-        )}
-      </div>
+      {selectedView === 'archive' && 'Archived clients management - Coming soon'}
+      {selectedView === 'brokers' && currentUser.role === 'admin' && (
+        <BrokerManagement currentUser={currentUser} />
+      )}
+      {selectedView === 'affiliates' && currentUser.role === 'admin' && (
+        <AffiliatesInhouseView currentUser={currentUser} />
+      )}
+      {selectedView === 'reports' && 'Reports and analytics dashboard - Coming soon'}
+      {selectedView === 'settings' && 'System settings and configuration - Coming soon'}
+    </p>
+  </div>
+)}
       
       {/* Modales */}
       <NewClientModal 
