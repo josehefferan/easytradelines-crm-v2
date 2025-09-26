@@ -73,29 +73,33 @@ const Pipeline = ({ currentUser }) => {
     loadClients();
   }, [currentUser]);
 
-  const loadClients = async () => {
-    try {
-      let query = supabase
-        .from('clients')
-        .select('*')
-        .not('status', 'in', '("muerto","blacklist")') // Excluir archivados
-        .order('created_at', { ascending: false });
+ const loadClients = async () => {
+  try {
+    let query = supabase
+      .from('clients')
+      .select('*')
+      .neq('status', 'blacklist')
+      .neq('status', 'muerto')
+      .order('created_at', { ascending: false });
 
-      // Si es broker, solo cargar sus clientes
-      if (currentUser?.role === 'broker') {
-        query = query.eq('broker_id', currentUser.brokerId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setClients(data || []);
-    } catch (error) {
-      console.error('Error loading clients:', error);
-    } finally {
-      setLoading(false);
+    // Si es broker, solo cargar sus clientes
+    if (currentUser?.role === 'broker') {
+      query = query.eq('assigned_broker_id', currentUser.brokerId);
     }
-  };
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    
+    // Log para debug
+    console.log('Clients loaded:', data);
+    setClients(data || []);
+  } catch (error) {
+    console.error('Error loading clients:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDragStart = (e, client) => {
     setDraggedClient(client);
