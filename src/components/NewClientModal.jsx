@@ -107,7 +107,6 @@ const generateClientNumber = async () => {
   
   let nextNumber = 1;
   if (todaysClients && todaysClients.length > 0) {
-    // Buscar el número más alto
     let maxNumber = 0;
     todaysClients.forEach(client => {
       if (client.unique_id) {
@@ -125,13 +124,21 @@ const generateClientNumber = async () => {
   return newId;
 };
 
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) return;
+
+  setLoading(true);
+  try {
+    // AHORA SOLO LA LLAMAS
     const clientNumber = await generateClientNumber();
     
     // Formatear SSN
     const formattedSSN = formData.ssn.replace(/\D/g, '').replace(/(\d{3})(\d{2})(\d{4})/, '$1-$2-$3');
 
     const clientData = {
-      unique_id: clientNumber, // Formato: C-20250926-0001
+      unique_id: clientNumber,
       first_name: formData.first_name.trim(),
       last_name: formData.last_name.trim(),
       address: formData.address.trim(),
