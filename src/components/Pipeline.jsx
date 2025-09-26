@@ -130,7 +130,7 @@ const Pipeline = ({ currentUser }) => {
     return;
   }
 
-  try { {
+  try { 
       // Actualizar en la base de datos
       const { error } = await supabase
         .from('clients')
