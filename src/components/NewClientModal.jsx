@@ -126,6 +126,7 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     try {
       // Llamar a generateClientNumber
       const clientNumber = await generateClientNumber();
+      console.log('Generated client number:', clientNumber);
       
       // Formatear SSN
       const formattedSSN = formData.ssn.replace(/\D/g, '').replace(/(\d{3})(\d{2})(\d{4})/, '$1-$2-$3');
@@ -139,43 +140,60 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
         email: formData.email.toLowerCase().trim(),
         ssn: formattedSSN,
         date_of_birth: formData.date_of_birth,
-        experian_user: formData.experian_user.trim(),
-        experian_password: formData.experian_password,
-        experian_security_answer: formData.experian_security_answer.trim(),
-        experian_pin: formData.experian_pin,
+        experian_user: formData.experian_user.trim() || null,
+        experian_password: formData.experian_password || null,
+        experian_security_answer: formData.experian_security_answer.trim() || null,
+        experian_pin: formData.experian_pin || null,
         status: 'new_lead',
         created_by: currentUser?.email || 'system',
         created_by_type: currentUser?.role === 'admin' ? 'admin' : 'broker'
       };
 
+      console.log('Current user role:', currentUser?.role);
+      console.log('Current user email:', currentUser?.email);
+
       // Si el usuario es un broker, asignar automáticamente el client a este broker
-      if (currentUser?.role === 'broker') {
+      if (currentUser?.role === 'broker' && currentUser?.email) {
+        console.log('User is broker, searching for broker record...');
+        
         // Primero obtener el broker_id desde la tabla brokers
         const { data: brokerData, error: brokerError } = await supabase
           .from('brokers')
-          .select('id')
+          .select('id, unique_id, email')
           .eq('email', currentUser.email)
           .single();
 
         if (brokerError) {
           console.error('Error finding broker:', brokerError);
+          console.log('Broker not found in brokers table. Creating client without assigned_broker_id');
+          // NO lanzar error, continuar sin assigned_broker_id
         } else if (brokerData) {
+          console.log('Found broker:', brokerData);
           clientData.assigned_broker_id = brokerData.id;
+          console.log('Assigned broker_id:', brokerData.id);
         }
       }
 
       // Solo agregar notes si el usuario es admin
-      if (currentUser?.role === 'admin' && formData.notes.trim()) {
+      if (currentUser?.role === 'admin' && formData.notes?.trim()) {
         clientData.notes = formData.notes.trim();
       }
+
+      console.log('Final client data to insert:', clientData);
 
       const { data, error } = await supabase
         .from('clients')
         .insert([clientData])
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase insert error:', error);
+        console.error('Error details:', error.details);
+        console.error('Error hint:', error.hint);
+        throw error;
+      }
 
+      console.log('Client created successfully:', data);
       alert(`Client ${clientNumber} created successfully!`);
       handleClose();
       
