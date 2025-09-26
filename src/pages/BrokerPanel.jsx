@@ -79,8 +79,18 @@ const checkAuth = async () => {
         role: 'broker',
         name: `${broker.first_name} ${broker.last_name}`
       });
-    }
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('assigned_broker_id', broker.id)
+        .order('created_at', { ascending: false });
 
+      if (clientsError) {
+        console.error('Error loading clients:', clientsError);
+        setClients([]);
+      } else {
+        console.log('Clients loaded:', clientsData);
+    }
 
       setClients(clientsData || []);
 
