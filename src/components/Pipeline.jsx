@@ -116,15 +116,21 @@ const Pipeline = ({ currentUser }) => {
     setDragOverColumn(null);
   };
 
-  const handleDrop = async (e, newStatus) => {
-    e.preventDefault();
-    setDragOverColumn(null);
-    
-    if (!draggedClient || draggedClient.status === newStatus) {
-      return;
-    }
+ const handleDrop = async (e, newStatus) => {
+  e.preventDefault();
+  setDragOverColumn(null);
+  
+  if (!draggedClient || draggedClient.status === newStatus) {
+    return;
+  }
 
-    try {
+  // Solo admins pueden mover clientes
+  if (currentUser?.role !== 'admin') {
+    alert('Only administrators can move clients in the pipeline');
+    return;
+  }
+
+  try { {
       // Actualizar en la base de datos
       const { error } = await supabase
         .from('clients')
