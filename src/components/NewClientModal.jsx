@@ -85,31 +85,35 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
   setLoading(true);
   try {
     // Generar unique_id con formato C-YYYYMMDD-XXXX
-    const generateClientNumber = async () => {
-      const today = new Date();
-      const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-      
-      // Buscar el último cliente creado hoy
-      const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
-      const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
-      
-      const { data: todaysClients } = await supabase
-        .from('clients')
-        .select('unique_id')
-        .gte('created_at', startOfDay)
-        .lte('created_at', endOfDay)
-        .order('unique_id', { ascending: false })
-        .limit(1);
+    // Generar unique_id con formato C-YYYYMMDD-XXXX
+const generateClientNumber = async () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const dateStr = `${year}${month}${day}`;
+  
+  // Buscar todos los clientes que empiecen con C-YYYYMMDD
+  const prefix = `C-${dateStr}`;
+  
+  const { data: todaysClients, error } = await supabase
+    .from('clients')
+    .select('unique_id')
+    .like('unique_id', `${prefix}-%`)
+    .order('unique_id', { ascending: false })
+    .limit(1);
 
-      let nextNumber = 1;
-      if (todaysClients && todaysClients.length > 0) {
-        const lastId = todaysClients[0].unique_id;
-        const lastNumber = parseInt(lastId.split('-')[2]) || 0;
-        nextNumber = lastNumber + 1;
-      }
+  let nextNumber = 1;
+  if (todaysClients && todaysClients.length > 0) {
+    const lastId = todaysClients[0].unique_id;
+    // Extraer el número final después del último guión
+    const parts = lastId.split('-');
+    const lastNumber = parseInt(parts[parts.length - 1]) || 0;
+    nextNumber = lastNumber + 1;
+  }
 
-      return `C-${dateStr}-${String(nextNumber).padStart(4, '0')}`;
-    };
+  return `${prefix}-${String(nextNumber).padStart(4, '0')}`;
+};
 
     const clientNumber = await generateClientNumber();
     
