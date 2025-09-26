@@ -867,11 +867,6 @@ const ModernCRMPanel = () => {
         )}
 
         {/* NUEVA SECCIÓN: ClientManagement Component */}
-        {selectedView === 'clients' && (
-          <ClientManagement />
-        )}
-
-        {/* NUEVA SECCIÓN: ClientManagement Component */}
 {selectedView === 'clients' && (
   <ClientManagement currentUser={currentUser} />
 )}
@@ -897,6 +892,7 @@ const ModernCRMPanel = () => {
     </p>
   </div>
 )}
+</div> 
       
       {/* Modales */}
       <NewClientModal 
