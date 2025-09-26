@@ -77,125 +77,118 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!validateForm()) return;
-
-  setLoading(true);
-  try {
-    // Generar unique_id con formato C-YYYYMMDD-XXXX
-    // Generar unique_id con formato C-YYYYMMDD-XXXX
-const generateClientNumber = async () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  const dateStr = `${year}${month}${day}`;
-  
-  const prefix = `C-${dateStr}`;
-  console.log('Buscando clientes con prefijo:', prefix);
-  
-  const { data: todaysClients, error } = await supabase
-    .from('clients')
-    .select('unique_id')
-    .like('unique_id', `${prefix}%`)
-    .order('unique_id', { ascending: false });
-
-  console.log('Clientes encontrados:', todaysClients);
-  console.log('Error si hay:', error);
-  
-  let nextNumber = 1;
-  if (todaysClients && todaysClients.length > 0) {
-    let maxNumber = 0;
-    todaysClients.forEach(client => {
-      if (client.unique_id) {
-        const parts = client.unique_id.split('-');
-        const num = parseInt(parts[parts.length - 1]) || 0;
-        console.log('Procesando:', client.unique_id, 'Número extraído:', num);
-        if (num > maxNumber) maxNumber = num;
-      }
-    });
-    nextNumber = maxNumber + 1;
-  }
-
-  const newId = `${prefix}-${String(nextNumber).padStart(4, '0')}`;
-  console.log('ID final generado:', newId);
-  return newId;
-};
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!validateForm()) return;
-
-  setLoading(true);
-  try {
-    // AHORA SOLO LA LLAMAS
-    const clientNumber = await generateClientNumber();
+  // Función para generar el número único del cliente - FUERA de handleSubmit
+  const generateClientNumber = async () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${year}${month}${day}`;
     
-    // Formatear SSN
-    const formattedSSN = formData.ssn.replace(/\D/g, '').replace(/(\d{3})(\d{2})(\d{4})/, '$1-$2-$3');
-
-    const clientData = {
-      unique_id: clientNumber,
-      first_name: formData.first_name.trim(),
-      last_name: formData.last_name.trim(),
-      address: formData.address.trim(),
-      phone: formData.phone.trim(),
-      email: formData.email.toLowerCase().trim(),
-      ssn: formattedSSN,
-      date_of_birth: formData.date_of_birth,
-      experian_user: formData.experian_user.trim(),
-      experian_password: formData.experian_password,
-      experian_security_answer: formData.experian_security_answer.trim(),
-      experian_pin: formData.experian_pin,
-      status: 'new_lead',
-      created_by: currentUser?.email || 'system',
-      created_by_type: currentUser?.role === 'admin' ? 'admin' : 'broker'
-    };
-
-    // Si el usuario es un broker, asignar automáticamente el client a este broker
-    if (currentUser?.role === 'broker') {
-      // Primero obtener el broker_id desde la tabla brokers
-      const { data: brokerData, error: brokerError } = await supabase
-        .from('brokers')
-        .select('id')
-        .eq('email', currentUser.email)
-        .single();
-
-      if (brokerError) {
-        console.error('Error finding broker:', brokerError);
-      } else if (brokerData) {
-        clientData.assigned_broker_id = brokerData.id;
-      }
-    }
-
-    // Solo agregar notes si el usuario es admin
-    if (currentUser?.role === 'admin' && formData.notes.trim()) {
-      clientData.notes = formData.notes.trim();
-    }
-
-    const { data, error } = await supabase
+    const prefix = `C-${dateStr}`;
+    console.log('Buscando clientes con prefijo:', prefix);
+    
+    const { data: todaysClients, error } = await supabase
       .from('clients')
-      .insert([clientData])
-      .select();
+      .select('unique_id')
+      .like('unique_id', `${prefix}%`)
+      .order('unique_id', { ascending: false });
 
-    if (error) throw error;
+    console.log('Clientes encontrados:', todaysClients);
+    console.log('Error si hay:', error);
+    
+    let nextNumber = 1;
+    if (todaysClients && todaysClients.length > 0) {
+      let maxNumber = 0;
+      todaysClients.forEach(client => {
+        if (client.unique_id) {
+          const parts = client.unique_id.split('-');
+          const num = parseInt(parts[parts.length - 1]) || 0;
+          console.log('Procesando:', client.unique_id, 'Número extraído:', num);
+          if (num > maxNumber) maxNumber = num;
+        }
+      });
+      nextNumber = maxNumber + 1;
+    }
 
-    alert(`Client ${clientNumber} created successfully!`);
-    handleClose();
+    const newId = `${prefix}-${String(nextNumber).padStart(4, '0')}`;
+    console.log('ID final generado:', newId);
+    return newId;
+  };
+
+  // Función handleSubmit - UNA SOLA VEZ
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    // Recargar la página para actualizar las listas
-    window.location.reload();
-    
-  } catch (error) {
-    console.error('Error creating client:', error);
-    alert('Error creating client: ' + error.message);
-  } finally {
-    setLoading(false);
-  }
-};
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      // Llamar a generateClientNumber
+      const clientNumber = await generateClientNumber();
+      
+      // Formatear SSN
+      const formattedSSN = formData.ssn.replace(/\D/g, '').replace(/(\d{3})(\d{2})(\d{4})/, '$1-$2-$3');
+
+      const clientData = {
+        unique_id: clientNumber,
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        address: formData.address.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email.toLowerCase().trim(),
+        ssn: formattedSSN,
+        date_of_birth: formData.date_of_birth,
+        experian_user: formData.experian_user.trim(),
+        experian_password: formData.experian_password,
+        experian_security_answer: formData.experian_security_answer.trim(),
+        experian_pin: formData.experian_pin,
+        status: 'new_lead',
+        created_by: currentUser?.email || 'system',
+        created_by_type: currentUser?.role === 'admin' ? 'admin' : 'broker'
+      };
+
+      // Si el usuario es un broker, asignar automáticamente el client a este broker
+      if (currentUser?.role === 'broker') {
+        // Primero obtener el broker_id desde la tabla brokers
+        const { data: brokerData, error: brokerError } = await supabase
+          .from('brokers')
+          .select('id')
+          .eq('email', currentUser.email)
+          .single();
+
+        if (brokerError) {
+          console.error('Error finding broker:', brokerError);
+        } else if (brokerData) {
+          clientData.assigned_broker_id = brokerData.id;
+        }
+      }
+
+      // Solo agregar notes si el usuario es admin
+      if (currentUser?.role === 'admin' && formData.notes.trim()) {
+        clientData.notes = formData.notes.trim();
+      }
+
+      const { data, error } = await supabase
+        .from('clients')
+        .insert([clientData])
+        .select();
+
+      if (error) throw error;
+
+      alert(`Client ${clientNumber} created successfully!`);
+      handleClose();
+      
+      // Recargar la página para actualizar las listas
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Error creating client:', error);
+      alert('Error creating client: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleClose = () => {
     setFormData({
