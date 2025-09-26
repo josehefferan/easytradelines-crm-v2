@@ -54,7 +54,7 @@ const checkAuth = async () => {
   }
 };
 
-  const loadBrokerData = async () => {
+ const loadBrokerData = async () => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -79,6 +79,8 @@ const checkAuth = async () => {
         role: 'broker',
         name: `${broker.first_name} ${broker.last_name}`
       });
+
+      // Cargar SOLO los clientes asignados a este broker
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
@@ -90,9 +92,8 @@ const checkAuth = async () => {
         setClients([]);
       } else {
         console.log('Clients loaded:', clientsData);
-    }
-
-      setClients(clientsData || []);
+        setClients(clientsData || []);
+      }
 
       // Calculate stats
       const now = new Date();
@@ -107,13 +108,14 @@ const checkAuth = async () => {
           return c.status === 'completed' && completedDate >= startOfMonth;
         }).length || 0
       });
-
-    } catch (error) {
-      console.error('Error loading broker data:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+
+  } catch (error) {
+    console.error('Error loading broker data:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleLogout = async () => {
     try {
