@@ -78,71 +78,103 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
+  e.preventDefault();
+  
+  if (!validateForm()) return;
 
-    setLoading(true);
-    try {
-      // Formatear SSN
-      const formattedSSN = formData.ssn.replace(/\D/g, '').replace(/(\d{3})(\d{2})(\d{4})/, '$1-$2-$3');
-
-      const clientData = {
-        first_name: formData.first_name.trim(),
-        last_name: formData.last_name.trim(),
-        address: formData.address.trim(),
-        phone: formData.phone.trim(),
-        email: formData.email.toLowerCase().trim(),
-        ssn: formattedSSN,
-        date_of_birth: formData.date_of_birth,
-        experian_user: formData.experian_user.trim(),
-        experian_password: formData.experian_password,
-        experian_security_answer: formData.experian_security_answer.trim(),
-        experian_pin: formData.experian_pin,
-        status: 'new_lead',
-        created_by: currentUser?.email || 'system'
-      };
-
-      // Si el usuario es un broker, asignar automáticamente el client a este broker
-      if (currentUser?.role === 'broker') {
-        // Primero obtener el broker_id desde la tabla brokers
-        const { data: brokerData, error: brokerError } = await supabase
-          .from('brokers')
-          .select('id')
-          .eq('email', currentUser.email)
-          .single();
-
-        if (brokerError) {
-          console.error('Error finding broker:', brokerError);
-        } else if (brokerData) {
-          clientData.assigned_broker_id = brokerData.id;
-        }
-      }
-
-      // Solo agregar notes si el usuario es admin
-      if (currentUser?.role === 'admin' && formData.notes.trim()) {
-        clientData.notes = formData.notes.trim();
-      }
-
-      const { data, error } = await supabase
+  setLoading(true);
+  try {
+    // Generar unique_id con formato C-YYYYMMDD-XXXX
+    const generateClientNumber = async () => {
+      const today = new Date();
+      const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+      
+      // Buscar el último cliente creado hoy
+      const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+      const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
+      
+      const { data: todaysClients } = await supabase
         .from('clients')
-        .insert([clientData])
-        .select();
+        .select('unique_id')
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay)
+        .order('unique_id', { ascending: false })
+        .limit(1);
 
-      if (error) throw error;
+      let nextNumber = 1;
+      if (todaysClients && todaysClients.length > 0) {
+        const lastId = todaysClients[0].unique_id;
+        const lastNumber = parseInt(lastId.split('-')[2]) || 0;
+        nextNumber = lastNumber + 1;
+      }
 
-      // TODO: Implementar subida de archivos aquí
-      // Los archivos se subirían a Supabase Storage y se guardarían las URLs
+      return `C-${dateStr}-${String(nextNumber).padStart(4, '0')}`;
+    };
 
-      alert('Client application submitted successfully!');
-      handleClose();
-    } catch (error) {
-      console.error('Error creating client:', error);
-      alert('Error creating client: ' + error.message);
-    } finally {
-      setLoading(false);
+    const clientNumber = await generateClientNumber();
+    
+    // Formatear SSN
+    const formattedSSN = formData.ssn.replace(/\D/g, '').replace(/(\d{3})(\d{2})(\d{4})/, '$1-$2-$3');
+
+    const clientData = {
+      unique_id: clientNumber, // Formato: C-20250926-0001
+      first_name: formData.first_name.trim(),
+      last_name: formData.last_name.trim(),
+      address: formData.address.trim(),
+      phone: formData.phone.trim(),
+      email: formData.email.toLowerCase().trim(),
+      ssn: formattedSSN,
+      date_of_birth: formData.date_of_birth,
+      experian_user: formData.experian_user.trim(),
+      experian_password: formData.experian_password,
+      experian_security_answer: formData.experian_security_answer.trim(),
+      experian_pin: formData.experian_pin,
+      status: 'new_lead',
+      created_by: currentUser?.email || 'system',
+      created_by_type: currentUser?.role === 'admin' ? 'admin' : 'broker'
+    };
+
+    // Si el usuario es un broker, asignar automáticamente el client a este broker
+    if (currentUser?.role === 'broker') {
+      // Primero obtener el broker_id desde la tabla brokers
+      const { data: brokerData, error: brokerError } = await supabase
+        .from('brokers')
+        .select('id')
+        .eq('email', currentUser.email)
+        .single();
+
+      if (brokerError) {
+        console.error('Error finding broker:', brokerError);
+      } else if (brokerData) {
+        clientData.assigned_broker_id = brokerData.id;
+      }
     }
-  };
+
+    // Solo agregar notes si el usuario es admin
+    if (currentUser?.role === 'admin' && formData.notes.trim()) {
+      clientData.notes = formData.notes.trim();
+    }
+
+    const { data, error } = await supabase
+      .from('clients')
+      .insert([clientData])
+      .select();
+
+    if (error) throw error;
+
+    alert(`Client ${clientNumber} created successfully!`);
+    handleClose();
+    
+    // Recargar la página para actualizar las listas
+    window.location.reload();
+    
+  } catch (error) {
+    console.error('Error creating client:', error);
+    alert('Error creating client: ' + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleClose = () => {
     setFormData({
