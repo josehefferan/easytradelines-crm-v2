@@ -116,7 +116,7 @@ const Pipeline = ({ currentUser }) => {
     setDragOverColumn(null);
   };
 
- const handleDrop = async (e, newStatus) => {
+const handleDrop = async (e, newStatus) => {
   e.preventDefault();
   setDragOverColumn(null);
   
@@ -130,43 +130,43 @@ const Pipeline = ({ currentUser }) => {
     return;
   }
 
-  try { 
-      // Actualizar en la base de datos
-      const { error } = await supabase
-        .from('clients')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', draggedClient.id);
+  try {
+    // Actualizar en la base de datos
+    const { error } = await supabase
+      .from('clients')
+      .update({ 
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', draggedClient.id);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      // Actualizar estado local
-      setClients(prevClients => 
-        prevClients.map(client => 
-          client.id === draggedClient.id 
-            ? { ...client, status: newStatus }
-            : client
-        )
-      );
+    // Actualizar estado local
+    setClients(prevClients => 
+      prevClients.map(client => 
+        client.id === draggedClient.id 
+          ? { ...client, status: newStatus }
+          : client
+      )
+    );
 
-      // Registrar actividad
-      await supabase.from('activity_log').insert({
-        client_id: draggedClient.id,
-        user_id: currentUser.email,
-        action: 'status_change',
-        details: `Status changed from ${draggedClient.status} to ${newStatus}`,
-        created_at: new Date().toISOString()
-      });
+    // Registrar actividad
+    await supabase.from('activity_log').insert({
+      client_id: draggedClient.id,
+      user_id: currentUser.email,
+      action: 'status_change',
+      details: `Status changed from ${draggedClient.status} to ${newStatus}`,
+      created_at: new Date().toISOString()
+    });
 
-    } catch (error) {
-      console.error('Error updating client status:', error);
-      alert('Error updating status. Please try again.');
-    }
-    
-    setDraggedClient(null);
-  };
+  } catch (error) {
+    console.error('Error updating client status:', error);
+    alert('Error updating status. Please try again.');
+  }
+  
+  setDraggedClient(null);
+};
 
   const getClientsByStatus = (status) => {
     return clients.filter(client => client.status === status);
