@@ -1135,18 +1135,24 @@ const ModernCRMPanel = () => {
         )}
 
         {/* Other Views */}
-        {selectedView !== 'dashboard' && selectedView !== 'clients' && selectedView !== 'pipeline' && (
-          <div style={styles.card}>
-            <p style={{ color: '#6b7280', fontSize: '16px' }}>
-              {selectedView === 'archive' && 'Archived clients management - Coming soon'}
-              {selectedView === 'brokers' && currentUser.role === 'admin' && (
-                <BrokerManagement currentUser={currentUser} />
-              )}
-              {selectedView === 'affiliates' && currentUser.role === 'admin' && (
-                <AffiliatesInhouseView currentUser={currentUser} />
-              )}
-              {currentUser.role === 'affiliate' && (
-  <AffiliatePanel currentUser={currentUser} />
+   {selectedView !== 'dashboard' && selectedView !== 'clients' && selectedView !== 'pipeline' && (
+  <div>
+    {/* AffiliatePanel - renderizar FUERA del párrafo */}
+    {currentUser.role === 'affiliate' && (
+      <AffiliatePanel currentUser={currentUser} />
+    )}
+    
+    {/* Solo admin ve estas vistas */}
+    {currentUser.role === 'admin' && (
+      <div style={styles.card}>
+        {selectedView === 'archive' && <p style={{ color: '#6b7280', fontSize: '16px' }}>Archived clients management - Coming soon</p>}
+        {selectedView === 'brokers' && <BrokerManagement currentUser={currentUser} />}
+        {selectedView === 'affiliates' && <AffiliatesInhouseView currentUser={currentUser} />}
+        {selectedView === 'reports' && <p style={{ color: '#6b7280', fontSize: '16px' }}>Reports and analytics dashboard - Coming soon</p>}
+        {selectedView === 'settings' && <p style={{ color: '#6b7280', fontSize: '16px' }}>System settings and configuration - Coming soon</p>}
+      </div>
+    )}
+  </div>
 )}
               {selectedView === 'reports' && 'Reports and analytics dashboard - Coming soon'}
               {selectedView === 'settings' && 'System settings and configuration - Coming soon'}
