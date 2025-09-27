@@ -1,349 +1,234 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Users, 
+  X, 
+  User, 
+  Mail, 
+  Phone, 
+  Calendar, 
+  FileText, 
+  Download, 
+  Eye, 
   CheckCircle, 
   XCircle, 
-  Clock, 
-  Eye, 
-  Edit,
-  Trash2,
-  UserCheck,
-  AlertTriangle,
-  Building2,
-  Mail,
-  Phone,
-  Calendar,
-  TrendingUp,
-  DollarSign,
+  Clock,
+  MapPin,
   CreditCard,
-  Archive,
-  Shield
+  Building2,
+  Shield,
+  AlertTriangle,
+  Edit,
+  ArrowLeft,
+  ArrowRight,
+  Users
 } from 'lucide-react';
 import { supabase } from "../lib/supabase";
-import ClientDetailsModal from './ClientDetailsModal';
 
-const ClientManagement = ({ currentUser }) => {
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+const ClientDetailsModal = ({ client, isOpen, onClose, onStatusUpdate, currentUser }) => {
+  const [documents, setDocuments] = useState([]);
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Estados del pipeline sincronizados con Sales Pipeline (solo en inglés)
-  const clientStatusConfig = {
-    new_lead: {
-      label: 'New Leads',
-      color: '#6b7280',
-      bgColor: '#f9fafb',
-      textColor: '#374151',
-      icon: Users,
-      nextStatus: 'contacted',
-      stage: 1
-    },
-    contacted: {
-      label: 'Contacted',
-      color: '#f59e0b', 
-      bgColor: '#fef3c7',
-      textColor: '#92400e',
-      icon: Phone,
-      nextStatus: 'qualification',
-      stage: 2
-    },
-    qualification: {
-      label: 'Qualification',
-      color: '#8b5cf6',
-      bgColor: '#f3e8ff', 
-      textColor: '#6b21a8',
-      icon: Eye,
-      nextStatus: 'approved',
-      stage: 3
-    },
-    approved: {
-      label: 'Approved',
-      color: '#10b981',
-      bgColor: '#d1fae5',
-      textColor: '#065f46',
-      icon: CheckCircle,
-      nextStatus: 'active',
-      stage: 4
-    },
-    active: {
-      label: 'Active',
-      color: '#22c55e',
-      bgColor: '#dcfce7',
-      textColor: '#166534',
-      icon: CreditCard,
-      nextStatus: null,
-      stage: 5
-    },
-    rejected: {
-      label: 'Rejected',
-      color: '#ef4444',
-      bgColor: '#fef2f2',
-      textColor: '#991b1b',
-      icon: XCircle,
-      nextStatus: null,
-      stage: 6
-    }
+  // Estados disponibles para cambios
+  const statusOptions = {
+    new_lead: { label: 'New Leads', color: '#6b7280', icon: Users },
+    contacted: { label: 'Contacted', color: '#f59e0b', icon: Phone },
+    qualification: { label: 'Qualification', color: '#8b5cf6', icon: Eye },
+    approved: { label: 'Approved', color: '#10b981', icon: CheckCircle },
+    active: { label: 'Active', color: '#22c55e', icon: CreditCard },
+    rejected: { label: 'Rejected', color: '#ef4444', icon: XCircle }
   };
 
-  // Cargar datos
+  // Definir el flujo del pipeline
+  const pipelineFlow = ['new_lead', 'contacted', 'qualification', 'approved', 'active'];
+
   useEffect(() => {
-    fetchClients();
-  }, []);
+    if (isOpen && client) {
+      fetchClientDocuments();
+      setNotes(client.admin_notes || '');
+    }
+  }, [isOpen, client]);
 
-const fetchClients = async () => {
-  try {
-    let query = supabase
-      .from('clients')
-      .select(`
-        *,
-        brokers (
-          id,
-          custom_id,
-          first_name,
-          last_name
-        )
-      `)
-      .eq('archived', false)
-      .order('created_at', { ascending: false });
+  const fetchClientDocuments = async () => {
+    try {
+      // Obtener archivos del storage de Supabase
+      const { data: files, error } = await supabase.storage
+        .from('client-documents')
+        .list(`${client.id}/`, {
+          limit: 100,
+          sortBy: { column: 'created_at', order: 'desc' }
+        });
 
-    // Si el usuario es un broker, filtrar solo sus clientes
-    if (currentUser && currentUser.role === 'broker') {
-      // Primero obtener el ID del broker
-      const { data: brokerData, error: brokerError } = await supabase
-        .from('brokers')
-        .select('id')
-        .eq('email', currentUser.email)
-        .single();
-
-      if (brokerError) {
-        console.error('Error fetching broker ID:', brokerError);
-        setClients([]);
-        setLoading(false);
+      if (error) {
+        console.error('Error fetching documents:', error);
+        setDocuments([]);
         return;
       }
 
-      if (brokerData) {
-        // Filtrar solo los clientes asignados a este broker
-        query = query.eq('assigned_broker_id', brokerData.id);
-      }
+      setDocuments(files || []);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      setDocuments([]);
     }
-    
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    setClients(data || []);
-  } catch (error) {
-    console.error('Error fetching clients:', error);
-    setClients([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-  // Cambiar estado del cliente - solo admins pueden cambiar estados
-  const updateClientStatus = async (clientId, newStatus) => {
+  const downloadDocument = async (fileName) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('client-documents')
+        .download(`${client.id}/${fileName}`);
+
+      if (error) throw error;
+
+      // Crear URL para descargar
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('Error downloading document: ' + error.message);
+    }
+  };
+
+  const viewDocument = async (fileName) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('client-documents')
+        .createSignedUrl(`${client.id}/${fileName}`, 3600); // 1 hora
+
+      if (error) throw error;
+
+      window.open(data.signedUrl, '_blank');
+    } catch (error) {
+      alert('Error viewing document: ' + error.message);
+    }
+  };
+
+  const updateClientStatus = async (newStatus) => {
     if (currentUser.role !== 'admin') {
       alert('Only administrators can change client status');
       return;
     }
 
+    setLoading(true);
     try {
       const { error } = await supabase
         .from('clients')
         .update({ 
           status: newStatus,
-          last_activity: new Date().toISOString()
+          last_activity: new Date().toISOString(),
+          admin_notes: notes
         })
-        .eq('id', clientId);
+        .eq('id', client.id);
 
       if (error) throw error;
-      
-      // Actualizar estado local
-      setClients(clients.map(client => 
-        client.id === clientId 
-          ? { ...client, status: newStatus, last_activity: new Date().toISOString() }
-          : client
-      ));
-      
-      alert(`Client status updated to ${clientStatusConfig[newStatus]?.label || newStatus}`);
+
+      alert(`Client status updated to ${statusOptions[newStatus]?.label}`);
+      onStatusUpdate(client.id, newStatus);
+      onClose();
     } catch (error) {
-      console.error('Error updating client status:', error);
+      console.error('Error updating status:', error);
       alert('Error updating client status');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Mover a rejected - solo admins
-  const moveToRejected = async (clientId) => {
-    if (currentUser.role !== 'admin') {
-      alert('Only administrators can reject clients');
-      return;
+  const saveNotes = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ admin_notes: notes })
+        .eq('id', client.id);
+
+      if (error) throw error;
+      alert('Notes saved successfully');
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      alert('Error saving notes');
+    } finally {
+      setSaving(false);
     }
-
-    const confirmed = confirm('Are you sure you want to reject this client? This action should be used carefully.');
-    if (!confirmed) return;
-
-    await updateClientStatus(clientId, 'rejected');
   };
 
-  // Ver detalles del cliente - abrir modal
-  const viewClientDetails = (client) => {
-    setSelectedClient(client);
-    setIsModalOpen(true);
-  };
-
-  // Cerrar modal
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedClient(null);
-  };
-
-  // Callback para actualizar estado desde el modal
-  const handleStatusUpdate = (clientId, newStatus) => {
-    setClients(clients.map(client => 
-      client.id === clientId 
-        ? { ...client, status: newStatus, last_activity: new Date().toISOString() }
-        : client
-    ));
-  };
-
-  // Filtrar clientes
-  const filteredClients = clients.filter(client => {
-    if (filter === 'all') return true;
-    if (filter === 'my_clients' && currentUser.role === 'broker') {
-      return client.assigned_broker_id === currentUser.id;
-    }
-    return client.status === filter;
-  });
-
-  // Estadísticas (sincronizadas con Sales Pipeline)
-  const getStats = () => {
-    const stats = {
-      total: clients.length,
-      new_lead: clients.filter(c => c.status === 'new_lead').length,
-      contacted: clients.filter(c => c.status === 'contacted').length,
-      qualification: clients.filter(c => c.status === 'qualification').length,
-      approved: clients.filter(c => c.status === 'approved').length,
-      active: clients.filter(c => c.status === 'active').length,
-      rejected: clients.filter(c => c.status === 'rejected').length
+  // Obtener el siguiente y anterior estado en el pipeline
+  const getNextPrevStatus = () => {
+    const currentIndex = pipelineFlow.indexOf(client.status);
+    
+    return {
+      nextStatus: currentIndex < pipelineFlow.length - 1 ? pipelineFlow[currentIndex + 1] : null,
+      prevStatus: currentIndex > 0 ? pipelineFlow[currentIndex - 1] : null
     };
-    return stats;
   };
 
-  const stats = getStats();
+  if (!isOpen || !client) return null;
 
-  // Obtener información de quién creó el cliente
-  const getCreatorInfo = (client) => {
-    if (client.created_by_type === 'admin') {
-      return `Created by ${client.created_by}`;
-    } else if (client.created_by_type === 'broker' && client.brokers) {
-      return `Created by Broker ${client.brokers.first_name} ${client.brokers.last_name} (${client.brokers.custom_id})`;
-    } else if (client.brokers) {
-      return `Assigned to Broker ${client.brokers.first_name} ${client.brokers.last_name} (${client.brokers.custom_id})`;
-    }
-    return client.created_by || 'System';
-  };
+  const currentStatus = statusOptions[client.status] || statusOptions.new_lead;
+  const CurrentStatusIcon = currentStatus.icon;
+  const { nextStatus, prevStatus } = getNextPrevStatus();
 
   const styles = {
-    container: {
-      padding: '24px'
+    overlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '20px'
+    },
+    modal: {
+      backgroundColor: 'white',
+      borderRadius: '16px',
+      width: '100%',
+      maxWidth: '1200px',
+      maxHeight: '90vh',
+      overflow: 'hidden',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
     },
     header: {
+      padding: '24px 32px',
+      borderBottom: '1px solid #e5e7eb',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: '32px'
+      backgroundColor: '#f9fafb'
     },
-    title: {
-      fontSize: '32px',
-      fontWeight: 'bold',
-      color: '#1f2937',
-      margin: 0
-    },
-    subtitle: {
-      color: '#6b7280',
-      marginTop: '4px',
-      fontSize: '16px'
-    },
-    statsGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-      gap: '16px',
-      marginBottom: '32px'
-    },
-    statCard: {
-      backgroundColor: 'white',
-      borderRadius: '12px',
-      padding: '16px',
-      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e5e7eb',
-      textAlign: 'center'
-    },
-    statLabel: {
-      fontSize: '12px',
-      color: '#6b7280',
-      margin: 0,
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px'
-    },
-    statValue: {
-      fontSize: '20px',
-      fontWeight: 'bold',
-      color: '#1f2937',
-      margin: '8px 0 0 0'
-    },
-    filtersContainer: {
+    headerLeft: {
       display: 'flex',
-      gap: '8px',
-      marginBottom: '24px',
-      flexWrap: 'wrap'
+      alignItems: 'center',
+      gap: '16px'
     },
-    filterButton: {
-      padding: '6px 12px',
-      borderRadius: '6px',
-      border: '1px solid #d1d5db',
-      backgroundColor: 'white',
-      cursor: 'pointer',
-      fontSize: '13px',
-      transition: 'all 0.2s',
-      fontWeight: '500'
-    },
-    filterButtonActive: {
-      backgroundColor: '#3b82f6',
+    avatar: {
+      width: '64px',
+      height: '64px',
+      borderRadius: '50%',
+      backgroundColor: currentStatus.color,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
       color: 'white',
-      borderColor: '#3b82f6'
-    },
-    clientsGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
-      gap: '20px'
-    },
-    clientCard: {
-      backgroundColor: 'white',
-      borderRadius: '12px',
-      padding: '20px',
-      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e5e7eb',
-      transition: 'all 0.2s'
-    },
-    clientHeader: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: '16px'
+      fontSize: '24px',
+      fontWeight: 'bold'
     },
     clientInfo: {
       flex: 1
     },
     clientName: {
-      fontSize: '18px',
-      fontWeight: '600',
+      fontSize: '24px',
+      fontWeight: 'bold',
       color: '#1f2937',
       margin: 0
     },
     clientId: {
-      fontSize: '13px',
+      fontSize: '14px',
       color: '#6b7280',
       fontFamily: 'monospace',
       marginTop: '4px'
@@ -351,65 +236,160 @@ const fetchClients = async () => {
     statusBadge: {
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '6px',
-      padding: '6px 12px',
-      borderRadius: '20px',
-      fontSize: '11px',
+      gap: '8px',
+      padding: '8px 16px',
+      borderRadius: '24px',
+      fontSize: '12px',
       fontWeight: '600',
       textTransform: 'uppercase',
-      letterSpacing: '0.5px'
+      letterSpacing: '0.5px',
+      backgroundColor: currentStatus.color + '20',
+      color: currentStatus.color,
+      marginTop: '8px'
     },
-    clientDetails: {
-      marginBottom: '16px'
+    closeButton: {
+      padding: '8px',
+      backgroundColor: 'transparent',
+      border: 'none',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      color: '#6b7280',
+      transition: 'all 0.2s'
     },
-    detailItem: {
+    content: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 400px',
+      height: 'calc(90vh - 140px)',
+      overflow: 'hidden'
+    },
+    leftPanel: {
+      padding: '32px',
+      overflow: 'auto'
+    },
+    rightPanel: {
+      borderLeft: '1px solid #e5e7eb',
+      backgroundColor: '#f9fafb',
+      padding: '32px',
+      overflow: 'auto'
+    },
+    section: {
+      marginBottom: '32px'
+    },
+    sectionTitle: {
+      fontSize: '18px',
+      fontWeight: '600',
+      color: '#1f2937',
+      marginBottom: '16px',
       display: 'flex',
       alignItems: 'center',
-      gap: '8px',
-      marginBottom: '6px',
-      fontSize: '13px',
+      gap: '8px'
+    },
+    infoGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: '16px'
+    },
+    infoItem: {
+      padding: '16px',
+      backgroundColor: '#f9fafb',
+      borderRadius: '8px',
+      border: '1px solid #e5e7eb'
+    },
+    infoLabel: {
+      fontSize: '12px',
+      color: '#6b7280',
+      fontWeight: '500',
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px',
+      marginBottom: '4px'
+    },
+    infoValue: {
+      fontSize: '14px',
+      color: '#1f2937',
+      fontWeight: '500'
+    },
+    documentsGrid: {
+      display: 'grid',
+      gap: '12px'
+    },
+    documentItem: {
+      padding: '16px',
+      backgroundColor: 'white',
+      borderRadius: '8px',
+      border: '1px solid #e5e7eb',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      transition: 'all 0.2s'
+    },
+    documentInfo: {
+      flex: 1
+    },
+    documentName: {
+      fontSize: '14px',
+      fontWeight: '500',
+      color: '#1f2937',
+      marginBottom: '4px'
+    },
+    documentMeta: {
+      fontSize: '12px',
       color: '#6b7280'
     },
-    creatorInfo: {
-      fontSize: '12px',
-      color: '#059669',
-      fontWeight: '500',
-      marginTop: '8px',
-      padding: '6px 10px',
-      backgroundColor: '#f0fdf4',
-      borderRadius: '6px'
-    },
-    actionsContainer: {
+    documentActions: {
       display: 'flex',
-      gap: '6px',
-      flexWrap: 'wrap'
+      gap: '8px'
+    },
+    iconButton: {
+      padding: '6px',
+      backgroundColor: 'transparent',
+      border: '1px solid #d1d5db',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      color: '#6b7280',
+      transition: 'all 0.2s'
+    },
+    notesTextarea: {
+      width: '100%',
+      minHeight: '120px',
+      padding: '12px',
+      border: '1px solid #d1d5db',
+      borderRadius: '8px',
+      fontSize: '14px',
+      resize: 'vertical',
+      outline: 'none',
+      transition: 'border-color 0.2s'
+    },
+    actionsGrid: {
+      display: 'grid',
+      gridTemplateColumns: '1fr',
+      gap: '12px',
+      marginTop: '24px'
     },
     actionButton: {
-      padding: '6px 10px',
-      borderRadius: '6px',
+      padding: '12px 16px',
       border: 'none',
-      fontSize: '11px',
-      fontWeight: '500',
+      borderRadius: '8px',
+      fontSize: '13px',
+      fontWeight: '600',
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
-      gap: '4px',
-      transition: 'all 0.2s'
+      justifyContent: 'center',
+      gap: '6px',
+      transition: 'all 0.2s',
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px'
     },
     primaryButton: {
-      backgroundColor: '#3b82f6',
+      backgroundColor: '#10b981',
       color: 'white'
-    },
-    secondaryButton: {
-      backgroundColor: '#f3f4f6',
-      color: '#374151'
     },
     dangerButton: {
       backgroundColor: '#ef4444',
       color: 'white'
     },
-    successButton: {
-      backgroundColor: '#10b981',
+    secondaryButton: {
+      backgroundColor: '#6b7280',
       color: 'white'
     },
     warningButton: {
@@ -418,224 +398,318 @@ const fetchClients = async () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ ...styles.container, textAlign: 'center', padding: '60px' }}>
-        <Clock style={{ width: '48px', height: '48px', color: '#6b7280' }} />
-        <p style={{ marginTop: '16px', color: '#6b7280' }}>Loading clients...</p>
-      </div>
-    );
-  }
-
   return (
-    <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header}>
-        <div>
-          <h2 style={styles.title}>Client Pipeline Management</h2>
-          <p style={styles.subtitle}>Track clients through all pipeline stages</p>
-        </div>
-      </div>
-
-      {/* Stats - Sincronizadas con Sales Pipeline */}
-      <div style={styles.statsGrid}>
-        <div style={styles.statCard}>
-          <p style={styles.statLabel}>Total Clients</p>
-          <p style={styles.statValue}>{stats.total}</p>
-        </div>
-        <div style={styles.statCard}>
-          <p style={styles.statLabel}>New Leads</p>
-          <p style={styles.statValue}>{stats.new_lead}</p>
-        </div>
-        <div style={styles.statCard}>
-          <p style={styles.statLabel}>Contacted</p>
-          <p style={styles.statValue}>{stats.contacted}</p>
-        </div>
-        <div style={styles.statCard}>
-          <p style={styles.statLabel}>Qualification</p>
-          <p style={styles.statValue}>{stats.qualification}</p>
-        </div>
-        <div style={styles.statCard}>
-          <p style={styles.statLabel}>Approved</p>
-          <p style={styles.statValue}>{stats.approved}</p>
-        </div>
-        <div style={styles.statCard}>
-          <p style={styles.statLabel}>Active</p>
-          <p style={styles.statValue}>{stats.active}</p>
-        </div>
-        <div style={styles.statCard}>
-          <p style={styles.statLabel}>Rejected</p>
-          <p style={styles.statValue}>{stats.rejected}</p>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div style={styles.filtersContainer}>
-        <button
-          onClick={() => setFilter('all')}
-          style={{
-            ...styles.filterButton,
-            ...(filter === 'all' ? styles.filterButtonActive : {})
-          }}
-        >
-          All Clients
-        </button>
-        {currentUser.role === 'broker' && (
-          <button
-            onClick={() => setFilter('my_clients')}
-            style={{
-              ...styles.filterButton,
-              ...(filter === 'my_clients' ? styles.filterButtonActive : {})
-            }}
+    <div style={styles.overlay} onClick={onClose}>
+      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div style={styles.headerLeft}>
+            <div style={styles.avatar}>
+              {client.first_name?.[0]}{client.last_name?.[0]}
+            </div>
+            <div style={styles.clientInfo}>
+              <h2 style={styles.clientName}>
+                {client.first_name} {client.last_name}
+              </h2>
+              <p style={styles.clientId}>ID: {client.custom_id}</p>
+              <div style={styles.statusBadge}>
+                <CurrentStatusIcon style={{ width: '14px', height: '14px' }} />
+                {currentStatus.label}
+              </div>
+            </div>
+          </div>
+          <button 
+            style={styles.closeButton}
+            onClick={onClose}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+            onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
           >
-            My Clients
+            <X style={{ width: '24px', height: '24px' }} />
           </button>
-        )}
-        {Object.entries(clientStatusConfig).map(([status, config]) => (
-          <button
-            key={status}
-            onClick={() => setFilter(status)}
-            style={{
-              ...styles.filterButton,
-              ...(filter === status ? styles.filterButtonActive : {})
-            }}
-          >
-            {config.label}
-          </button>
-        ))}
-      </div>
+        </div>
 
-      {/* Clients Grid */}
-      <div style={styles.clientsGrid}>
-        {filteredClients.map(client => {
-          const statusConfig = clientStatusConfig[client.status] || clientStatusConfig.new_lead;
-          const StatusIcon = statusConfig.icon;
-
-          return (
-            <div 
-              key={client.id} 
-              style={{
-                ...styles.clientCard,
-                borderLeft: `4px solid ${statusConfig.color}`
-              }}
-            >
-              {/* Header */}
-              <div style={styles.clientHeader}>
-                <div style={styles.clientInfo}>
-                  <h3 style={styles.clientName}>
-                    {client.first_name} {client.last_name}
-                  </h3>
-                  <p style={styles.clientId}>ID: {client.custom_id}</p>
+        {/* Content */}
+        <div style={styles.content}>
+          {/* Left Panel - Client Information */}
+          <div style={styles.leftPanel}>
+            {/* Personal Information */}
+            <div style={styles.section}>
+              <h3 style={styles.sectionTitle}>
+                <User style={{ width: '20px', height: '20px' }} />
+                Personal Information
+              </h3>
+              <div style={styles.infoGrid}>
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>Email</div>
+                  <div style={styles.infoValue}>{client.email}</div>
                 </div>
-                <div
-                  style={{
-                    ...styles.statusBadge,
-                    backgroundColor: statusConfig.bgColor,
-                    color: statusConfig.textColor
-                  }}
-                >
-                  <StatusIcon style={{ width: '12px', height: '12px' }} />
-                  {statusConfig.label}
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>Phone</div>
+                  <div style={styles.infoValue}>{client.phone || 'Not provided'}</div>
+                </div>
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>Date of Birth</div>
+                  <div style={styles.infoValue}>
+                    {client.date_of_birth ? new Date(client.date_of_birth).toLocaleDateString() : 'Not provided'}
+                  </div>
+                </div>
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>SSN</div>
+                  <div style={styles.infoValue}>
+                    {client.ssn ? `***-**-${client.ssn.slice(-4)}` : 'Not provided'}
+                  </div>
+                </div>
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>Address</div>
+                  <div style={styles.infoValue}>{client.address || 'Not provided'}</div>
+                </div>
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>City, State, ZIP</div>
+                  <div style={styles.infoValue}>
+                    {[client.city, client.state, client.zip_code].filter(Boolean).join(', ') || 'Not provided'}
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Details */}
-              <div style={styles.clientDetails}>
-                <div style={styles.detailItem}>
-                  <Mail style={{ width: '14px', height: '14px' }} />
-                  {client.email}
+            {/* Experian Information */}
+            <div style={styles.section}>
+              <h3 style={styles.sectionTitle}>
+                <Shield style={{ width: '20px', height: '20px' }} />
+                Experian Account
+              </h3>
+              <div style={styles.infoGrid}>
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>Username</div>
+                  <div style={styles.infoValue}>{client.experian_username || 'Not provided'}</div>
                 </div>
-                <div style={styles.detailItem}>
-                  <Phone style={{ width: '14px', height: '14px' }} />
-                  {client.phone || 'No phone'}
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>Security Answer</div>
+                  <div style={styles.infoValue}>{client.security_answer || 'Not provided'}</div>
                 </div>
-                <div style={styles.detailItem}>
-                  <Calendar style={{ width: '14px', height: '14px' }} />
-                  Created: {new Date(client.created_at).toLocaleDateString()}
-                </div>
-                <div style={styles.detailItem}>
-                  <Clock style={{ width: '14px', height: '14px' }} />
-                  Last activity: {client.last_activity ? new Date(client.last_activity).toLocaleDateString() : 'No activity'}
-                </div>
-
-                {/* Creator Info */}
-                <div style={styles.creatorInfo}>
-                  {getCreatorInfo(client)}
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>4-Digit PIN</div>
+                  <div style={styles.infoValue}>{client.four_digit_pin || 'Not provided'}</div>
                 </div>
               </div>
+            </div>
 
-              {/* Actions - Solo admins pueden cambiar estados */}
-              {currentUser.role === 'admin' && (
-                <div style={styles.actionsContainer}>
-                  {/* Botón siguiente estado */}
-                  {statusConfig.nextStatus && (
+            {/* Account Information */}
+            <div style={styles.section}>
+              <h3 style={styles.sectionTitle}>
+                <Building2 style={{ width: '20px', height: '20px' }} />
+                Account Details
+              </h3>
+              <div style={styles.infoGrid}>
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>Created</div>
+                  <div style={styles.infoValue}>
+                    {new Date(client.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>Last Activity</div>
+                  <div style={styles.infoValue}>
+                    {client.last_activity 
+                      ? new Date(client.last_activity).toLocaleDateString() 
+                      : 'No activity'}
+                  </div>
+                </div>
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>Assigned Broker</div>
+                  <div style={styles.infoValue}>
+                    {client.brokers 
+                      ? `${client.brokers.first_name} ${client.brokers.last_name}` 
+                      : 'Unassigned'}
+                  </div>
+                </div>
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>Created By</div>
+                  <div style={styles.infoValue}>{client.created_by || 'System'}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Documents */}
+            <div style={styles.section}>
+              <h3 style={styles.sectionTitle}>
+                <FileText style={{ width: '20px', height: '20px' }} />
+                Documents ({documents.length})
+              </h3>
+              <div style={styles.documentsGrid}>
+                {documents.length > 0 ? (
+                  documents.map((doc, index) => (
+                    <div key={index} style={styles.documentItem}>
+                      <div style={styles.documentInfo}>
+                        <div style={styles.documentName}>{doc.name}</div>
+                        <div style={styles.documentMeta}>
+                          {Math.round(doc.metadata?.size / 1024) || 0} KB • 
+                          {new Date(doc.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div style={styles.documentActions}>
+                        <button
+                          style={styles.iconButton}
+                          onClick={() => viewDocument(doc.name)}
+                          title="View document"
+                        >
+                          <Eye style={{ width: '16px', height: '16px' }} />
+                        </button>
+                        <button
+                          style={styles.iconButton}
+                          onClick={() => downloadDocument(doc.name)}
+                          title="Download document"
+                        >
+                          <Download style={{ width: '16px', height: '16px' }} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '32px', 
+                    color: '#6b7280',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '8px'
+                  }}>
+                    <FileText style={{ width: '32px', height: '32px', margin: '0 auto 8px' }} />
+                    <p>No documents uploaded yet</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Panel - Actions & Notes */}
+          <div style={styles.rightPanel}>
+            {/* Admin Notes */}
+            <div style={styles.section}>
+              <h3 style={styles.sectionTitle}>
+                <Edit style={{ width: '20px', height: '20px' }} />
+                Admin Notes
+              </h3>
+              <textarea
+                style={styles.notesTextarea}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add internal notes about this client..."
+                onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+              />
+              <button
+                onClick={saveNotes}
+                disabled={saving}
+                style={{
+                  ...styles.actionButton,
+                  ...styles.secondaryButton,
+                  marginTop: '12px'
+                }}
+              >
+                {saving ? 'Saving...' : 'Save Notes'}
+              </button>
+            </div>
+
+            {/* Status Actions */}
+            {currentUser.role === 'admin' && (
+              <div style={styles.section}>
+                <h3 style={styles.sectionTitle}>
+                  <CheckCircle style={{ width: '20px', height: '20px' }} />
+                  Pipeline Actions
+                </h3>
+                <div style={styles.actionsGrid}>
+                  {/* Botón para retroceder */}
+                  {prevStatus && (
                     <button
-                      onClick={() => updateClientStatus(client.id, statusConfig.nextStatus)}
-                      style={{...styles.actionButton, ...styles.successButton}}
+                      onClick={() => updateClientStatus(prevStatus)}
+                      disabled={loading}
+                      style={{
+                        ...styles.actionButton,
+                        backgroundColor: '#f59e0b',
+                        color: 'white'
+                      }}
                     >
-                      <CheckCircle style={{ width: '12px', height: '12px' }} />
-                      Move to {clientStatusConfig[statusConfig.nextStatus]?.label}
+                      <ArrowLeft style={{ width: '14px', height: '14px' }} />
+                      Back to {statusOptions[prevStatus]?.label}
                     </button>
                   )}
-                  
-                  {/* Botón reject */}
+
+                  {/* Botón para avanzar */}
+                  {nextStatus && (
+                    <button
+                      onClick={() => updateClientStatus(nextStatus)}
+                      disabled={loading}
+                      style={{
+                        ...styles.actionButton,
+                        backgroundColor: '#10b981',
+                        color: 'white'
+                      }}
+                    >
+                      <ArrowRight style={{ width: '14px', height: '14px' }} />
+                      Move to {statusOptions[nextStatus]?.label}
+                    </button>
+                  )}
+
+                  {/* Botón reject (desde cualquier estado) */}
                   {client.status !== 'rejected' && (
                     <button
-                      onClick={() => moveToRejected(client.id)}
-                      style={{...styles.actionButton, ...styles.dangerButton}}
+                      onClick={() => updateClientStatus('rejected')}
+                      disabled={loading}
+                      style={{
+                        ...styles.actionButton,
+                        backgroundColor: '#ef4444',
+                        color: 'white'
+                      }}
                     >
-                      <XCircle style={{ width: '12px', height: '12px' }} />
-                      Reject
+                      <XCircle style={{ width: '14px', height: '14px' }} />
+                      Reject Client
                     </button>
                   )}
 
-                  <button
-                    onClick={() => viewClientDetails(client)}
-                    style={{...styles.actionButton, ...styles.secondaryButton}}
-                  >
-                    <Eye style={{ width: '12px', height: '12px' }} />
-                    View Details
-                  </button>
+                  {/* Si está rejected, permitir regresar a cualquier estado */}
+                  {client.status === 'rejected' && (
+                    <>
+                      <button
+                        onClick={() => updateClientStatus('new_lead')}
+                        disabled={loading}
+                        style={{
+                          ...styles.actionButton,
+                          backgroundColor: '#6b7280',
+                          color: 'white'
+                        }}
+                      >
+                        <Users style={{ width: '14px', height: '14px' }} />
+                        Restore to New Leads
+                      </button>
+                    </>
+                  )}
                 </div>
-              )}
-              
-              {/* Solo vista para brokers */}
-              {currentUser.role === 'broker' && (
-                <div style={styles.actionsContainer}>
-                  <button
-                    onClick={() => viewClientDetails(client)}
-                    style={{...styles.actionButton, ...styles.secondaryButton}}
-                  >
-                    <Eye style={{ width: '12px', height: '12px' }} />
-                    View Details
-                  </button>
-                </div>
-              )}
+              </div>
+            )}
+
+            {/* Quick Info */}
+            <div style={styles.section}>
+              <h3 style={styles.sectionTitle}>
+                <AlertTriangle style={{ width: '20px', height: '20px' }} />
+                Quick Review
+              </h3>
+              <div style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.5' }}>
+                <p><strong>Application Status:</strong> {currentStatus.label}</p>
+                <p><strong>Documents:</strong> {documents.length} files uploaded</p>
+                <p><strong>Last Update:</strong> {client.last_activity 
+                  ? new Date(client.last_activity).toLocaleDateString() 
+                  : 'No recent activity'}</p>
+                <p><strong>Account Age:</strong> {Math.floor(
+                  (new Date() - new Date(client.created_at)) / (1000 * 60 * 60 * 24)
+                )} days</p>
+                <p><strong>Pipeline Stage:</strong> {pipelineFlow.indexOf(client.status) + 1} of {pipelineFlow.length}</p>
+              </div>
             </div>
-          );
-        })}
-      </div>
-
-      {filteredClients.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#6b7280' }}>
-          <AlertTriangle style={{ width: '48px', height: '48px', margin: '0 auto 16px' }} />
-          <h3 style={{ margin: '0 0 8px 0' }}>No clients found</h3>
-          <p style={{ margin: 0 }}>
-            {filter === 'all' ? 'No clients registered yet' : `No clients with status "${clientStatusConfig[filter]?.label || filter}"`}
-          </p>
+          </div>
         </div>
-      )}
-
-      {/* Client Details Modal */}
-      <ClientDetailsModal
-        client={selectedClient}
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        onStatusUpdate={handleStatusUpdate}
-        currentUser={currentUser}
-      />
+      </div>
     </div>
   );
 };
 
-export default ClientManagement;
+export default ClientDetailsModal;
