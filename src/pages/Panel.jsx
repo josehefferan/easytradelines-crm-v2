@@ -27,6 +27,7 @@ import ClientManagement from '../components/ClientManagement';
 import BrokerManagement from '../components/BrokerManagement';
 import AffiliatesInhouseView from '../components/AffiliatesInhouseView';
 import Pipeline from '../components/Pipeline';
+import AffiliatePanel from '../components/AffiliatePanel';
 
 const ModernCRMPanel = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -1144,6 +1145,9 @@ const ModernCRMPanel = () => {
               {selectedView === 'affiliates' && currentUser.role === 'admin' && (
                 <AffiliatesInhouseView currentUser={currentUser} />
               )}
+              {currentUser.role === 'affiliate' && (
+  <AffiliatePanel currentUser={currentUser} />
+)}
               {selectedView === 'reports' && 'Reports and analytics dashboard - Coming soon'}
               {selectedView === 'settings' && 'System settings and configuration - Coming soon'}
             </p>
