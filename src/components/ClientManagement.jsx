@@ -26,10 +26,10 @@ const ClientManagement = ({ currentUser }) => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
 
-  // Estados del pipeline para clientes según tu definición
+  // Estados del pipeline sincronizados con Sales Pipeline (solo en inglés)
   const clientStatusConfig = {
     new_lead: {
-      label: 'Nuevo Cliente',
+      label: 'New Leads',
       color: '#6b7280',
       bgColor: '#f9fafb',
       textColor: '#374151',
@@ -38,7 +38,7 @@ const ClientManagement = ({ currentUser }) => {
       stage: 1
     },
     contacted: {
-      label: 'Contactado',
+      label: 'Contacted',
       color: '#f59e0b', 
       bgColor: '#fef3c7',
       textColor: '#92400e',
@@ -47,34 +47,16 @@ const ClientManagement = ({ currentUser }) => {
       stage: 2
     },
     qualification: {
-      label: 'En Calificación',
-      color: '#f59e0b',
-      bgColor: '#fef3c7', 
-      textColor: '#92400e',
+      label: 'Qualification',
+      color: '#8b5cf6',
+      bgColor: '#f3e8ff', 
+      textColor: '#6b21a8',
       icon: Eye,
-      nextStatus: 'proposal',
-      stage: 2
-    },
-    proposal: {
-      label: 'Propuesta Enviada',
-      color: '#eab308',
-      bgColor: '#fefce8',
-      textColor: '#a16207',
-      icon: Mail,
-      nextStatus: 'negotiation',
-      stage: 3
-    },
-    negotiation: {
-      label: 'En Negociación',
-      color: '#eab308',
-      bgColor: '#fefce8',
-      textColor: '#a16207',
-      icon: TrendingUp,
       nextStatus: 'approved',
       stage: 3
     },
     approved: {
-      label: 'Aprobado',
+      label: 'Approved',
       color: '#10b981',
       bgColor: '#d1fae5',
       textColor: '#065f46',
@@ -83,7 +65,7 @@ const ClientManagement = ({ currentUser }) => {
       stage: 4
     },
     active: {
-      label: 'Tradeline Activa',
+      label: 'Active',
       color: '#22c55e',
       bgColor: '#dcfce7',
       textColor: '#166534',
@@ -91,32 +73,14 @@ const ClientManagement = ({ currentUser }) => {
       nextStatus: null,
       stage: 5
     },
-    vigencia_60: {
-      label: 'Vigencia 60 días',
-      color: '#84cc16',
-      bgColor: '#ecfccb',
-      textColor: '#365314',
-      icon: Clock,
-      nextStatus: 'expired',
-      stage: 5
-    },
-    expired: {
-      label: 'Tradeline Caducada',
-      color: '#16a34a',
-      bgColor: '#f0fdf4',
-      textColor: '#14532d',
-      icon: Archive,
+    rejected: {
+      label: 'Rejected',
+      color: '#ef4444',
+      bgColor: '#fef2f2',
+      textColor: '#991b1b',
+      icon: XCircle,
       nextStatus: null,
       stage: 6
-    },
-    blacklist: {
-      label: 'Lista Negra',
-      color: '#000000',
-      bgColor: '#f3f4f6',
-      textColor: '#111827',
-      icon: Shield,
-      nextStatus: null,
-      stage: 7
     }
   };
 
@@ -178,7 +142,7 @@ const fetchClients = async () => {
   // Cambiar estado del cliente - solo admins pueden cambiar estados
   const updateClientStatus = async (clientId, newStatus) => {
     if (currentUser.role !== 'admin') {
-      alert('Solo los administradores pueden cambiar el estado del cliente');
+      alert('Only administrators can change client status');
       return;
     }
 
@@ -200,30 +164,30 @@ const fetchClients = async () => {
           : client
       ));
       
-      alert(`Estado del cliente actualizado a ${clientStatusConfig[newStatus]?.label || newStatus}`);
+      alert(`Client status updated to ${clientStatusConfig[newStatus]?.label || newStatus}`);
     } catch (error) {
       console.error('Error updating client status:', error);
-      alert('Error actualizando el estado del cliente');
+      alert('Error updating client status');
     }
   };
 
-  // Mover a lista negra - solo admins
-  const moveToBlacklist = async (clientId) => {
+  // Mover a rejected - solo admins
+  const moveToRejected = async (clientId) => {
     if (currentUser.role !== 'admin') {
-      alert('Solo los administradores pueden mover clientes a lista negra');
+      alert('Only administrators can reject clients');
       return;
     }
 
-    const confirmed = confirm('¿Estás seguro de que quieres mover este cliente a la lista negra? Esta acción debe usarse con cuidado.');
+    const confirmed = confirm('Are you sure you want to reject this client? This action should be used carefully.');
     if (!confirmed) return;
 
-    await updateClientStatus(clientId, 'blacklist');
+    await updateClientStatus(clientId, 'rejected');
   };
 
   // Ver detalles del cliente - para ambos roles
   const viewClientDetails = (client) => {
-    // Aquí puedes implementar un modal o navegación a vista detallada
-    alert(`Ver detalles de ${client.first_name} ${client.last_name}\nID: ${client.custom_id}\nEstado: ${clientStatusConfig[client.status]?.label}`);
+    // Aquí implementarás el modal de expediente completo
+    alert(`View details for ${client.first_name} ${client.last_name}\nID: ${client.custom_id}\nStatus: ${clientStatusConfig[client.status]?.label}`);
   };
 
   // Filtrar clientes
@@ -235,15 +199,16 @@ const fetchClients = async () => {
     return client.status === filter;
   });
 
-  // Estadísticas
+  // Estadísticas (sincronizadas con Sales Pipeline)
   const getStats = () => {
     const stats = {
       total: clients.length,
       new_lead: clients.filter(c => c.status === 'new_lead').length,
       contacted: clients.filter(c => c.status === 'contacted').length,
+      qualification: clients.filter(c => c.status === 'qualification').length,
       approved: clients.filter(c => c.status === 'approved').length,
       active: clients.filter(c => c.status === 'active').length,
-      blacklist: clients.filter(c => c.status === 'blacklist').length
+      rejected: clients.filter(c => c.status === 'rejected').length
     };
     return stats;
   };
@@ -253,13 +218,13 @@ const fetchClients = async () => {
   // Obtener información de quién creó el cliente
   const getCreatorInfo = (client) => {
     if (client.created_by_type === 'admin') {
-      return `Creado por ${client.created_by}`;
+      return `Created by ${client.created_by}`;
     } else if (client.created_by_type === 'broker' && client.brokers) {
-      return `Creado por Broker ${client.brokers.first_name} ${client.brokers.last_name} (${client.brokers.custom_id})`;
+      return `Created by Broker ${client.brokers.first_name} ${client.brokers.last_name} (${client.brokers.custom_id})`;
     } else if (client.brokers) {
-      return `Asignado a Broker ${client.brokers.first_name} ${client.brokers.last_name} (${client.brokers.custom_id})`;
+      return `Assigned to Broker ${client.brokers.first_name} ${client.brokers.last_name} (${client.brokers.custom_id})`;
     }
-    return client.created_by || 'Sistema';
+    return client.created_by || 'System';
   };
 
   const styles = {
@@ -439,7 +404,7 @@ const fetchClients = async () => {
     return (
       <div style={{ ...styles.container, textAlign: 'center', padding: '60px' }}>
         <Clock style={{ width: '48px', height: '48px', color: '#6b7280' }} />
-        <p style={{ marginTop: '16px', color: '#6b7280' }}>Cargando clientes...</p>
+        <p style={{ marginTop: '16px', color: '#6b7280' }}>Loading clients...</p>
       </div>
     );
   }
@@ -449,36 +414,40 @@ const fetchClients = async () => {
       {/* Header */}
       <div style={styles.header}>
         <div>
-          <h2 style={styles.title}>Gestión del Pipeline de Clientes</h2>
-          <p style={styles.subtitle}>Seguimiento de clientes a través de todas las etapas del pipeline</p>
+          <h2 style={styles.title}>Client Pipeline Management</h2>
+          <p style={styles.subtitle}>Track clients through all pipeline stages</p>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats - Sincronizadas con Sales Pipeline */}
       <div style={styles.statsGrid}>
         <div style={styles.statCard}>
-          <p style={styles.statLabel}>Total Clientes</p>
+          <p style={styles.statLabel}>Total Clients</p>
           <p style={styles.statValue}>{stats.total}</p>
         </div>
         <div style={styles.statCard}>
-          <p style={styles.statLabel}>Nuevos Leads</p>
+          <p style={styles.statLabel}>New Leads</p>
           <p style={styles.statValue}>{stats.new_lead}</p>
         </div>
         <div style={styles.statCard}>
-          <p style={styles.statLabel}>Contactados</p>
+          <p style={styles.statLabel}>Contacted</p>
           <p style={styles.statValue}>{stats.contacted}</p>
         </div>
         <div style={styles.statCard}>
-          <p style={styles.statLabel}>Aprobados</p>
+          <p style={styles.statLabel}>Qualification</p>
+          <p style={styles.statValue}>{stats.qualification}</p>
+        </div>
+        <div style={styles.statCard}>
+          <p style={styles.statLabel}>Approved</p>
           <p style={styles.statValue}>{stats.approved}</p>
         </div>
         <div style={styles.statCard}>
-          <p style={styles.statLabel}>Activos</p>
+          <p style={styles.statLabel}>Active</p>
           <p style={styles.statValue}>{stats.active}</p>
         </div>
         <div style={styles.statCard}>
-          <p style={styles.statLabel}>Lista Negra</p>
-          <p style={styles.statValue}>{stats.blacklist}</p>
+          <p style={styles.statLabel}>Rejected</p>
+          <p style={styles.statValue}>{stats.rejected}</p>
         </div>
       </div>
 
@@ -491,7 +460,7 @@ const fetchClients = async () => {
             ...(filter === 'all' ? styles.filterButtonActive : {})
           }}
         >
-          Todos los Clientes
+          All Clients
         </button>
         {currentUser.role === 'broker' && (
           <button
@@ -501,7 +470,7 @@ const fetchClients = async () => {
               ...(filter === 'my_clients' ? styles.filterButtonActive : {})
             }}
           >
-            Mis Clientes
+            My Clients
           </button>
         )}
         {Object.entries(clientStatusConfig).map(([status, config]) => (
@@ -560,15 +529,15 @@ const fetchClients = async () => {
                 </div>
                 <div style={styles.detailItem}>
                   <Phone style={{ width: '14px', height: '14px' }} />
-                  {client.phone || 'Sin teléfono'}
+                  {client.phone || 'No phone'}
                 </div>
                 <div style={styles.detailItem}>
                   <Calendar style={{ width: '14px', height: '14px' }} />
-                  Creado: {new Date(client.created_at).toLocaleDateString()}
+                  Created: {new Date(client.created_at).toLocaleDateString()}
                 </div>
                 <div style={styles.detailItem}>
                   <Clock style={{ width: '14px', height: '14px' }} />
-                  Última actividad: {client.last_activity ? new Date(client.last_activity).toLocaleDateString() : 'Sin actividad'}
+                  Last activity: {client.last_activity ? new Date(client.last_activity).toLocaleDateString() : 'No activity'}
                 </div>
 
                 {/* Creator Info */}
@@ -587,18 +556,18 @@ const fetchClients = async () => {
                       style={{...styles.actionButton, ...styles.successButton}}
                     >
                       <CheckCircle style={{ width: '12px', height: '12px' }} />
-                      Mover a {clientStatusConfig[statusConfig.nextStatus]?.label}
+                      Move to {clientStatusConfig[statusConfig.nextStatus]?.label}
                     </button>
                   )}
                   
-                  {/* Botón lista negra */}
-                  {client.status !== 'blacklist' && (
+                  {/* Botón reject */}
+                  {client.status !== 'rejected' && (
                     <button
-                      onClick={() => moveToBlacklist(client.id)}
+                      onClick={() => moveToRejected(client.id)}
                       style={{...styles.actionButton, ...styles.dangerButton}}
                     >
-                      <Shield style={{ width: '12px', height: '12px' }} />
-                      Lista Negra
+                      <XCircle style={{ width: '12px', height: '12px' }} />
+                      Reject
                     </button>
                   )}
 
@@ -607,7 +576,7 @@ const fetchClients = async () => {
                     style={{...styles.actionButton, ...styles.secondaryButton}}
                   >
                     <Eye style={{ width: '12px', height: '12px' }} />
-                    Ver Detalles
+                    View Details
                   </button>
                 </div>
               )}
@@ -620,7 +589,7 @@ const fetchClients = async () => {
                     style={{...styles.actionButton, ...styles.secondaryButton}}
                   >
                     <Eye style={{ width: '12px', height: '12px' }} />
-                    Ver Detalles
+                    View Details
                   </button>
                 </div>
               )}
@@ -632,9 +601,9 @@ const fetchClients = async () => {
       {filteredClients.length === 0 && (
         <div style={{ textAlign: 'center', padding: '60px', color: '#6b7280' }}>
           <AlertTriangle style={{ width: '48px', height: '48px', margin: '0 auto 16px' }} />
-          <h3 style={{ margin: '0 0 8px 0' }}>No se encontraron clientes</h3>
+          <h3 style={{ margin: '0 0 8px 0' }}>No clients found</h3>
           <p style={{ margin: 0 }}>
-            {filter === 'all' ? 'No hay clientes registrados aún' : `No hay clientes con estado "${clientStatusConfig[filter]?.label || filter}"`}
+            {filter === 'all' ? 'No clients registered yet' : `No clients with status "${clientStatusConfig[filter]?.label || filter}"`}
           </p>
         </div>
       )}
