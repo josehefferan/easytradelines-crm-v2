@@ -13,7 +13,6 @@ import {
   Settings, 
   LogOut, 
   Plus, 
-  Filter, 
   UserCheck, 
   Building2, 
   CreditCard
@@ -32,7 +31,6 @@ import AffiliatePanel from '../components/AffiliatePanel';
 const ModernCRMPanel = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  
   const [selectedView, setSelectedView] = useState('dashboard');
   
   // Estados para los modales
@@ -72,7 +70,7 @@ const ModernCRMPanel = () => {
         return;
       }
 
-      // Verificar si es admin usando la tabla admin_emails
+      // Verificar si es admin
       const { data: adminData, error: adminError } = await supabase
         .from('admin_emails')
         .select('*')
@@ -89,7 +87,7 @@ const ModernCRMPanel = () => {
         return;
       }
 
-      // Verificar si es broker (tabla brokers)
+      // Verificar si es broker
       const { data: brokerData, error: brokerError } = await supabase
         .from('brokers')
         .select('*')
@@ -102,7 +100,7 @@ const ModernCRMPanel = () => {
           name: `${brokerData.first_name} ${brokerData.last_name}`,
           email: user.email,
           brokerId: brokerData.id,
-          brokerData: brokerData // Guardar datos del broker
+          brokerData: brokerData
         });
         setLoading(false);
         return;
@@ -118,7 +116,7 @@ const ModernCRMPanel = () => {
       if (!affiliateError && affiliateData) {
         setCurrentUser({
           role: 'affiliate',
-          name: affiliateData.company_name || user.email.split('@')[0],
+          name: affiliateData.first_name + ' ' + affiliateData.last_name || user.email.split('@')[0],
           email: user.email,
           affiliateId: affiliateData.id
         });
@@ -152,12 +150,10 @@ const ModernCRMPanel = () => {
     }
   }, [currentUser]);
 
-  // Función para obtener actividad del BROKER (solo sus clientes)
   const fetchBrokerActivity = async () => {
     try {
       setLoadingActivity(true);
       
-      // Obtener solo los clientes del broker
       const { data: brokerClients } = await supabase
         .from('clients')
         .select('*')
@@ -193,13 +189,12 @@ const ModernCRMPanel = () => {
     }
   };
 
-  // Función para obtener actividad GLOBAL (solo admin)
   const fetchGlobalActivity = async () => {
     try {
       setLoadingActivity(true);
       const activities = [];
       
-      // 1. Obtener clientes recientes
+      // Obtener clientes recientes
       const { data: recentClients } = await supabase
         .from('clients')
         .select(`
@@ -239,7 +234,7 @@ const ModernCRMPanel = () => {
         });
       }
 
-      // 2. Obtener brokers recientes
+      // Obtener brokers recientes
       const { data: recentBrokers } = await supabase
         .from('brokers')
         .select('*')
@@ -264,10 +259,7 @@ const ModernCRMPanel = () => {
         });
       }
 
-      // Ordenar todas las actividades por timestamp
       activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      
-      // Tomar solo las 10 más recientes
       setRecentActivity(activities.slice(0, 10));
       
     } catch (error) {
@@ -277,12 +269,10 @@ const ModernCRMPanel = () => {
     }
   };
 
-  // Función para obtener estadísticas
   const fetchStats = async () => {
     try {
       let query = supabase.from('clients').select('status');
       
-      // Si es broker, filtrar solo sus clientes
       if (currentUser.role === 'broker') {
         const { data: brokerClients } = await supabase
           .from('clients')
@@ -299,7 +289,7 @@ const ModernCRMPanel = () => {
             muerto: 0,
             blacklist: 0,
             total: brokerClients.length,
-            revenue: 0 // Los brokers no ven revenue
+            revenue: 0
           };
 
           brokerClients.forEach(client => {
@@ -346,7 +336,7 @@ const ModernCRMPanel = () => {
             muerto: 0,
             blacklist: 0,
             total: clients.length,
-            revenue: 17200 // Solo admin ve revenue
+            revenue: 17200
           };
 
           clients.forEach(client => {
@@ -385,7 +375,6 @@ const ModernCRMPanel = () => {
     }
   };
 
-  // Función para formatear el timestamp
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -510,21 +499,34 @@ const ModernCRMPanel = () => {
     window.location.href = '/login';
   };
 
-  // Función para determinar qué botones mostrar según el rol
   const getHeaderButtons = () => {
     const buttons = [];
     
     if (!currentUser) return buttons;
     
-    // Botón New Client - visible para admin y broker
-    buttons.push({
-      key: 'client',
-      label: 'New Client',
-      icon: Users,
-      color: '#16a34a',
-      hoverColor: '#15803d',
-      onClick: () => setIsNewClientModalOpen(true)
-    });
+    // Botón New Client - visible para admin, broker y affiliate
+    if (currentUser.role === 'admin' || currentUser.role === 'broker') {
+      buttons.push({
+        key: 'client',
+        label: 'New Client',
+        icon: Users,
+        color: '#16a34a',
+        hoverColor: '#15803d',
+        onClick: () => setIsNewClientModalOpen(true)
+      });
+    }
+
+    // Botón Card Registration - solo affiliate ve este botón
+    if (currentUser.role === 'affiliate') {
+      buttons.push({
+        key: 'card',
+        label: 'Card Registration',
+        icon: CreditCard,
+        color: '#10b981',
+        hoverColor: '#059669',
+        onClick: () => setIsCardRegistrationModalOpen(true)
+      });
+    }
 
     // Botones adicionales solo para admin
     if (currentUser && currentUser.role === 'admin') {
@@ -704,8 +706,8 @@ const ModernCRMPanel = () => {
     statsGrid: {
       display: 'grid',
       gridTemplateColumns: currentUser?.role === 'broker' 
-        ? 'repeat(auto-fit, minmax(250px, 1fr))' // 3 columnas para broker
-        : 'repeat(auto-fit, minmax(250px, 1fr))', // 4 columnas para admin
+        ? 'repeat(auto-fit, minmax(250px, 1fr))'
+        : 'repeat(auto-fit, minmax(250px, 1fr))',
       gap: '24px',
       marginBottom: '32px'
     },
@@ -826,6 +828,11 @@ const ModernCRMPanel = () => {
     return null;
   }
 
+  // Renderizar directamente el AffiliatePanel si el usuario es affiliate
+  if (currentUser.role === 'affiliate') {
+    return <AffiliatePanel currentUser={currentUser} />;
+  }
+
   return (
     <div style={styles.container}>
       {/* Sidebar */}
@@ -922,7 +929,6 @@ const ModernCRMPanel = () => {
               </p>
             </div>
             
-            {/* Container de botones dinámicos */}
             <div style={styles.buttonsContainer}>
               {getHeaderButtons().map(button => {
                 const IconComponent = button.icon;
@@ -1124,36 +1130,17 @@ const ModernCRMPanel = () => {
           </div>
         )}
 
-        {/* ClientManagement Component */}
-        {selectedView === 'clients' && (
-          <ClientManagement currentUser={currentUser} />
-        )}
-
-        {/* Pipeline View */}
-        {selectedView === 'pipeline' && (
-          <Pipeline currentUser={currentUser} />
-        )}
-
-        {/* Other Views */}
-   {selectedView !== 'dashboard' && selectedView !== 'clients' && selectedView !== 'pipeline' && (
-  <div>
-    {/* AffiliatePanel - renderizar FUERA del párrafo */}
-    {currentUser.role === 'affiliate' && (
-      <AffiliatePanel currentUser={currentUser} />
-    )}
-    
-    {/* Solo admin ve estas vistas */}
-    {currentUser.role === 'admin' && (
-      <div style={styles.card}>
-        {selectedView === 'archive' && <p style={{ color: '#6b7280', fontSize: '16px' }}>Archived clients management - Coming soon</p>}
-        {selectedView === 'brokers' && <BrokerManagement currentUser={currentUser} />}
-        {selectedView === 'affiliates' && <AffiliatesInhouseView currentUser={currentUser} />}
-        {selectedView === 'reports' && <p style={{ color: '#6b7280', fontSize: '16px' }}>Reports and analytics dashboard - Coming soon</p>}
-        {selectedView === 'settings' && <p style={{ color: '#6b7280', fontSize: '16px' }}>System settings and configuration - Coming soon</p>}
-      </div>
-    )}
-  </div>
-)}
+        {/* Views específicas */}
+        {selectedView === 'clients' && <ClientManagement currentUser={currentUser} />}
+        {selectedView === 'pipeline' && <Pipeline currentUser={currentUser} />}
+        {selectedView === 'brokers' && currentUser.role === 'admin' && <BrokerManagement currentUser={currentUser} />}
+        {selectedView === 'affiliates' && currentUser.role === 'admin' && <AffiliatesInhouseView currentUser={currentUser} />}
+        
+        {/* Otras vistas */}
+        {(selectedView === 'archive' || selectedView === 'reports' || selectedView === 'settings') && (
+          <div style={styles.card}>
+            <p style={{ color: '#6b7280', fontSize: '16px' }}>
+              {selectedView === 'archive' && 'Archived clients management - Coming soon'}
               {selectedView === 'reports' && 'Reports and analytics dashboard - Coming soon'}
               {selectedView === 'settings' && 'System settings and configuration - Coming soon'}
             </p>
