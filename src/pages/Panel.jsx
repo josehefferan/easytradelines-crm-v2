@@ -46,139 +46,338 @@ const ModernCRMPanel = () => {
   }, []);
 
   const checkUser = async () => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      window.location.href = '/login';
-      return;
-    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        window.location.href = '/login';
+        return;
+      }
 
-    // Verificar si es admin usando la tabla admin_emails
-    const { data: adminData, error: adminError } = await supabase
-      .from('admin_emails')
-      .select('*')
-      .eq('email', user.email)
-      .single();
-    
-    if (!adminError && adminData) {
+      // Verificar si es admin usando la tabla admin_emails
+      const { data: adminData, error: adminError } = await supabase
+        .from('admin_emails')
+        .select('*')
+        .eq('email', user.email)
+        .single();
+      
+      if (!adminError && adminData) {
+        setCurrentUser({
+          role: 'admin',
+          name: user.email.split('@')[0],
+          email: user.email
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Verificar si es broker (tabla brokers)
+      const { data: brokerData, error: brokerError } = await supabase
+        .from('brokers')
+        .select('*')
+        .eq('email', user.email)
+        .single();
+      
+      if (!brokerError && brokerData && brokerData.status === 'active') {
+        setCurrentUser({
+          role: 'broker',
+          name: `${brokerData.first_name} ${brokerData.last_name}`,
+          email: user.email,
+          brokerId: brokerData.id,
+          brokerNumber: brokerData.broker_number
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Verificar si es affiliate
+      const { data: affiliateData, error: affiliateError } = await supabase
+        .from('affiliates')
+        .select('*')
+        .eq('email', user.email)
+        .single();
+      
+      if (!affiliateError && affiliateData) {
+        setCurrentUser({
+          role: 'affiliate',
+          name: affiliateData.company_name || user.email.split('@')[0],
+          email: user.email,
+          affiliateId: affiliateData.id
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Por defecto, usuario viewer
       setCurrentUser({
-        role: 'admin',
+        role: 'viewer',
         name: user.email.split('@')[0],
         email: user.email
       });
+      
       setLoading(false);
-      return;
+    } catch (error) {
+      console.error('Error loading user:', error);
+      window.location.href = '/login';
     }
+  };
 
-    // Verificar si es broker (tabla brokers)
-    const { data: brokerData, error: brokerError } = await supabase
-      .from('brokers')
-      .select('*')
-      .eq('email', user.email)
-      .single();
+  // NUEVO: Estados para actividad reciente y estadísticas
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(true);
+
+  // Stats para el dashboard
+  const [stats, setStats] = useState({
+    nuevo_lead: 0,
+    contactado: 0,
+    en_validacion: 0,
+    aprobado: 0,
+    activo: 0,
+    muerto: 0,
+    blacklist: 0,
+    total: 0,
+    revenue: 0
+  });
+
+  // Cargar actividad reciente cuando el usuario esté listo
+  useEffect(() => {
+    if (currentUser) {
+      fetchGlobalActivity();
+      fetchStats();
+    }
+  }, [currentUser]);
+
+  // Función para obtener toda la actividad reciente del CRM
+  const fetchGlobalActivity = async () => {
+    try {
+      setLoadingActivity(true);
+      const activities = [];
+      
+      // 1. Obtener clientes recientes
+      const { data: recentClients } = await supabase
+        .from('clients')
+        .select(`
+          id,
+          unique_id,
+          first_name,
+          last_name,
+          email,
+          status,
+          created_at,
+          updated_at,
+          created_by,
+          brokers (
+            first_name,
+            last_name
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (recentClients) {
+        recentClients.forEach(client => {
+          activities.push({
+            id: `client-${client.id}`,
+            type: 'client',
+            name: `${client.first_name} ${client.last_name}`,
+            action: 'New client registered',
+            status: client.status,
+            email: client.email,
+            timestamp: client.created_at,
+            icon: Users,
+            color: '#3b82f6',
+            bgColor: '#eff6ff',
+            broker: client.brokers ? `${client.brokers.first_name} ${client.brokers.last_name}` : 'Unassigned',
+            createdBy: client.created_by || 'System'
+          });
+        });
+      }
+
+      // 2. Obtener brokers recientes
+      const { data: recentBrokers } = await supabase
+        .from('brokers')
+        .select(`
+          id,
+          custom_id,
+          first_name,
+          last_name,
+          email,
+          status,
+          created_at
+        `)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (recentBrokers) {
+        recentBrokers.forEach(broker => {
+          activities.push({
+            id: `broker-${broker.id}`,
+            type: 'broker',
+            name: `${broker.first_name} ${broker.last_name}`,
+            action: 'New broker registered',
+            status: broker.status,
+            email: broker.email,
+            timestamp: broker.created_at,
+            icon: UserCheck,
+            color: '#22c55e',
+            bgColor: '#f0fdf4',
+            createdBy: 'Admin'
+          });
+        });
+      }
+
+      // 3. Obtener affiliates recientes (si la tabla existe)
+      try {
+        const { data: recentAffiliates } = await supabase
+          .from('affiliates')
+          .select(`
+            id,
+            company_name,
+            email,
+            status,
+            created_at
+          `)
+          .order('created_at', { ascending: false })
+          .limit(3);
+        
+        if (recentAffiliates) {
+          recentAffiliates.forEach(affiliate => {
+            activities.push({
+              id: `affiliate-${affiliate.id}`,
+              type: 'affiliate',
+              name: affiliate.company_name || 'Unnamed Affiliate',
+              action: 'New affiliate registered',
+              status: affiliate.status || 'active',
+              email: affiliate.email,
+              timestamp: affiliate.created_at,
+              icon: Building2,
+              color: '#a855f7',
+              bgColor: '#faf5ff',
+              createdBy: 'Admin'
+            });
+          });
+        }
+      } catch (err) {
+        console.log('Affiliates table not available');
+      }
+
+      // 4. Obtener tarjetas recientes (si la tabla existe)
+      try {
+        const { data: recentCards } = await supabase
+          .from('cards')
+          .select(`
+            id,
+            bank,
+            account_limit,
+            created_at,
+            registered_by
+          `)
+          .order('created_at', { ascending: false })
+          .limit(3);
+        
+        if (recentCards) {
+          recentCards.forEach(card => {
+            activities.push({
+              id: `card-${card.id}`,
+              type: 'card',
+              name: `${card.bank} Card`,
+              action: 'New card registered',
+              status: 'active',
+              email: `Limit: $${card.account_limit}`,
+              timestamp: card.created_at,
+              icon: CreditCard,
+              color: '#ea580c',
+              bgColor: '#fff7ed',
+              createdBy: card.registered_by || 'System'
+            });
+          });
+        }
+      } catch (err) {
+        console.log('Cards table not available');
+      }
+
+      // Ordenar todas las actividades por timestamp (más reciente primero)
+      activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      // Tomar solo las 10 más recientes
+      setRecentActivity(activities.slice(0, 10));
+      
+    } catch (error) {
+      console.error('Error fetching global activity:', error);
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  // Función para obtener estadísticas
+  const fetchStats = async () => {
+    try {
+      const { data: clients } = await supabase
+        .from('clients')
+        .select('status');
+      
+      if (clients) {
+        const newStats = {
+          nuevo_lead: 0,
+          contactado: 0,
+          en_validacion: 0,
+          aprobado: 0,
+          activo: 0,
+          muerto: 0,
+          blacklist: 0,
+          total: clients.length,
+          revenue: 17200 // Placeholder - calcular desde datos reales si tienes campo de revenue
+        };
+
+        // Mapear los estados reales a los estados del dashboard
+        clients.forEach(client => {
+          switch(client.status) {
+            case 'new_lead':
+              newStats.nuevo_lead++;
+              break;
+            case 'contacted':
+              newStats.contactado++;
+              break;
+            case 'qualification':
+            case 'in_validation':
+              newStats.en_validacion++;
+              break;
+            case 'approved':
+              newStats.aprobado++;
+              break;
+            case 'active':
+              newStats.activo++;
+              break;
+            case 'expired':
+            case 'dead':
+              newStats.muerto++;
+              break;
+            case 'blacklist':
+              newStats.blacklist++;
+              break;
+          }
+        });
+
+        setStats(newStats);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  // Función para formatear el timestamp
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     
-    if (!brokerError && brokerData && brokerData.status === 'active') {
-      setCurrentUser({
-        role: 'broker',
-        name: `${brokerData.first_name} ${brokerData.last_name}`,
-        email: user.email,
-        brokerId: brokerData.id,
-        brokerNumber: brokerData.broker_number
-      });
-      setLoading(false);
-      return;
-    }
-
-    // Verificar si es affiliate
-    const { data: affiliateData, error: affiliateError } = await supabase
-      .from('affiliates')
-      .select('*')
-      .eq('email', user.email)
-      .single();
-    
-    if (!affiliateError && affiliateData) {
-      setCurrentUser({
-        role: 'affiliate',
-        name: affiliateData.company_name || user.email.split('@')[0],
-        email: user.email,
-        affiliateId: affiliateData.id
-      });
-      setLoading(false);
-      return;
-    }
-
-    // Por defecto, usuario viewer
-    setCurrentUser({
-      role: 'viewer',
-      name: user.email.split('@')[0],
-      email: user.email
-    });
-    
-    setLoading(false);
-  } catch (error) {
-    console.error('Error loading user:', error);
-    window.location.href = '/login';
-  }
-};
-
-  const [clients] = useState([
-    {
-      id: 1,
-      name: 'John Smith',
-      email: 'john@example.com',
-      status: 'nuevo_lead',
-      broker: 'Maria Garcia',
-      created: '2024-01-15',
-      lastActivity: '2024-01-20',
-      progress: 20,
-      amount: 2500
-    },
-    {
-      id: 2,
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
-      status: 'contactado',
-      broker: 'Carlos Rodriguez',
-      created: '2024-01-18',
-      lastActivity: '2024-01-22',
-      progress: 40,
-      amount: 3200
-    },
-    {
-      id: 3,
-      name: 'Mike Wilson',
-      email: 'mike@example.com',
-      status: 'en_validacion',
-      broker: 'Maria Garcia',
-      created: '2024-01-20',
-      lastActivity: '2024-01-23',
-      progress: 60,
-      amount: 1800
-    },
-    {
-      id: 4,
-      name: 'Lisa Brown',
-      email: 'lisa@example.com',
-      status: 'aprobado',
-      broker: 'Carlos Rodriguez',
-      created: '2024-01-12',
-      lastActivity: '2024-01-24',
-      progress: 80,
-      amount: 4500
-    },
-    {
-      id: 5,
-      name: 'David Lee',
-      email: 'david@example.com',
-      status: 'activo',
-      broker: 'Maria Garcia',
-      created: '2024-01-10',
-      lastActivity: '2024-01-25',
-      progress: 100,
-      amount: 5200
-    }
-  ]);
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 30) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
 
   const statusConfig = {
     nuevo_lead: { 
@@ -238,18 +437,6 @@ const ModernCRMPanel = () => {
       icon: Shield
     }
   };
-
-  const getStats = () => {
-    const stats = {};
-    Object.keys(statusConfig).forEach(status => {
-      stats[status] = clients.filter(client => client.status === status).length;
-    });
-    stats.total = clients.length;
-    stats.revenue = clients.reduce((sum, client) => sum + client.amount, 0);
-    return stats;
-  };
-
-  const stats = getStats();
 
   const LogoSVG = () => (
     <svg width="40" height="40" viewBox="0 0 120 60" style={{ marginRight: '12px' }}>
@@ -806,26 +993,69 @@ const ModernCRMPanel = () => {
 
             {/* Content Cards */}
             <div style={styles.contentGrid}>
+              {/* Recent Activity - ACTUALIZADO */}
               <div style={styles.card}>
                 <h3 style={styles.cardTitle}>Recent Activity</h3>
-                {clients.slice(0, 5).map(client => {
-                  const StatusIcon = statusConfig[client.status].icon;
-                  return (
-                    <div key={client.id} style={styles.activityItem}>
-                      <div style={{
-                        ...styles.activityIcon,
-                        backgroundColor: statusConfig[client.status].color
-                      }}>
-                        <StatusIcon style={{ width: '16px', height: '16px', color: 'white' }} />
+                {loadingActivity ? (
+                  <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
+                    Loading activity...
+                  </div>
+                ) : recentActivity.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
+                    No recent activity
+                  </div>
+                ) : (
+                  recentActivity.map(activity => {
+                    const StatusIcon = activity.icon;
+                    return (
+                      <div key={activity.id} style={styles.activityItem}>
+                        <div style={{
+                          ...styles.activityIcon,
+                          backgroundColor: activity.bgColor
+                        }}>
+                          <StatusIcon style={{ 
+                            width: '16px', 
+                            height: '16px', 
+                            color: activity.color 
+                          }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <p style={styles.activityName}>
+                            {activity.name}
+                            {activity.type === 'client' && activity.broker && (
+                              <span style={{ 
+                                fontSize: '11px', 
+                                color: '#16a34a',
+                                marginLeft: '8px',
+                                backgroundColor: '#f0fdf4',
+                                padding: '2px 6px',
+                                borderRadius: '4px'
+                              }}>
+                                {activity.broker}
+                              </span>
+                            )}
+                          </p>
+                          <p style={styles.activityStatus}>
+                            {activity.action}
+                            {activity.createdBy && (
+                              <span style={{ fontSize: '11px', color: '#9ca3af' }}>
+                                {' by '}{activity.createdBy}
+                              </span>
+                            )}
+                          </p>
+                          {activity.type === 'client' && (
+                            <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
+                              Status: {activity.status?.replace(/_/g, ' ')}
+                            </p>
+                          )}
+                        </div>
+                        <span style={styles.activityTime}>
+                          {formatTimestamp(activity.timestamp)}
+                        </span>
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <p style={styles.activityName}>{client.name}</p>
-                        <p style={styles.activityStatus}>Changed to {statusConfig[client.status].label}</p>
-                      </div>
-                      <span style={styles.activityTime}>{client.lastActivity}</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
 
               <div style={styles.card}>
@@ -867,32 +1097,32 @@ const ModernCRMPanel = () => {
         )}
 
         {/* NUEVA SECCIÓN: ClientManagement Component */}
-{selectedView === 'clients' && (
-  <ClientManagement currentUser={currentUser} />
-)}
+        {selectedView === 'clients' && (
+          <ClientManagement currentUser={currentUser} />
+        )}
 
-{/* Pipeline View */}
-{selectedView === 'pipeline' && (
-  <Pipeline currentUser={currentUser} />
-)}
+        {/* Pipeline View */}
+        {selectedView === 'pipeline' && (
+          <Pipeline currentUser={currentUser} />
+        )}
 
-{/* Other Views */}
-{selectedView !== 'dashboard' && selectedView !== 'clients' && selectedView !== 'pipeline' && (
-  <div style={styles.card}>
-    <p style={{ color: '#6b7280', fontSize: '16px' }}>
-      {selectedView === 'archive' && 'Archived clients management - Coming soon'}
-      {selectedView === 'brokers' && currentUser.role === 'admin' && (
-        <BrokerManagement currentUser={currentUser} />
-      )}
-      {selectedView === 'affiliates' && currentUser.role === 'admin' && (
-        <AffiliatesInhouseView currentUser={currentUser} />
-      )}
-      {selectedView === 'reports' && 'Reports and analytics dashboard - Coming soon'}
-      {selectedView === 'settings' && 'System settings and configuration - Coming soon'}
-    </p>
-  </div>
-)}
-</div> 
+        {/* Other Views */}
+        {selectedView !== 'dashboard' && selectedView !== 'clients' && selectedView !== 'pipeline' && (
+          <div style={styles.card}>
+            <p style={{ color: '#6b7280', fontSize: '16px' }}>
+              {selectedView === 'archive' && 'Archived clients management - Coming soon'}
+              {selectedView === 'brokers' && currentUser.role === 'admin' && (
+                <BrokerManagement currentUser={currentUser} />
+              )}
+              {selectedView === 'affiliates' && currentUser.role === 'admin' && (
+                <AffiliatesInhouseView currentUser={currentUser} />
+              )}
+              {selectedView === 'reports' && 'Reports and analytics dashboard - Coming soon'}
+              {selectedView === 'settings' && 'System settings and configuration - Coming soon'}
+            </p>
+          </div>
+        )}
+      </div>
       
       {/* Modales */}
       <NewClientModal 
