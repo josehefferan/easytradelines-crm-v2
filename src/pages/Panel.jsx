@@ -40,7 +40,24 @@ const ModernCRMPanel = () => {
   const [isNewAffiliateModalOpen, setIsNewAffiliateModalOpen] = useState(false);
   const [isCardRegistrationModalOpen, setIsCardRegistrationModalOpen] = useState(false);
 
-  // Agregar useEffect para cargar el usuario
+  // Estados para actividad reciente y estadísticas
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(true);
+
+  // Stats para el dashboard
+  const [stats, setStats] = useState({
+    nuevo_lead: 0,
+    contactado: 0,
+    en_validacion: 0,
+    aprobado: 0,
+    activo: 0,
+    muerto: 0,
+    blacklist: 0,
+    total: 0,
+    revenue: 0
+  });
+
+  // Cargar usuario
   useEffect(() => {
     checkUser();
   }, []);
@@ -84,7 +101,7 @@ const ModernCRMPanel = () => {
           name: `${brokerData.first_name} ${brokerData.last_name}`,
           email: user.email,
           brokerId: brokerData.id,
-          brokerNumber: brokerData.broker_number
+          brokerData: brokerData // Guardar datos del broker
         });
         setLoading(false);
         return;
@@ -122,32 +139,60 @@ const ModernCRMPanel = () => {
     }
   };
 
-  // NUEVO: Estados para actividad reciente y estadísticas
-  const [recentActivity, setRecentActivity] = useState([]);
-  const [loadingActivity, setLoadingActivity] = useState(true);
-
-  // Stats para el dashboard
-  const [stats, setStats] = useState({
-    nuevo_lead: 0,
-    contactado: 0,
-    en_validacion: 0,
-    aprobado: 0,
-    activo: 0,
-    muerto: 0,
-    blacklist: 0,
-    total: 0,
-    revenue: 0
-  });
-
   // Cargar actividad reciente cuando el usuario esté listo
   useEffect(() => {
     if (currentUser) {
-      fetchGlobalActivity();
+      if (currentUser.role === 'admin') {
+        fetchGlobalActivity();
+      } else if (currentUser.role === 'broker') {
+        fetchBrokerActivity();
+      }
       fetchStats();
     }
   }, [currentUser]);
 
-  // Función para obtener toda la actividad reciente del CRM
+  // Función para obtener actividad del BROKER (solo sus clientes)
+  const fetchBrokerActivity = async () => {
+    try {
+      setLoadingActivity(true);
+      
+      // Obtener solo los clientes del broker
+      const { data: brokerClients } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('assigned_broker_id', currentUser.brokerId)
+        .order('updated_at', { ascending: false })
+        .limit(10);
+
+      const activities = [];
+      
+      if (brokerClients) {
+        brokerClients.forEach(client => {
+          activities.push({
+            id: `client-${client.id}`,
+            type: 'client',
+            name: `${client.first_name} ${client.last_name}`,
+            action: 'Client activity',
+            status: client.status,
+            email: client.email,
+            timestamp: client.updated_at || client.created_at,
+            icon: Users,
+            color: '#3b82f6',
+            bgColor: '#eff6ff'
+          });
+        });
+      }
+
+      setRecentActivity(activities);
+      
+    } catch (error) {
+      console.error('Error fetching broker activity:', error);
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  // Función para obtener actividad GLOBAL (solo admin)
   const fetchGlobalActivity = async () => {
     try {
       setLoadingActivity(true);
@@ -196,15 +241,7 @@ const ModernCRMPanel = () => {
       // 2. Obtener brokers recientes
       const { data: recentBrokers } = await supabase
         .from('brokers')
-        .select(`
-          id,
-          custom_id,
-          first_name,
-          last_name,
-          email,
-          status,
-          created_at
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(3);
       
@@ -226,77 +263,7 @@ const ModernCRMPanel = () => {
         });
       }
 
-      // 3. Obtener affiliates recientes (si la tabla existe)
-      try {
-        const { data: recentAffiliates } = await supabase
-          .from('affiliates')
-          .select(`
-            id,
-            company_name,
-            email,
-            status,
-            created_at
-          `)
-          .order('created_at', { ascending: false })
-          .limit(3);
-        
-        if (recentAffiliates) {
-          recentAffiliates.forEach(affiliate => {
-            activities.push({
-              id: `affiliate-${affiliate.id}`,
-              type: 'affiliate',
-              name: affiliate.company_name || 'Unnamed Affiliate',
-              action: 'New affiliate registered',
-              status: affiliate.status || 'active',
-              email: affiliate.email,
-              timestamp: affiliate.created_at,
-              icon: Building2,
-              color: '#a855f7',
-              bgColor: '#faf5ff',
-              createdBy: 'Admin'
-            });
-          });
-        }
-      } catch (err) {
-        console.log('Affiliates table not available');
-      }
-
-      // 4. Obtener tarjetas recientes (si la tabla existe)
-      try {
-        const { data: recentCards } = await supabase
-          .from('cards')
-          .select(`
-            id,
-            bank,
-            account_limit,
-            created_at,
-            registered_by
-          `)
-          .order('created_at', { ascending: false })
-          .limit(3);
-        
-        if (recentCards) {
-          recentCards.forEach(card => {
-            activities.push({
-              id: `card-${card.id}`,
-              type: 'card',
-              name: `${card.bank} Card`,
-              action: 'New card registered',
-              status: 'active',
-              email: `Limit: $${card.account_limit}`,
-              timestamp: card.created_at,
-              icon: CreditCard,
-              color: '#ea580c',
-              bgColor: '#fff7ed',
-              createdBy: card.registered_by || 'System'
-            });
-          });
-        }
-      } catch (err) {
-        console.log('Cards table not available');
-      }
-
-      // Ordenar todas las actividades por timestamp (más reciente primero)
+      // Ordenar todas las actividades por timestamp
       activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
       
       // Tomar solo las 10 más recientes
@@ -312,53 +279,105 @@ const ModernCRMPanel = () => {
   // Función para obtener estadísticas
   const fetchStats = async () => {
     try {
-      const { data: clients } = await supabase
-        .from('clients')
-        .select('status');
+      let query = supabase.from('clients').select('status');
       
-      if (clients) {
-        const newStats = {
-          nuevo_lead: 0,
-          contactado: 0,
-          en_validacion: 0,
-          aprobado: 0,
-          activo: 0,
-          muerto: 0,
-          blacklist: 0,
-          total: clients.length,
-          revenue: 17200 // Placeholder - calcular desde datos reales si tienes campo de revenue
-        };
+      // Si es broker, filtrar solo sus clientes
+      if (currentUser.role === 'broker') {
+        const { data: brokerClients } = await supabase
+          .from('clients')
+          .select('status')
+          .eq('assigned_broker_id', currentUser.brokerId);
+        
+        if (brokerClients) {
+          const newStats = {
+            nuevo_lead: 0,
+            contactado: 0,
+            en_validacion: 0,
+            aprobado: 0,
+            activo: 0,
+            muerto: 0,
+            blacklist: 0,
+            total: brokerClients.length,
+            revenue: 0 // Los brokers no ven revenue
+          };
 
-        // Mapear los estados reales a los estados del dashboard
-        clients.forEach(client => {
-          switch(client.status) {
-            case 'new_lead':
-              newStats.nuevo_lead++;
-              break;
-            case 'contacted':
-              newStats.contactado++;
-              break;
-            case 'qualification':
-            case 'in_validation':
-              newStats.en_validacion++;
-              break;
-            case 'approved':
-              newStats.aprobado++;
-              break;
-            case 'active':
-              newStats.activo++;
-              break;
-            case 'expired':
-            case 'dead':
-              newStats.muerto++;
-              break;
-            case 'blacklist':
-              newStats.blacklist++;
-              break;
-          }
-        });
+          brokerClients.forEach(client => {
+            switch(client.status) {
+              case 'new_lead':
+                newStats.nuevo_lead++;
+                break;
+              case 'contacted':
+                newStats.contactado++;
+                break;
+              case 'qualification':
+              case 'in_validation':
+                newStats.en_validacion++;
+                break;
+              case 'approved':
+                newStats.aprobado++;
+                break;
+              case 'active':
+                newStats.activo++;
+                break;
+              case 'expired':
+              case 'dead':
+                newStats.muerto++;
+                break;
+              case 'blacklist':
+                newStats.blacklist++;
+                break;
+            }
+          });
 
-        setStats(newStats);
+          setStats(newStats);
+        }
+      } else {
+        // Admin ve todas las stats
+        const { data: clients } = await query;
+        
+        if (clients) {
+          const newStats = {
+            nuevo_lead: 0,
+            contactado: 0,
+            en_validacion: 0,
+            aprobado: 0,
+            activo: 0,
+            muerto: 0,
+            blacklist: 0,
+            total: clients.length,
+            revenue: 17200 // Solo admin ve revenue
+          };
+
+          clients.forEach(client => {
+            switch(client.status) {
+              case 'new_lead':
+                newStats.nuevo_lead++;
+                break;
+              case 'contacted':
+                newStats.contactado++;
+                break;
+              case 'qualification':
+              case 'in_validation':
+                newStats.en_validacion++;
+                break;
+              case 'approved':
+                newStats.aprobado++;
+                break;
+              case 'active':
+                newStats.activo++;
+                break;
+              case 'expired':
+              case 'dead':
+                newStats.muerto++;
+                break;
+              case 'blacklist':
+                newStats.blacklist++;
+                break;
+            }
+          });
+
+          setStats(newStats);
+        }
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -471,6 +490,7 @@ const ModernCRMPanel = () => {
       { id: 'reports', label: 'Reports', icon: Eye }
     ];
 
+    // Solo admin ve estas opciones
     if (currentUser && currentUser.role === 'admin') {
       baseItems.push(
         { id: 'brokers', label: 'Brokers', icon: UserCheck },
@@ -489,14 +509,13 @@ const ModernCRMPanel = () => {
     window.location.href = '/login';
   };
 
-  // Función para determinar qué botones mostrar según la vista actual
+  // Función para determinar qué botones mostrar según el rol
   const getHeaderButtons = () => {
     const buttons = [];
     
-    // Solo agregar botones si currentUser existe
     if (!currentUser) return buttons;
     
-    // Botón New Client - siempre visible
+    // Botón New Client - visible para admin y broker
     buttons.push({
       key: 'client',
       label: 'New Client',
@@ -526,7 +545,6 @@ const ModernCRMPanel = () => {
         onClick: () => setIsNewAffiliateModalOpen(true)
       });
       
-      // Botón Card Registration - solo para admin
       buttons.push({
         key: 'card',
         label: 'Card Registration',
@@ -684,7 +702,9 @@ const ModernCRMPanel = () => {
     },
     statsGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+      gridTemplateColumns: currentUser?.role === 'broker' 
+        ? 'repeat(auto-fit, minmax(250px, 1fr))' // 3 columnas para broker
+        : 'repeat(auto-fit, minmax(250px, 1fr))', // 4 columnas para admin
       gap: '24px',
       marginBottom: '32px'
     },
@@ -877,7 +897,7 @@ const ModernCRMPanel = () => {
 
       {/* Main Content */}
       <div style={styles.mainContent}>
-        {/* Header solo para las vistas que NO son ClientManagement */}
+        {/* Header */}
         {selectedView !== 'clients' && (
           <div style={styles.header}>
             <div>
@@ -945,7 +965,9 @@ const ModernCRMPanel = () => {
                   </div>
                   <Plus style={{ width: '32px', height: '32px', opacity: 0.8 }} />
                 </div>
-                <div style={styles.statTrend}>+12% vs last month</div>
+                <div style={styles.statTrend}>
+                  {currentUser.role === 'broker' ? 'Your new leads' : '+12% vs last month'}
+                </div>
               </div>
 
               <div style={{
@@ -959,7 +981,9 @@ const ModernCRMPanel = () => {
                   </div>
                   <TrendingUp style={{ width: '32px', height: '32px', opacity: 0.8 }} />
                 </div>
-                <div style={styles.statTrend}>+8% vs last month</div>
+                <div style={styles.statTrend}>
+                  {currentUser.role === 'broker' ? 'Your active clients' : '+8% vs last month'}
+                </div>
               </div>
 
               <div style={{
@@ -976,24 +1000,27 @@ const ModernCRMPanel = () => {
                 <div style={styles.statTrend}>Average 3 days</div>
               </div>
 
-              <div style={{
-                ...styles.statCard,
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-              }}>
-                <div style={styles.statCardContent}>
-                  <div>
-                    <p style={styles.statLabel}>Total Revenue</p>
-                    <p style={styles.statValue}>${stats.revenue.toLocaleString()}</p>
+              {/* Total Revenue - Solo para Admin */}
+              {currentUser.role === 'admin' && (
+                <div style={{
+                  ...styles.statCard,
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                }}>
+                  <div style={styles.statCardContent}>
+                    <div>
+                      <p style={styles.statLabel}>Total Revenue</p>
+                      <p style={styles.statValue}>${stats.revenue.toLocaleString()}</p>
+                    </div>
+                    <DollarSign style={{ width: '32px', height: '32px', opacity: 0.8 }} />
                   </div>
-                  <DollarSign style={{ width: '32px', height: '32px', opacity: 0.8 }} />
+                  <div style={styles.statTrend}>+15% vs last month</div>
                 </div>
-                <div style={styles.statTrend}>+15% vs last month</div>
-              </div>
+              )}
             </div>
 
             {/* Content Cards */}
             <div style={styles.contentGrid}>
-              {/* Recent Activity - ACTUALIZADO */}
+              {/* Recent Activity */}
               <div style={styles.card}>
                 <h3 style={styles.cardTitle}>Recent Activity</h3>
                 {loadingActivity ? (
@@ -1022,7 +1049,7 @@ const ModernCRMPanel = () => {
                         <div style={{ flex: 1 }}>
                           <p style={styles.activityName}>
                             {activity.name}
-                            {activity.type === 'client' && activity.broker && (
+                            {currentUser.role === 'admin' && activity.type === 'client' && activity.broker && (
                               <span style={{ 
                                 fontSize: '11px', 
                                 color: '#16a34a',
@@ -1037,7 +1064,7 @@ const ModernCRMPanel = () => {
                           </p>
                           <p style={styles.activityStatus}>
                             {activity.action}
-                            {activity.createdBy && (
+                            {currentUser.role === 'admin' && activity.createdBy && (
                               <span style={{ fontSize: '11px', color: '#9ca3af' }}>
                                 {' by '}{activity.createdBy}
                               </span>
@@ -1096,7 +1123,7 @@ const ModernCRMPanel = () => {
           </div>
         )}
 
-        {/* NUEVA SECCIÓN: ClientManagement Component */}
+        {/* ClientManagement Component */}
         {selectedView === 'clients' && (
           <ClientManagement currentUser={currentUser} />
         )}
@@ -1127,59 +1154,77 @@ const ModernCRMPanel = () => {
       {/* Modales */}
       <NewClientModal 
         isOpen={isNewClientModalOpen}
-        onClose={() => setIsNewClientModalOpen(false)}
-        currentUser={currentUser}
-      />
-      
-      <NewBrokerModal 
-        isOpen={isNewBrokerModalOpen}
-        onClose={() => setIsNewBrokerModalOpen(false)}
-        currentUser={currentUser}
-      />
-      
-      <NewAffiliateModal 
-        isOpen={isNewAffiliateModalOpen}
-        onClose={() => setIsNewAffiliateModalOpen(false)}
-        currentUser={currentUser}
-      />
-      
-      <CardRegistrationModal 
-        isOpen={isCardRegistrationModalOpen}
-        onClose={() => setIsCardRegistrationModalOpen(false)}
-        currentUser={currentUser}
-        onSubmit={async (data) => {
-          try {
-            // Guardar en Supabase
-            const { data: newCard, error } = await supabase
-              .from('cards')
-              .insert([{
-                bank: data.bank,
-                account_limit: data.account_limit,
-                open_date: data.open_date,
-                statement_date: data.statement_date,
-                card_address: data.card_address,
-                default_cycles: data.default_cycles,
-                default_spots: data.default_spots,
-                payout: data.payout,
-                owner_type: data.owner_type,
-                owner_id: currentUser.id || null,
-                registered_by: currentUser.email,
-                status: 'active'
-              }])
-              .select()
-              .single();
-
-            if (error) throw error;
-
-            alert('Card registered successfully!');
-            setIsCardRegistrationModalOpen(false);
-            
-          } catch (error) {
-            console.error('Error registering card:', error);
-            alert('Error registering card. Please try again.');
+        onClose={() => {
+          setIsNewClientModalOpen(false);
+          if (currentUser.role === 'broker') {
+            fetchBrokerActivity();
+          } else {
+            fetchGlobalActivity();
           }
+          fetchStats();
         }}
+        currentUser={currentUser}
       />
+      
+      {currentUser.role === 'admin' && (
+        <>
+          <NewBrokerModal 
+            isOpen={isNewBrokerModalOpen}
+            onClose={() => {
+              setIsNewBrokerModalOpen(false);
+              fetchGlobalActivity();
+            }}
+            currentUser={currentUser}
+          />
+          
+          <NewAffiliateModal 
+            isOpen={isNewAffiliateModalOpen}
+            onClose={() => {
+              setIsNewAffiliateModalOpen(false);
+              fetchGlobalActivity();
+            }}
+            currentUser={currentUser}
+          />
+          
+          <CardRegistrationModal 
+            isOpen={isCardRegistrationModalOpen}
+            onClose={() => setIsCardRegistrationModalOpen(false)}
+            currentUser={currentUser}
+            onSubmit={async (data) => {
+              try {
+                const { data: newCard, error } = await supabase
+                  .from('cards')
+                  .insert([{
+                    bank: data.bank,
+                    account_limit: data.account_limit,
+                    open_date: data.open_date,
+                    statement_date: data.statement_date,
+                    card_address: data.card_address,
+                    default_cycles: data.default_cycles,
+                    default_spots: data.default_spots,
+                    payout: data.payout,
+                    owner_type: data.owner_type,
+                    owner_id: currentUser.id || null,
+                    registered_by: currentUser.email,
+                    status: 'active'
+                  }])
+                  .select()
+                  .single();
+
+                if (error) throw error;
+
+                alert('Card registered successfully!');
+                setIsCardRegistrationModalOpen(false);
+                fetchGlobalActivity();
+                
+              } catch (error) {
+                console.error('Error registering card:', error);
+                alert('Error registering card. Please try again.');
+              }
+            }}
+          />
+        </>
+      )}
     </div>
   );
 };
