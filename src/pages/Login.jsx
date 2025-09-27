@@ -1,258 +1,229 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "../lib/supabase";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [isResetMode, setIsResetMode] = useState(false);
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [isResetMode, setIsResetMode] = useState(false);
 
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
+    setMessage('');
 
     try {
       if (isResetMode) {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
         });
-
-        if (error) {
-          setMessage(`Error: ${error.message}`);
-        } else {
-          setMessage("Password reset email sent! Check your inbox.");
-        }
-      } else if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/panel`
-          }
-        });
-
-        if (error) {
-          setMessage(`Error: ${error.message}`);
-        } else if (data.user && !data.session) {
-          setMessage("Check your email for the confirmation link!");
-        } else if (data.session) {
-          setMessage("Account created successfully!");
-        }
+        
+        if (error) throw error;
+        
+        setMessage("Password reset email sent! Check your inbox.");
+        setIsResetMode(false);
       } else {
-        // LOGIN - Todos van al mismo panel
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-
-        if (error) {
-          setMessage(`Error: ${error.message}`);
-        } else {
-          navigate('/panel');
+        
+        if (error) throw error;
+        
+        // Verificar el rol del usuario y redirigir apropiadamente
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // Verificar si es admin
+          const { data: adminData } = await supabase
+            .from('admin_emails')
+            .select('*')
+            .eq('email', user.email)
+            .single();
+          
+          if (adminData) {
+            // Es admin - ir al panel de admin
+            navigate('/panel');
+            return;
+          }
+          
+          // Verificar si es broker activo
+          const { data: brokerData } = await supabase
+            .from('brokers')
+            .select('*')
+            .eq('email', user.email)
+            .single();
+          
+          if (brokerData && brokerData.status === 'active') {
+            // Es broker activo - ir al panel de broker
+            navigate('/broker/panel');
+            return;
+          }
+          
+          // Por defecto, ir a Mi Cuenta
+          navigate('/mi-cuenta');
         }
       }
     } catch (error) {
-      setMessage(`Unexpected error: ${error.message}`);
+      setMessage(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const LogoSVG = () => (
-    <svg width="120" height="60" viewBox="0 0 120 60" style={{ marginBottom: '16px' }}>
-      <rect x="8" y="35" width="12" height="20" fill="#FF6B35" rx="2"/>
-      <rect x="24" y="25" width="12" height="30" fill="#FFB800" rx="2"/>
-      <rect x="40" y="15" width="12" height="40" fill="#7CB342" rx="2"/>
-      <path d="M45 8 L65 8 L60 3 M65 8 L60 13" 
-            stroke="#2E7D32" 
-            strokeWidth="3" 
-            fill="none" 
-            strokeLinecap="round" 
-            strokeLinejoin="round"/>
-      <text x="75" y="25" 
-            fill="#2E7D32" 
-            fontSize="14" 
-            fontWeight="bold" 
-            fontFamily="Arial, sans-serif">EASY</text>
-      <text x="75" y="42" 
-            fill="#2E7D32" 
-            fontSize="14" 
-            fontWeight="bold" 
-            fontFamily="Arial, sans-serif">TRADELINES</text>
-    </svg>
-  );
-
-  const getTitle = () => {
-    if (isResetMode) return "Reset your password";
-    if (isSignUp) return "Create your account";
-    return "Welcome back";
-  };
-
-  const getButtonText = () => {
-    if (loading) return "Processing...";
-    if (isResetMode) return "Send Reset Email";
-    if (isSignUp) return "Create Account";
-    return "Sign In to CRM";
-  };
-
-  return (
-    <div style={{
+  const styles = {
+    container: {
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1e3a8a 0%, #2E7D32 50%, #7CB342 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '20px',
-      fontFamily: 'system-ui, -apple-system, sans-serif'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '20px',
-        padding: '40px',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        width: '100%',
-        maxWidth: '420px',
-        border: '1px solid rgba(255, 255, 255, 0.2)'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <LogoSVG />
-          <h1 style={{
-            fontSize: '24px',
-            fontWeight: 'bold',
-            color: '#2E7D32',
-            margin: '0 0 8px 0',
-            letterSpacing: '-0.5px'
-          }}>
-            Professional CRM Platform
-          </h1>
-          <p style={{
-            color: '#6b7280',
-            margin: '0 0 8px 0',
-            fontSize: '16px'
-          }}>
-            {getTitle()}
-          </p>
-          <p style={{
-            fontSize: '14px',
-            color: '#2E7D32',
-            margin: '0',
-            fontWeight: '500'
-          }}>
-            Tradeline Management System
-          </p>
+      backgroundColor: '#f3f4f6',
+      padding: '1rem'
+    },
+    card: {
+      width: '100%',
+      maxWidth: '400px',
+      backgroundColor: 'white',
+      borderRadius: '8px',
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+      padding: '2rem'
+    },
+    logo: {
+      textAlign: 'center',
+      marginBottom: '2rem'
+    },
+    logoText: {
+      fontSize: '24px',
+      fontWeight: 'bold',
+      color: '#16a34a',
+      margin: 0
+    },
+    tagline: {
+      fontSize: '12px',
+      color: '#6b7280',
+      marginTop: '4px'
+    },
+    form: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '1rem'
+    },
+    inputGroup: {
+      display: 'flex',
+      flexDirection: 'column'
+    },
+    label: {
+      fontSize: '14px',
+      fontWeight: '500',
+      color: '#374151',
+      marginBottom: '4px'
+    },
+    input: {
+      padding: '0.5rem 1rem',
+      border: '1px solid #d1d5db',
+      borderRadius: '6px',
+      fontSize: '14px',
+      outline: 'none',
+      transition: 'border-color 0.15s'
+    },
+    inputFocus: {
+      borderColor: '#16a34a'
+    },
+    button: {
+      padding: '0.75rem',
+      backgroundColor: '#16a34a',
+      color: 'white',
+      border: 'none',
+      borderRadius: '6px',
+      fontSize: '16px',
+      fontWeight: '500',
+      cursor: 'pointer',
+      transition: 'background-color 0.15s'
+    },
+    buttonHover: {
+      backgroundColor: '#15803d'
+    },
+    buttonDisabled: {
+      backgroundColor: '#9ca3af',
+      cursor: 'not-allowed'
+    },
+    resetLink: {
+      fontSize: '14px',
+      color: '#16a34a',
+      textAlign: 'center',
+      marginTop: '1rem',
+      cursor: 'pointer',
+      textDecoration: 'none',
+      border: 'none',
+      background: 'none'
+    },
+    message: {
+      padding: '0.75rem',
+      borderRadius: '6px',
+      fontSize: '14px',
+      marginBottom: '1rem',
+      textAlign: 'center'
+    },
+    errorMessage: {
+      backgroundColor: '#fee2e2',
+      color: '#dc2626'
+    },
+    successMessage: {
+      backgroundColor: '#dcfce7',
+      color: '#16a34a'
+    }
+  };
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <div style={styles.logo}>
+          <h1 style={styles.logoText}>EasyTradelines</h1>
+          <p style={styles.tagline}>CRM System v1.0</p>
         </div>
 
-        <form onSubmit={handleAuth}>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#374151',
-              marginBottom: '8px'
-            }}>
-              Email Address
-            </label>
+        {message && (
+          <div 
+            style={{
+              ...styles.message,
+              ...(message.includes('sent') ? styles.successMessage : styles.errorMessage)
+            }}
+          >
+            {message}
+          </div>
+        )}
+
+        <form onSubmit={handleAuth} style={styles.form}>
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Email Address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              style={{
-                width: '100%',
-                padding: '14px 16px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '12px',
-                fontSize: '16px',
-                outline: 'none',
-                transition: 'all 0.2s',
-                boxSizing: 'border-box',
-                backgroundColor: '#fafafa'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#7CB342';
-                e.target.style.backgroundColor = 'white';
-                e.target.style.boxShadow = '0 0 0 3px rgba(124, 179, 66, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#e5e7eb';
-                e.target.style.backgroundColor = '#fafafa';
-                e.target.style.boxShadow = 'none';
-              }}
+              style={styles.input}
               placeholder="Enter your email"
+              onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
             />
           </div>
 
           {!isResetMode && (
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#374151',
-                marginBottom: '8px'
-              }}>
-                Password
-              </label>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                style={{
-                  width: '100%',
-                  padding: '14px 16px',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  outline: 'none',
-                  transition: 'all 0.2s',
-                  boxSizing: 'border-box',
-                  backgroundColor: '#fafafa'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#7CB342';
-                  e.target.style.backgroundColor = 'white';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(124, 179, 66, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#e5e7eb';
-                  e.target.style.backgroundColor = '#fafafa';
-                  e.target.style.boxShadow = 'none';
-                }}
+                style={styles.input}
                 placeholder="Enter your password"
-                minLength={6}
+                onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
               />
-            </div>
-          )}
-
-          {!isSignUp && !isResetMode && (
-            <div style={{ textAlign: 'right', marginBottom: '20px' }}>
-              <button
-                type="button"
-                onClick={() => setIsResetMode(true)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#2E7D32',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  padding: '4px 8px',
-                  borderRadius: '6px',
-                  transition: 'background-color 0.2s'
-                }}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9f0'}
-                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-              >
-                Forgot password?
-              </button>
             </div>
           )}
 
@@ -260,148 +231,28 @@ export default function Login() {
             type="submit"
             disabled={loading}
             style={{
-              width: '100%',
-              background: loading ? '#9ca3af' : 'linear-gradient(135deg, #7CB342 0%, #2E7D32 100%)',
-              color: 'white',
-              padding: '16px',
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.3s',
-              marginBottom: '20px',
-              letterSpacing: '0.5px'
+              ...styles.button,
+              ...(loading && styles.buttonDisabled)
             }}
-            onMouseOver={(e) => {
-              if (!loading) {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-                e.target.style.background = 'linear-gradient(135deg, #8BC34A 0%, #388E3C 100%)';
-              }
-            }}
-            onMouseOut={(e) => {
-              if (!loading) {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-                e.target.style.background = 'linear-gradient(135deg, #7CB342 0%, #2E7D32 100%)';
-              }
-            }}
+            onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = '#15803d')}
+            onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = '#16a34a')}
           >
-            {loading ? (
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{
-                  width: '20px',
-                  height: '20px',
-                  border: '2px solid transparent',
-                  borderTop: '2px solid white',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite',
-                  marginRight: '8px'
-                }}></span>
-                Processing...
-              </span>
-            ) : (
-              getButtonText()
-            )}
+            {loading 
+              ? 'Processing...' 
+              : isResetMode 
+                ? 'Send Reset Email' 
+                : 'Sign In'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsResetMode(!isResetMode)}
+            style={styles.resetLink}
+          >
+            {isResetMode ? 'Back to Sign In' : 'Forgot Password?'}
           </button>
         </form>
-
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          {isResetMode ? (
-            <button
-              type="button"
-              onClick={() => {
-                setIsResetMode(false);
-                setMessage("");
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#2E7D32',
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                textDecoration: 'none',
-                padding: '8px',
-                borderRadius: '6px',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9f0'}
-              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-            >
-              ← Back to sign in
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setMessage("");
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#2E7D32',
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                textDecoration: 'none',
-                padding: '8px',
-                borderRadius: '6px',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9f0'}
-              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-            >
-              {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
-            </button>
-          )}
-        </div>
-
-        {message && (
-          <div style={{
-            padding: '14px',
-            borderRadius: '12px',
-            fontSize: '14px',
-            marginBottom: '16px',
-            backgroundColor: message.includes("Error") ? '#fef2f2' : '#f0fdf4',
-            color: message.includes("Error") ? '#dc2626' : '#16a34a',
-            border: `2px solid ${message.includes("Error") ? '#fecaca' : '#bbf7d0'}`,
-            fontWeight: '500'
-          }}>
-            {message}
-          </div>
-        )}
-
-        <div style={{
-          backgroundColor: '#f0f9f0',
-          border: '2px solid #c8e6c9',
-          borderRadius: '12px',
-          padding: '14px',
-          fontSize: '12px',
-          color: '#2E7D32'
-        }}>
-          <div style={{ fontWeight: '600', marginBottom: '4px' }}>Admin Access</div>
-          <div>Use josehefferan@gmail.com to access the administrative panel</div>
-        </div>
-
-        <div style={{ 
-          textAlign: 'center', 
-          marginTop: '20px',
-          fontSize: '11px',
-          color: '#9ca3af'
-        }}>
-          Secured by enterprise-grade encryption
-        </div>
       </div>
-
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }
