@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 
 export default function Login() {
-  const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [isResetMode, setIsResetMode] = useState(false);
+  const navigate = useNavigate();
 
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
+    setMessage("");
 
     try {
       if (isResetMode) {
@@ -33,39 +33,8 @@ export default function Login() {
         
         if (error) throw error;
         
-        // Verificar el rol del usuario y redirigir apropiadamente
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (user) {
-          // Verificar si es admin
-          const { data: adminData } = await supabase
-            .from('admin_emails')
-            .select('*')
-            .eq('email', user.email)
-            .single();
-          
-          if (adminData) {
-            // Es admin - ir al panel de admin
-            navigate('/panel');
-            return;
-          }
-          
-          // Verificar si es broker activo
-          const { data: brokerData } = await supabase
-            .from('brokers')
-            .select('*')
-            .eq('email', user.email)
-            .single();
-          
-          if (brokerData && brokerData.status === 'active') {
-            // Es broker activo - ir al panel de broker
-            navigate('/broker/panel');
-            return;
-          }
-          
-          // Por defecto, ir a Mi Cuenta
-          navigate('/mi-cuenta');
-        }
+        // TODOS van al mismo panel
+        navigate('/panel');
       }
     } catch (error) {
       setMessage(error.message);
@@ -74,155 +43,147 @@ export default function Login() {
     }
   };
 
-  const styles = {
-    container: {
+  return (
+    <div style={{
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#f3f4f6',
-      padding: '1rem'
-    },
-    card: {
-      width: '100%',
-      maxWidth: '400px',
-      backgroundColor: 'white',
-      borderRadius: '8px',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      padding: '2rem'
-    },
-    logo: {
-      textAlign: 'center',
-      marginBottom: '2rem'
-    },
-    logoText: {
-      fontSize: '24px',
-      fontWeight: 'bold',
-      color: '#16a34a',
-      margin: 0
-    },
-    tagline: {
-      fontSize: '12px',
-      color: '#6b7280',
-      marginTop: '4px'
-    },
-    form: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1rem'
-    },
-    inputGroup: {
-      display: 'flex',
-      flexDirection: 'column'
-    },
-    label: {
-      fontSize: '14px',
-      fontWeight: '500',
-      color: '#374151',
-      marginBottom: '4px'
-    },
-    input: {
-      padding: '0.5rem 1rem',
-      border: '1px solid #d1d5db',
-      borderRadius: '6px',
-      fontSize: '14px',
-      outline: 'none',
-      transition: 'border-color 0.15s'
-    },
-    inputFocus: {
-      borderColor: '#16a34a'
-    },
-    button: {
-      padding: '0.75rem',
-      backgroundColor: '#16a34a',
-      color: 'white',
-      border: 'none',
-      borderRadius: '6px',
-      fontSize: '16px',
-      fontWeight: '500',
-      cursor: 'pointer',
-      transition: 'background-color 0.15s'
-    },
-    buttonHover: {
-      backgroundColor: '#15803d'
-    },
-    buttonDisabled: {
-      backgroundColor: '#9ca3af',
-      cursor: 'not-allowed'
-    },
-    resetLink: {
-      fontSize: '14px',
-      color: '#16a34a',
-      textAlign: 'center',
-      marginTop: '1rem',
-      cursor: 'pointer',
-      textDecoration: 'none',
-      border: 'none',
-      background: 'none'
-    },
-    message: {
-      padding: '0.75rem',
-      borderRadius: '6px',
-      fontSize: '14px',
-      marginBottom: '1rem',
-      textAlign: 'center'
-    },
-    errorMessage: {
-      backgroundColor: '#fee2e2',
-      color: '#dc2626'
-    },
-    successMessage: {
-      backgroundColor: '#dcfce7',
-      color: '#16a34a'
-    }
-  };
-
-  return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <div style={styles.logo}>
-          <h1 style={styles.logoText}>EasyTradelines</h1>
-          <p style={styles.tagline}>CRM System v1.0</p>
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      padding: '20px'
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '400px',
+        background: 'white',
+        borderRadius: '20px',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        padding: '40px',
+        position: 'relative'
+      }}>
+        {/* Logo Section */}
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '30px'
+        }}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px',
+            boxShadow: '0 10px 30px rgba(102, 126, 234, 0.4)'
+          }}>
+            <span style={{
+              color: 'white',
+              fontSize: '32px',
+              fontWeight: 'bold'
+            }}>ET</span>
+          </div>
+          <h1 style={{
+            fontSize: '28px',
+            fontWeight: '700',
+            color: '#1a202c',
+            marginBottom: '8px'
+          }}>Welcome Back</h1>
+          <p style={{
+            color: '#718096',
+            fontSize: '14px'
+          }}>EasyTradelines CRM System</p>
         </div>
 
+        {/* Message Alert */}
         {message && (
-          <div 
-            style={{
-              ...styles.message,
-              ...(message.includes('sent') ? styles.successMessage : styles.errorMessage)
-            }}
-          >
+          <div style={{
+            padding: '12px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            background: message.includes('sent') ? '#c6f6d5' : '#fed7d7',
+            color: message.includes('sent') ? '#22543d' : '#742a2a',
+            fontSize: '14px',
+            textAlign: 'center'
+          }}>
             {message}
           </div>
         )}
 
-        <form onSubmit={handleAuth} style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Email Address</label>
+        {/* Form */}
+        <form onSubmit={handleAuth}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#4a5568',
+              marginBottom: '8px'
+            }}>
+              Email Address
+            </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              style={styles.input}
-              placeholder="Enter your email"
-              onFocus={(e) => e.target.style.borderColor = '#16a34a'}
-              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '2px solid #e2e8f0',
+                borderRadius: '10px',
+                fontSize: '16px',
+                transition: 'all 0.3s',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+              placeholder="your@email.com"
+              onFocus={(e) => {
+                e.target.style.borderColor = '#667eea';
+                e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#e2e8f0';
+                e.target.style.boxShadow = 'none';
+              }}
             />
           </div>
 
           {!isResetMode && (
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Password</label>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#4a5568',
+                marginBottom: '8px'
+              }}>
+                Password
+              </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                style={styles.input}
-                placeholder="Enter your password"
-                onFocus={(e) => e.target.style.borderColor = '#16a34a'}
-                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '10px',
+                  fontSize: '16px',
+                  transition: 'all 0.3s',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+                placeholder="••••••••"
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#667eea';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#e2e8f0';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </div>
           )}
@@ -231,14 +192,31 @@ export default function Login() {
             type="submit"
             disabled={loading}
             style={{
-              ...styles.button,
-              ...(loading && styles.buttonDisabled)
+              width: '100%',
+              padding: '14px',
+              background: loading 
+                ? '#cbd5e0' 
+                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '10px',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'transform 0.2s',
+              boxShadow: loading 
+                ? 'none' 
+                : '0 10px 30px rgba(102, 126, 234, 0.4)'
             }}
-            onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = '#15803d')}
-            onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = '#16a34a')}
+            onMouseEnter={(e) => {
+              if (!loading) e.target.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+            }}
           >
             {loading 
-              ? 'Processing...' 
+              ? 'Please wait...' 
               : isResetMode 
                 ? 'Send Reset Email' 
                 : 'Sign In'}
@@ -247,11 +225,43 @@ export default function Login() {
           <button
             type="button"
             onClick={() => setIsResetMode(!isResetMode)}
-            style={styles.resetLink}
+            style={{
+              width: '100%',
+              marginTop: '16px',
+              padding: '12px',
+              background: 'transparent',
+              color: '#667eea',
+              border: 'none',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'color 0.3s'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.color = '#764ba2';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.color = '#667eea';
+            }}
           >
-            {isResetMode ? 'Back to Sign In' : 'Forgot Password?'}
+            {isResetMode ? '← Back to Sign In' : 'Forgot Password?'}
           </button>
         </form>
+
+        {/* Footer */}
+        <div style={{
+          marginTop: '30px',
+          paddingTop: '20px',
+          borderTop: '1px solid #e2e8f0',
+          textAlign: 'center'
+        }}>
+          <p style={{
+            fontSize: '12px',
+            color: '#a0aec0'
+          }}>
+            © 2024 EasyTradelines. All rights reserved.
+          </p>
+        </div>
       </div>
     </div>
   );
