@@ -17,14 +17,19 @@ import {
   DollarSign,
   CreditCard,
   Archive,
-  Shield
+  Shield,
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-react';
 import { supabase } from "../lib/supabase";
+import ClientDetailsModal from './ClientDetailsModal';
 
 const ClientManagement = ({ currentUser }) => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Estados del pipeline sincronizados con Sales Pipeline (solo en inglés)
   const clientStatusConfig = {
@@ -35,6 +40,7 @@ const ClientManagement = ({ currentUser }) => {
       textColor: '#374151',
       icon: Users,
       nextStatus: 'contacted',
+      prevStatus: null,
       stage: 1
     },
     contacted: {
@@ -44,6 +50,7 @@ const ClientManagement = ({ currentUser }) => {
       textColor: '#92400e',
       icon: Phone,
       nextStatus: 'qualification',
+      prevStatus: 'new_lead',
       stage: 2
     },
     qualification: {
@@ -53,6 +60,7 @@ const ClientManagement = ({ currentUser }) => {
       textColor: '#6b21a8',
       icon: Eye,
       nextStatus: 'approved',
+      prevStatus: 'contacted',
       stage: 3
     },
     approved: {
@@ -62,6 +70,7 @@ const ClientManagement = ({ currentUser }) => {
       textColor: '#065f46',
       icon: CheckCircle,
       nextStatus: 'active',
+      prevStatus: 'qualification',
       stage: 4
     },
     active: {
@@ -71,6 +80,7 @@ const ClientManagement = ({ currentUser }) => {
       textColor: '#166534',
       icon: CreditCard,
       nextStatus: null,
+      prevStatus: 'approved',
       stage: 5
     },
     rejected: {
@@ -80,6 +90,7 @@ const ClientManagement = ({ currentUser }) => {
       textColor: '#991b1b',
       icon: XCircle,
       nextStatus: null,
+      prevStatus: null, // Rejected puede ir a cualquier estado
       stage: 6
     }
   };
@@ -184,10 +195,25 @@ const fetchClients = async () => {
     await updateClientStatus(clientId, 'rejected');
   };
 
-  // Ver detalles del cliente - para ambos roles
+  // Ver detalles del cliente - abrir modal
   const viewClientDetails = (client) => {
-    // Aquí implementarás el modal de expediente completo
-    alert(`View details for ${client.first_name} ${client.last_name}\nID: ${client.custom_id}\nStatus: ${clientStatusConfig[client.status]?.label}`);
+    setSelectedClient(client);
+    setIsModalOpen(true);
+  };
+
+  // Cerrar modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedClient(null);
+  };
+
+  // Callback para actualizar estado desde el modal
+  const handleStatusUpdate = (clientId, newStatus) => {
+    setClients(clients.map(client => 
+      client.id === clientId 
+        ? { ...client, status: newStatus, last_activity: new Date().toISOString() }
+        : client
+    ));
   };
 
   // Filtrar clientes
@@ -549,13 +575,24 @@ const fetchClients = async () => {
               {/* Actions - Solo admins pueden cambiar estados */}
               {currentUser.role === 'admin' && (
                 <div style={styles.actionsContainer}>
-                  {/* Botón siguiente estado */}
+                  {/* Botón retroceder */}
+                  {statusConfig.prevStatus && (
+                    <button
+                      onClick={() => updateClientStatus(client.id, statusConfig.prevStatus)}
+                      style={{...styles.actionButton, ...styles.warningButton}}
+                    >
+                      <ArrowLeft style={{ width: '12px', height: '12px' }} />
+                      Back to {clientStatusConfig[statusConfig.prevStatus]?.label}
+                    </button>
+                  )}
+
+                  {/* Botón avanzar */}
                   {statusConfig.nextStatus && (
                     <button
                       onClick={() => updateClientStatus(client.id, statusConfig.nextStatus)}
                       style={{...styles.actionButton, ...styles.successButton}}
                     >
-                      <CheckCircle style={{ width: '12px', height: '12px' }} />
+                      <ArrowRight style={{ width: '12px', height: '12px' }} />
                       Move to {clientStatusConfig[statusConfig.nextStatus]?.label}
                     </button>
                   )}
@@ -568,6 +605,17 @@ const fetchClients = async () => {
                     >
                       <XCircle style={{ width: '12px', height: '12px' }} />
                       Reject
+                    </button>
+                  )}
+
+                  {/* Si está rejected, botón para restaurar */}
+                  {client.status === 'rejected' && (
+                    <button
+                      onClick={() => updateClientStatus(client.id, 'new_lead')}
+                      style={{...styles.actionButton, ...styles.primaryButton}}
+                    >
+                      <Users style={{ width: '12px', height: '12px' }} />
+                      Restore
                     </button>
                   )}
 
@@ -607,6 +655,15 @@ const fetchClients = async () => {
           </p>
         </div>
       )}
+
+      {/* Client Details Modal */}
+      <ClientDetailsModal
+        client={selectedClient}
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onStatusUpdate={handleStatusUpdate}
+        currentUser={currentUser}
+      />
     </div>
   );
 };
