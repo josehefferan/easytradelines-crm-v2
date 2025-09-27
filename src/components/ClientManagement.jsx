@@ -125,30 +125,55 @@ const ClientManagement = ({ currentUser }) => {
     fetchClients();
   }, []);
 
-  const fetchClients = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select(`
-          *,
-          brokers (
-            id,
-            custom_id,
-            first_name,
-            last_name
-          )
-        `)
-        .eq('archived', false)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setClients(data || []);
-    } catch (error) {
-      console.error('Error fetching clients:', error);
-    } finally {
-      setLoading(false);
+const fetchClients = async () => {
+  try {
+    let query = supabase
+      .from('clients')
+      .select(`
+        *,
+        brokers (
+          id,
+          custom_id,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('archived', false)
+      .order('created_at', { ascending: false });
+
+    // Si el usuario es un broker, filtrar solo sus clientes
+    if (currentUser && currentUser.role === 'broker') {
+      // Primero obtener el ID del broker
+      const { data: brokerData, error: brokerError } = await supabase
+        .from('brokers')
+        .select('id')
+        .eq('email', currentUser.email)
+        .single();
+
+      if (brokerError) {
+        console.error('Error fetching broker ID:', brokerError);
+        setClients([]);
+        setLoading(false);
+        return;
+      }
+
+      if (brokerData) {
+        // Filtrar solo los clientes asignados a este broker
+        query = query.eq('assigned_broker_id', brokerData.id);
+      }
     }
-  };
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    setClients(data || []);
+  } catch (error) {
+    console.error('Error fetching clients:', error);
+    setClients([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Cambiar estado del cliente - solo admins pueden cambiar estados
   const updateClientStatus = async (clientId, newStatus) => {
