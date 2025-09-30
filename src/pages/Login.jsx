@@ -1,14 +1,55 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
 export default function Login() {
+  const [searchParams] = useSearchParams();
+  const userType = searchParams.get('type'); // 'broker' o 'affiliate'
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isResetMode, setIsResetMode] = useState(false);
   const navigate = useNavigate();
+
+  // Configuración de colores según el tipo
+  const getConfig = () => {
+    if (userType === 'broker') {
+      return {
+        gradient: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%)',
+        primaryColor: '#2563eb',
+        hoverColor: '#1d4ed8',
+        lightBg: '#eff6ff',
+        borderColor: '#bfdbfe',
+        title: 'Broker Login',
+        subtitle: 'Access your broker dashboard'
+      };
+    } else if (userType === 'affiliate') {
+      return {
+        gradient: 'linear-gradient(135deg, #14532d 0%, #16a34a 50%, #22c55e 100%)',
+        primaryColor: '#16a34a',
+        hoverColor: '#15803d',
+        lightBg: '#f0fdf4',
+        borderColor: '#bbf7d0',
+        title: 'Cardholder Login',
+        subtitle: 'Access your cardholder dashboard'
+      };
+    } else {
+      // Default (admin o sin tipo)
+      return {
+        gradient: 'linear-gradient(135deg, #1e3a8a 0%, #2E7D32 50%, #7CB342 100%)',
+        primaryColor: '#7CB342',
+        hoverColor: '#689F38',
+        lightBg: '#f0fdf4',
+        borderColor: '#c8e6c9',
+        title: 'Welcome back',
+        subtitle: 'Professional CRM Platform'
+      };
+    }
+  };
+
+  const config = getConfig();
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -32,6 +73,37 @@ export default function Login() {
         });
         
         if (error) throw error;
+
+        // Verificar el rol del usuario según el tipo de login
+        if (userType === 'broker') {
+          const { data: brokerData } = await supabase
+            .from('brokers')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+          if (!brokerData) {
+            throw new Error('No broker account found with this email');
+          }
+
+          if (brokerData.status !== 'active') {
+            throw new Error('Your broker account is pending approval');
+          }
+        } else if (userType === 'affiliate') {
+          const { data: affiliateData } = await supabase
+            .from('affiliates')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+          if (!affiliateData) {
+            throw new Error('No cardholder account found with this email');
+          }
+
+          if (affiliateData.status !== 'active') {
+            throw new Error('Your cardholder account is pending approval');
+          }
+        }
         
         // TODOS van al mismo panel
         navigate('/panel');
@@ -43,30 +115,23 @@ export default function Login() {
     }
   };
 
-  // SVG recreation of the EasyTradelines logo
+  // SVG del logo EasyTradelines
   const LogoSVG = () => (
     <svg width="120" height="60" viewBox="0 0 120 60" style={{ marginBottom: '16px' }}>
-      {/* Chart bars */}
       <rect x="8" y="35" width="12" height="20" fill="#FF6B35" rx="2"/>
       <rect x="24" y="25" width="12" height="30" fill="#FFB800" rx="2"/>
       <rect x="40" y="15" width="12" height="40" fill="#7CB342" rx="2"/>
-      
-      {/* Growth arrow */}
       <path d="M45 8 L65 8 L60 3 M65 8 L60 13" 
             stroke="#2E7D32" 
             strokeWidth="3" 
             fill="none" 
             strokeLinecap="round" 
             strokeLinejoin="round"/>
-      
-      {/* Text - EASY */}
       <text x="75" y="25" 
             fill="#2E7D32" 
             fontSize="14" 
             fontWeight="bold" 
             fontFamily="Arial, sans-serif">EASY</text>
-      
-      {/* Text - TRADELINES */}
       <text x="75" y="42" 
             fill="#2E7D32" 
             fontSize="14" 
@@ -75,13 +140,11 @@ export default function Login() {
     </svg>
   );
 
-  // Función para determinar el título
   const getTitle = () => {
     if (isResetMode) return "Reset your password";
-    return "Welcome back";
+    return config.title;
   };
 
-  // Función para determinar el texto del botón
   const getButtonText = () => {
     if (loading) return "Processing...";
     if (isResetMode) return "Send Reset Email";
@@ -91,7 +154,7 @@ export default function Login() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1e3a8a 0%, #2E7D32 50%, #7CB342 100%)',
+      background: config.gradient,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -107,28 +170,28 @@ export default function Login() {
         maxWidth: '420px',
         border: '1px solid rgba(255, 255, 255, 0.2)'
       }}>
-        {/* Header with Real Logo */}
+        {/* Header con Logo */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <LogoSVG />
           <h1 style={{
             fontSize: '24px',
             fontWeight: 'bold',
-            color: '#2E7D32',
+            color: config.primaryColor,
             margin: '0 0 8px 0',
             letterSpacing: '-0.5px'
           }}>
-            Professional CRM Platform
+            {config.title}
           </h1>
           <p style={{
             color: '#6b7280',
             margin: '0 0 8px 0',
             fontSize: '16px'
           }}>
-            {getTitle()}
+            {config.subtitle}
           </p>
           <p style={{
             fontSize: '14px',
-            color: '#2E7D32',
+            color: config.primaryColor,
             margin: '0',
             fontWeight: '500'
           }}>
@@ -136,23 +199,23 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Message Alert */}
+        {/* Mensaje de alerta */}
         {message && (
           <div style={{
             padding: '14px',
             borderRadius: '12px',
             fontSize: '14px',
             marginBottom: '16px',
-            backgroundColor: message.includes("sent") ? '#f0fdf4' : '#fef2f2',
-            color: message.includes("sent") ? '#16a34a' : '#dc2626',
-            border: `2px solid ${message.includes("sent") ? '#bbf7d0' : '#fecaca'}`,
+            backgroundColor: message.includes("sent") ? config.lightBg : '#fef2f2',
+            color: message.includes("sent") ? config.primaryColor : '#dc2626',
+            border: `2px solid ${message.includes("sent") ? config.borderColor : '#fecaca'}`,
             fontWeight: '500'
           }}>
             {message}
           </div>
         )}
 
-        {/* Form */}
+        {/* Formulario */}
         <form onSubmit={handleAuth}>
           <div style={{ marginBottom: '20px' }}>
             <label style={{
@@ -181,9 +244,9 @@ export default function Login() {
                 backgroundColor: '#fafafa'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#7CB342';
+                e.target.style.borderColor = config.primaryColor;
                 e.target.style.backgroundColor = 'white';
-                e.target.style.boxShadow = '0 0 0 3px rgba(124, 179, 66, 0.1)';
+                e.target.style.boxShadow = `0 0 0 3px ${config.primaryColor}20`;
               }}
               onBlur={(e) => {
                 e.target.style.borderColor = '#e5e7eb';
@@ -194,7 +257,7 @@ export default function Login() {
             />
           </div>
 
-          {/* Password field - solo mostrar si no está en modo reset */}
+          {/* Campo Password - solo mostrar si no está en modo reset */}
           {!isResetMode && (
             <div style={{ marginBottom: '24px' }}>
               <label style={{
@@ -223,9 +286,9 @@ export default function Login() {
                   backgroundColor: '#fafafa'
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = '#7CB342';
+                  e.target.style.borderColor = config.primaryColor;
                   e.target.style.backgroundColor = 'white';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(124, 179, 66, 0.1)';
+                  e.target.style.boxShadow = `0 0 0 3px ${config.primaryColor}20`;
                 }}
                 onBlur={(e) => {
                   e.target.style.borderColor = '#e5e7eb';
@@ -233,12 +296,12 @@ export default function Login() {
                   e.target.style.boxShadow = 'none';
                 }}
                 placeholder="Enter your password"
-                minLength={6}
+                minLength={7}
               />
             </div>
           )}
 
-          {/* Forgot Password Link - solo mostrar en modo login */}
+          {/* Link Forgot Password - solo mostrar en modo login */}
           {!isResetMode && (
             <div style={{ textAlign: 'right', marginBottom: '20px' }}>
               <button
@@ -247,7 +310,7 @@ export default function Login() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#2E7D32',
+                  color: config.primaryColor,
                   fontSize: '13px',
                   fontWeight: '500',
                   cursor: 'pointer',
@@ -256,7 +319,7 @@ export default function Login() {
                   borderRadius: '6px',
                   transition: 'background-color 0.2s'
                 }}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9f0'}
+                onMouseOver={(e) => e.target.style.backgroundColor = config.lightBg}
                 onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 Forgot password?
@@ -269,7 +332,7 @@ export default function Login() {
             disabled={loading}
             style={{
               width: '100%',
-              background: loading ? '#9ca3af' : 'linear-gradient(135deg, #7CB342 0%, #2E7D32 100%)',
+              background: loading ? '#9ca3af' : `linear-gradient(135deg, ${config.primaryColor} 0%, ${config.hoverColor} 100%)`,
               color: 'white',
               padding: '16px',
               border: 'none',
@@ -284,15 +347,13 @@ export default function Login() {
             onMouseOver={(e) => {
               if (!loading) {
                 e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-                e.target.style.background = 'linear-gradient(135deg, #8BC34A 0%, #388E3C 100%)';
+                e.target.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
               }
             }}
             onMouseOut={(e) => {
               if (!loading) {
                 e.target.style.transform = 'translateY(0)';
                 e.target.style.boxShadow = 'none';
-                e.target.style.background = 'linear-gradient(135deg, #7CB342 0%, #2E7D32 100%)';
               }
             }}
           >
@@ -315,7 +376,7 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Navigation Links */}
+        {/* Link de navegación */}
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           {isResetMode && (
             <button
@@ -327,7 +388,7 @@ export default function Login() {
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#2E7D32',
+                color: config.primaryColor,
                 fontSize: '14px',
                 fontWeight: '600',
                 cursor: 'pointer',
@@ -336,26 +397,47 @@ export default function Login() {
                 borderRadius: '6px',
                 transition: 'background-color 0.2s'
               }}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#f0f9f0'}
+              onMouseOver={(e) => e.target.style.backgroundColor = config.lightBg}
               onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               ← Back to sign in
             </button>
           )}
+          
+          {!isResetMode && userType && (
+            <div style={{ marginTop: '16px' }}>
+              <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
+                Don't have an account?
+              </p>
+              <a 
+                href={`/signup?type=${userType}`}
+                style={{
+                  color: config.primaryColor,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  textDecoration: 'none'
+                }}
+              >
+                Create Account
+              </a>
+            </div>
+          )}
         </div>
 
-        {/* Admin Info */}
-        <div style={{
-          backgroundColor: '#f0f9f0',
-          border: '2px solid #c8e6c9',
-          borderRadius: '12px',
-          padding: '14px',
-          fontSize: '12px',
-          color: '#2E7D32'
-        }}>
-          <div style={{ fontWeight: '600', marginBottom: '4px' }}>Admin Access</div>
-          <div>Use josehefferan@gmail.com to access the administrative panel</div>
-        </div>
+        {/* Información de Admin - solo mostrar si no hay tipo específico */}
+        {!userType && (
+          <div style={{
+            backgroundColor: config.lightBg,
+            border: `2px solid ${config.borderColor}`,
+            borderRadius: '12px',
+            padding: '14px',
+            fontSize: '12px',
+            color: config.primaryColor
+          }}>
+            <div style={{ fontWeight: '600', marginBottom: '4px' }}>Admin Access</div>
+            <div>Use josehefferan@gmail.com to access the administrative panel</div>
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{ 
