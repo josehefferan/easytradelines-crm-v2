@@ -176,9 +176,9 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
 
       // Solo agregar notes si el usuario es admin
       if (currentUser?.role === 'admin' && formData.notes?.trim()) {
-        clientData.notes = formData.notes.trim();
-      }
-
+  clientData.admin_notes = formData.notes.trim();
+}
+      
       console.log('Final client data to insert:', clientData);
 
       const { data, error } = await supabase
