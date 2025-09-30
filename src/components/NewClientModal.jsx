@@ -197,9 +197,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       alert(`Client ${clientNumber} created successfully!`);
       handleClose();
       
-      // Recargar la página para actualizar las listas
-      window.location.reload();
-      
     } catch (error) {
       console.error('Error creating client:', error);
       alert('Error creating client: ' + error.message);
