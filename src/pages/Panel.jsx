@@ -150,6 +150,58 @@ const ModernCRMPanel = () => {
     }
   }, [currentUser]);
 
+  // Supabase Realtime - Actualización automática en tiempo real
+useEffect(() => {
+  if (!currentUser) return;
+
+  const clientsSubscription = supabase
+    .channel('clients-realtime')
+    .on(
+      'postgres_changes',
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'clients' 
+      },
+      (payload) => {
+        console.log('Clients table changed:', payload);
+        if (currentUser.role === 'admin') {
+          fetchGlobalActivity();
+        } else if (currentUser.role === 'broker') {
+          fetchBrokerActivity();
+        }
+        fetchStats();
+      }
+    )
+    .subscribe();
+
+  let brokersSubscription = null;
+  if (currentUser.role === 'admin') {
+    brokersSubscription = supabase
+      .channel('brokers-realtime')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*',
+          schema: 'public', 
+          table: 'brokers' 
+        },
+        (payload) => {
+          console.log('Brokers table changed:', payload);
+          fetchGlobalActivity();
+        }
+      )
+      .subscribe();
+  }
+
+  return () => {
+    clientsSubscription.unsubscribe();
+    if (brokersSubscription) {
+      brokersSubscription.unsubscribe();
+    }
+  };
+}, [currentUser]);
+
   const fetchBrokerActivity = async () => {
     try {
       setLoadingActivity(true);
