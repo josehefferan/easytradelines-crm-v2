@@ -7,7 +7,7 @@ export default function Signup() {
   const [searchParams] = useSearchParams();
   const userType = searchParams.get('type'); // 'broker' o 'affiliate'
   const navigate = useNavigate();
-
+  
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -97,74 +97,87 @@ export default function Signup() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) return;
 
-    setLoading(true);
-    try {
-      // 1. Crear usuario en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email.toLowerCase().trim(),
-        password: formData.password
-      });
+  setLoading(true);
+  setErrors({});
 
-      if (authError) throw authError;
+  try {
+    // 1. Crear usuario en Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: formData.email.toLowerCase().trim(),
+      password: formData.password,
+      options: {
+        data: {
+          role: userType, // 'broker' o 'affiliate'
+          status: 'pending'
+        }
+      }
+    });
 
-      const userId = authData.user.id;
+    if (authError) throw authError;
+    if (!authData.user) throw new Error('Failed to create user account');
 
-      // 2. Crear registro en la tabla correspondiente
-      if (userType === 'broker') {
-        const { error: brokerError } = await supabase
-          .from('brokers')
-          .insert([{
-            user_id: userId,
-            first_name: formData.first_name.trim(),
-            last_name: formData.last_name.trim(),
-            email: formData.email.toLowerCase().trim(),
-            phone: formData.phone.trim(),
-            company_name: formData.company_name.trim(),
-            company_website: formData.company_website.trim(),
-            status: 'pending',
-            active: false,
-            registration_type: 'self_registered',
-            created_by: formData.email.toLowerCase().trim()
-          }]);
+    const userId = authData.user.id;
 
-        if (brokerError) throw brokerError;
+    // 2. Crear registro en la tabla correspondiente
+    if (userType === 'broker') {
+      const { error: brokerError } = await supabase
+        .from('brokers')
+        .insert({
+          user_id: userId,
+          name: `${formData.first_name.trim()} ${formData.last_name.trim()}`, // ⚠️ NOMBRE COMPLETO
+          email: formData.email.toLowerCase().trim(),
+          phone: formData.phone.trim(),
+          company_name: formData.company_name.trim(),
+          company_website: formData.company_website.trim() || null,
+          status: 'pending',
+          active: false
+        });
 
-      } else if (userType === 'affiliate') {
-        const { error: affiliateError } = await supabase
-          .from('affiliates')
-          .insert([{
-            user_id: userId,
-            first_name: formData.first_name.trim(),
-            last_name: formData.last_name.trim(),
-            email: formData.email.toLowerCase().trim(),
-            phone: formData.phone.trim(),
-            payment_method: formData.payment_method,
-            payment_info: {
-              account: formData.payment_info.account.trim()
-            },
-            status: 'pending',
-            active: false,
-            registration_type: 'self_registered',
-            created_by: formData.email.toLowerCase().trim()
-          }]);
-
-        if (affiliateError) throw affiliateError;
+      if (brokerError) {
+        console.error('Database error:', brokerError);
+        throw new Error(`Database error: ${brokerError.message}`);
       }
 
-      setSuccess(true);
+    } else if (userType === 'affiliate') {
+      const { error: affiliateError } = await supabase
+        .from('affiliates')
+        .insert({
+          user_id: userId,
+          name: `${formData.first_name.trim()} ${formData.last_name.trim()}`, // ⚠️ NOMBRE COMPLETO
+          email: formData.email.toLowerCase().trim(),
+          phone: formData.phone.trim(),
+          payment_method: formData.payment_method,
+          payment_info: {
+            account: formData.payment_info.account.trim()
+          },
+          status: 'pending',
+          active: false
+        });
 
-    } catch (error) {
-      console.error('Error during signup:', error);
-      setErrors({ submit: error.message });
-    } finally {
-      setLoading(false);
+      if (affiliateError) {
+        console.error('Database error:', affiliateError);
+        throw new Error(`Database error: ${affiliateError.message}`);
+      }
     }
-  };
+
+    // 3. Cerrar sesión inmediatamente (usuarios pending no deben estar logueados)
+    await supabase.auth.signOut();
+
+    // 4. Mostrar mensaje de éxito
+    setSuccess(true);
+
+  } catch (error) {
+    console.error('Error during signup:', error);
+    setErrors({ submit: error.message || 'An error occurred during registration. Please try again.' });
+  } finally {
+    setLoading(false);
+  }
+};
 
   // SVG del logo
   const LogoSVG = () => (
