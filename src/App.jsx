@@ -4,6 +4,7 @@ import Panel from "./pages/Panel.jsx";
 import MiCuenta from "./pages/MiCuenta.jsx";
 import BrokerPanel from "./pages/BrokerPanel.jsx";
 import RequireAuth from "./lib/RequireAuth.jsx";
+import Signup from './pages/Signup';
 
 export default function App() {
   return (
