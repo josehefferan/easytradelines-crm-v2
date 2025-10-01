@@ -51,59 +51,103 @@ export default function Login() {
 
   const config = getConfig();
 
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
+  // Reemplaza la sección del handleAuth donde verifica el status:
 
-    try {
-      if (isResetMode) {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/reset-password`,
-        });
-        
-        if (error) throw error;
-        
-        setMessage("Password reset email sent! Check your inbox.");
-        setIsResetMode(false);
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
+const handleAuth = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setMessage("");
 
-        // Verificar el rol del usuario según el tipo de login
-        if (userType === 'broker') {
-          const { data: brokerData } = await supabase
-            .from('brokers')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-          if (!brokerData) {
-            throw new Error('No broker account found with this email');
-          }
-
-          if (brokerData.status !== 'active') {
-            throw new Error('Your broker account is pending approval');
-          }
-        } else if (userType === 'affiliate') {
-          const { data: affiliateData } = await supabase
-            .from('affiliates')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-          if (!affiliateData) {
-            throw new Error('No cardholder account found with this email');
-          }
-
-          if (affiliateData.status !== 'active') {
-            throw new Error('Your cardholder account is pending approval');
-          }
+  try {
+    if (isResetMode) {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) throw error;
+      
+      setMessage("Password reset email sent! Check your inbox.");
+      setIsResetMode(false);
+    } else {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        // Personalizar mensajes de error
+        if (error.message.includes('Email not confirmed') || 
+            error.message.includes('not confirmed')) {
+          throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
         }
+        throw error;
+      }
+
+      // Verificar el rol del usuario según el tipo de login
+      if (userType === 'broker') {
+        const { data: brokerData } = await supabase
+          .from('brokers')
+          .select('*')
+          .eq('email', email)
+          .single();
+
+        if (!brokerData) {
+          throw new Error('No broker account found with this email');
+        }
+
+        // Cambiar mensajes según el status
+        if (brokerData.status === 'pending') {
+          await supabase.auth.signOut();
+          throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
+        }
+
+        if (brokerData.status === 'rejected') {
+          await supabase.auth.signOut();
+          throw new Error('Your broker application was not approved. Please contact support for more information.');
+        }
+
+        if (!brokerData.active) {
+          await supabase.auth.signOut();
+          throw new Error('Your account is currently inactive. Please contact EasyTradelines Admin.');
+        }
+
+      } else if (userType === 'affiliate') {
+        const { data: affiliateData } = await supabase
+          .from('affiliates')
+          .select('*')
+          .eq('email', email)
+          .single();
+
+        if (!affiliateData) {
+          throw new Error('No cardholder account found with this email');
+        }
+
+        // Cambiar mensajes según el status
+        if (affiliateData.status === 'pending') {
+          await supabase.auth.signOut();
+          throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
+        }
+
+        if (affiliateData.status === 'rejected') {
+          await supabase.auth.signOut();
+          throw new Error('Your cardholder application was not approved. Please contact support for more information.');
+        }
+
+        if (!affiliateData.active) {
+          await supabase.auth.signOut();
+          throw new Error('Your account is currently inactive. Please contact EasyTradelines Admin.');
+        }
+      }
+      
+      // TODOS van al mismo panel
+      navigate('/panel');
+    }
+  } catch (error) {
+    setMessage(error.message);
+  } finally {
+    setLoading(false);
+  }
+};
         
         // TODOS van al mismo panel
         navigate('/panel');
