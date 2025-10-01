@@ -5,15 +5,13 @@ import {
   XCircle, 
   Clock, 
   Eye, 
-  Edit,
-  Trash2,
-  UserCheck,
   AlertTriangle,
   Building2,
   Mail,
   Phone,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  AlertCircle
 } from 'lucide-react';
 import { supabase } from "../lib/supabase";
 
@@ -26,6 +24,14 @@ const BrokerManagement = ({ currentUser }) => {
 
   // Estados del pipeline para brokers
   const brokerStatusConfig = {
+    pending: {
+      label: 'Pending Approval',
+      color: '#f59e0b',
+      bgColor: '#fef3c7',
+      textColor: '#d97706',
+      icon: AlertCircle,
+      nextStatus: 'active'
+    },
     registered: {
       label: 'Registered',
       color: '#3b82f6',
@@ -47,7 +53,7 @@ const BrokerManagement = ({ currentUser }) => {
       color: '#22c55e',
       bgColor: '#f0fdf4', 
       textColor: '#15803d',
-      icon: UserCheck,
+      icon: CheckCircle,
       nextStatus: null
     },
     suspended: {
@@ -57,6 +63,14 @@ const BrokerManagement = ({ currentUser }) => {
       textColor: '#dc2626',
       icon: XCircle,
       nextStatus: 'active'
+    },
+    rejected: {
+      label: 'Rejected',
+      color: '#991b1b',
+      bgColor: '#fee2e2',
+      textColor: '#991b1b',
+      icon: XCircle,
+      nextStatus: null
     }
   };
 
@@ -67,7 +81,7 @@ const BrokerManagement = ({ currentUser }) => {
     proposal: { label: 'Proposal Sent', color: '#06b6d4', icon: Mail },
     negotiation: { label: 'In Negotiation', color: '#f59e0b', icon: TrendingUp },
     approved: { label: 'Approved', color: '#10b981', icon: CheckCircle },
-    active: { label: 'Active', color: '#22c55e', icon: UserCheck },
+    active: { label: 'Active', color: '#22c55e', icon: CheckCircle },
     blacklist: { label: 'Blacklisted', color: '#ef4444', icon: XCircle }
   };
 
@@ -115,20 +129,82 @@ const BrokerManagement = ({ currentUser }) => {
     }
   };
 
-  // Cambiar estado del broker
-  const updateBrokerStatus = async (brokerId, newStatus) => {
+  // Aprobar broker
+  const approveBroker = async (brokerId) => {
+    if (!confirm('Are you sure you want to approve this broker?')) return;
+    
     try {
       const { error } = await supabase
         .from('brokers')
-        .update({ status: newStatus })
+        .update({ 
+          status: 'active',
+          active: true
+        })
         .eq('id', brokerId);
 
       if (error) throw error;
       
-      // Actualizar estado local
       setBrokers(brokers.map(broker => 
         broker.id === brokerId 
-          ? { ...broker, status: newStatus }
+          ? { ...broker, status: 'active', active: true }
+          : broker
+      ));
+      
+      alert('Broker approved successfully!');
+    } catch (error) {
+      console.error('Error approving broker:', error);
+      alert('Error approving broker');
+    }
+  };
+
+  // Rechazar broker
+  const rejectBroker = async (brokerId) => {
+    if (!confirm('Are you sure you want to reject this broker? This action will mark them as rejected.')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('brokers')
+        .update({ 
+          status: 'rejected',
+          active: false
+        })
+        .eq('id', brokerId);
+
+      if (error) throw error;
+      
+      setBrokers(brokers.map(broker => 
+        broker.id === brokerId 
+          ? { ...broker, status: 'rejected', active: false }
+          : broker
+      ));
+      
+      alert('Broker rejected');
+    } catch (error) {
+      console.error('Error rejecting broker:', error);
+      alert('Error rejecting broker');
+    }
+  };
+
+  // Cambiar estado del broker
+  const updateBrokerStatus = async (brokerId, newStatus) => {
+    try {
+      const updateData = { status: newStatus };
+      if (newStatus === 'active') {
+        updateData.active = true;
+      } else if (newStatus === 'suspended') {
+        updateData.active = false;
+      }
+
+      const { error } = await supabase
+        .from('brokers')
+        .update(updateData)
+        .eq('id', brokerId);
+
+      if (error) throw error;
+      
+      setBrokers(brokers.map(broker => 
+        broker.id === brokerId 
+          ? { ...broker, ...updateData }
           : broker
       ));
       
@@ -142,18 +218,20 @@ const BrokerManagement = ({ currentUser }) => {
   // Filtrar brokers
   const filteredBrokers = brokers.filter(broker => {
     if (filter === 'all') return true;
+    if (filter === 'pending') return broker.status === 'pending';
     return broker.status === filter;
   });
 
   // Obtener clientes de un broker específico
   const getBrokerClients = (brokerId) => {
-    return clients.filter(client => client.broker_id === brokerId);
+    return clients.filter(client => client.assigned_broker_id === brokerId);
   };
 
   // Estadísticas
   const getStats = () => {
     const stats = {
       total: brokers.length,
+      pending: brokers.filter(b => b.status === 'pending').length,
       registered: brokers.filter(b => b.status === 'registered').length,
       validated: brokers.filter(b => b.status === 'validated').length,
       active: brokers.filter(b => b.status === 'active').length,
@@ -169,22 +247,15 @@ const BrokerManagement = ({ currentUser }) => {
     container: {
       padding: '24px'
     },
-    header: {
+    pendingAlert: {
+      backgroundColor: '#fef3c7',
+      border: '2px solid #f59e0b',
+      borderRadius: '12px',
+      padding: '20px',
+      marginBottom: '24px',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: '32px'
-    },
-    title: {
-      fontSize: '32px',
-      fontWeight: 'bold',
-      color: '#1f2937',
-      margin: 0
-    },
-    subtitle: {
-      color: '#6b7280',
-      marginTop: '4px',
-      fontSize: '16px'
+      gap: '12px'
     },
     statsGrid: {
       display: 'grid',
@@ -241,6 +312,10 @@ const BrokerManagement = ({ currentUser }) => {
       padding: '24px',
       boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
       border: '1px solid #e5e7eb'
+    },
+    pendingCard: {
+      border: '2px solid #f59e0b',
+      backgroundColor: '#fffbeb'
     },
     brokerHeader: {
       display: 'flex',
@@ -300,6 +375,14 @@ const BrokerManagement = ({ currentUser }) => {
       gap: '6px',
       transition: 'all 0.2s'
     },
+    approveButton: {
+      backgroundColor: '#10b981',
+      color: 'white'
+    },
+    rejectButton: {
+      backgroundColor: '#ef4444',
+      color: 'white'
+    },
     primaryButton: {
       backgroundColor: '#3b82f6',
       color: 'white'
@@ -315,40 +398,12 @@ const BrokerManagement = ({ currentUser }) => {
     successButton: {
       backgroundColor: '#10b981',
       color: 'white'
-    },
-    clientsSection: {
-      marginTop: '16px',
-      paddingTop: '16px',
-      borderTop: '1px solid #e5e7eb'
-    },
-    clientsList: {
-      marginTop: '12px'
-    },
-    clientItem: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '8px 0',
-      fontSize: '14px'
-    },
-    clientName: {
-      color: '#1f2937',
-      fontWeight: '500'
-    },
-    clientStatus: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '4px',
-      padding: '4px 8px',
-      borderRadius: '12px',
-      fontSize: '11px',
-      fontWeight: '500'
     }
   };
 
   if (loading) {
     return (
-      <div style={{ ...styles.container, textAlign: 'center', padding: '60px' }}>
+      <div style={{ textAlign: 'center', padding: '60px' }}>
         <Clock style={{ width: '48px', height: '48px', color: '#6b7280' }} />
         <p style={{ marginTop: '16px', color: '#6b7280' }}>Loading brokers...</p>
       </div>
@@ -357,13 +412,20 @@ const BrokerManagement = ({ currentUser }) => {
 
   return (
     <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header}>
-        <div>
-          <h2 style={styles.title}>Broker Management</h2>
-          <p style={styles.subtitle}>Admin Pipeline - Validate and manage broker access</p>
+      {/* Alerta de pendientes */}
+      {stats.pending > 0 && (
+        <div style={styles.pendingAlert}>
+          <AlertCircle style={{ width: '24px', height: '24px', color: '#f59e0b' }} />
+          <div>
+            <strong style={{ color: '#92400e' }}>
+              {stats.pending} broker{stats.pending > 1 ? 's' : ''} pending approval
+            </strong>
+            <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#92400e' }}>
+              Review and approve new broker registrations
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Stats */}
       <div style={styles.statsGrid}>
@@ -372,12 +434,12 @@ const BrokerManagement = ({ currentUser }) => {
           <p style={styles.statValue}>{stats.total}</p>
         </div>
         <div style={styles.statCard}>
-          <p style={styles.statLabel}>Registered</p>
-          <p style={styles.statValue}>{stats.registered}</p>
+          <p style={styles.statLabel}>Pending Approval</p>
+          <p style={{...styles.statValue, color: '#f59e0b'}}>{stats.pending}</p>
         </div>
         <div style={styles.statCard}>
-          <p style={styles.statLabel}>Validated</p>
-          <p style={styles.statValue}>{stats.validated}</p>
+          <p style={styles.statLabel}>Registered</p>
+          <p style={styles.statValue}>{stats.registered}</p>
         </div>
         <div style={styles.statCard}>
           <p style={styles.statLabel}>Active</p>
@@ -391,7 +453,7 @@ const BrokerManagement = ({ currentUser }) => {
 
       {/* Filters */}
       <div style={styles.filtersContainer}>
-        {['all', 'registered', 'validated', 'active', 'suspended'].map(status => (
+        {['all', 'pending', 'registered', 'validated', 'active', 'suspended'].map(status => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -400,7 +462,7 @@ const BrokerManagement = ({ currentUser }) => {
               ...(filter === status ? styles.filterButtonActive : {})
             }}
           >
-            {status === 'all' ? 'All Brokers' : brokerStatusConfig[status]?.label || status}
+            {status === 'all' ? 'All Brokers' : status === 'pending' ? 'Pending Approval' : brokerStatusConfig[status]?.label || status}
           </button>
         ))}
       </div>
@@ -411,16 +473,20 @@ const BrokerManagement = ({ currentUser }) => {
           const statusConfig = brokerStatusConfig[broker.status] || brokerStatusConfig.registered;
           const StatusIcon = statusConfig.icon;
           const brokerClients = getBrokerClients(broker.id);
+          const isPending = broker.status === 'pending';
 
           return (
-            <div key={broker.id} style={styles.brokerCard}>
+            <div key={broker.id} style={{
+              ...styles.brokerCard,
+              ...(isPending ? styles.pendingCard : {})
+            }}>
               {/* Header */}
               <div style={styles.brokerHeader}>
                 <div style={styles.brokerInfo}>
                   <h3 style={styles.brokerName}>
                     {broker.first_name} {broker.last_name}
                   </h3>
-                  <p style={styles.brokerId}>ID: {broker.custom_id}</p>
+                  <p style={styles.brokerId}>ID: {broker.custom_id || broker.id.slice(0, 8)}</p>
                 </div>
                 <div
                   style={{
@@ -460,6 +526,27 @@ const BrokerManagement = ({ currentUser }) => {
 
               {/* Actions */}
               <div style={styles.actionsContainer}>
+                {/* Botones para PENDING */}
+                {broker.status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => approveBroker(broker.id)}
+                      style={{...styles.actionButton, ...styles.approveButton}}
+                    >
+                      <CheckCircle style={{ width: '14px', height: '14px' }} />
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => rejectBroker(broker.id)}
+                      style={{...styles.actionButton, ...styles.rejectButton}}
+                    >
+                      <XCircle style={{ width: '14px', height: '14px' }} />
+                      Reject
+                    </button>
+                  </>
+                )}
+
+                {/* Botones para otros estados */}
                 {broker.status === 'registered' && (
                   <button
                     onClick={() => updateBrokerStatus(broker.id, 'validated')}
@@ -475,7 +562,7 @@ const BrokerManagement = ({ currentUser }) => {
                     onClick={() => updateBrokerStatus(broker.id, 'active')}
                     style={{...styles.actionButton, ...styles.primaryButton}}
                   >
-                    <UserCheck style={{ width: '14px', height: '14px' }} />
+                    <CheckCircle style={{ width: '14px', height: '14px' }} />
                     Activate
                   </button>
                 )}
@@ -495,7 +582,7 @@ const BrokerManagement = ({ currentUser }) => {
                     onClick={() => updateBrokerStatus(broker.id, 'active')}
                     style={{...styles.actionButton, ...styles.successButton}}
                   >
-                    <UserCheck style={{ width: '14px', height: '14px' }} />
+                    <CheckCircle style={{ width: '14px', height: '14px' }} />
                     Reactivate
                   </button>
                 )}
@@ -505,44 +592,9 @@ const BrokerManagement = ({ currentUser }) => {
                   style={{...styles.actionButton, ...styles.secondaryButton}}
                 >
                   <Eye style={{ width: '14px', height: '14px' }} />
-                  View Details
+                  View
                 </button>
               </div>
-
-              {/* Clients Section */}
-              {brokerClients.length > 0 && (
-                <div style={styles.clientsSection}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', margin: '0 0 8px 0' }}>
-                    Recent Clients ({brokerClients.length})
-                  </h4>
-                  <div style={styles.clientsList}>
-                    {brokerClients.slice(0, 3).map(client => {
-                      const clientStatus = clientStatusConfig[client.status] || clientStatusConfig.new_lead;
-                      return (
-                        <div key={client.id} style={styles.clientItem}>
-                          <span style={styles.clientName}>
-                            {client.first_name} {client.last_name} ({client.custom_id})
-                          </span>
-                          <div
-                            style={{
-                              ...styles.clientStatus,
-                              backgroundColor: `${clientStatus.color}20`,
-                              color: clientStatus.color
-                            }}
-                          >
-                            {clientStatus.label}
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {brokerClients.length > 3 && (
-                      <p style={{ fontSize: '12px', color: '#6b7280', textAlign: 'center', margin: '8px 0 0 0' }}>
-                        +{brokerClients.length - 3} more clients
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}
