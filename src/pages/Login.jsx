@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 
 export default function Login() {
   const [searchParams] = useSearchParams();
-  const userType = searchParams.get('type'); // 'broker' o 'affiliate'
+  const userType = searchParams.get('type');
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,7 +13,6 @@ export default function Login() {
   const [isResetMode, setIsResetMode] = useState(false);
   const navigate = useNavigate();
 
-  // Configuración de colores según el tipo
   const getConfig = () => {
     if (userType === 'broker') {
       return {
@@ -36,7 +35,6 @@ export default function Login() {
         subtitle: 'Access your cardholder dashboard'
       };
     } else {
-      // Default (admin o sin tipo)
       return {
         gradient: 'linear-gradient(135deg, #1e3a8a 0%, #2E7D32 50%, #7CB342 100%)',
         primaryColor: '#7CB342',
@@ -51,105 +49,88 @@ export default function Login() {
 
   const config = getConfig();
 
-  // Reemplaza la sección del handleAuth donde verifica el status:
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
 
-const handleAuth = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setMessage("");
-
-  try {
-    if (isResetMode) {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      
-      if (error) throw error;
-      
-      setMessage("Password reset email sent! Check your inbox.");
-      setIsResetMode(false);
-    } else {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) {
-        // Personalizar mensajes de error
-        if (error.message.includes('Email not confirmed') || 
-            error.message.includes('not confirmed')) {
-          throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
-        }
-        throw error;
-      }
-
-      // Verificar el rol del usuario según el tipo de login
-      if (userType === 'broker') {
-        const { data: brokerData } = await supabase
-          .from('brokers')
-          .select('*')
-          .eq('email', email)
-          .single();
-
-        if (!brokerData) {
-          throw new Error('No broker account found with this email');
-        }
-
-        // Cambiar mensajes según el status
-        if (brokerData.status === 'pending') {
-          await supabase.auth.signOut();
-          throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
-        }
-
-        if (brokerData.status === 'rejected') {
-          await supabase.auth.signOut();
-          throw new Error('Your broker application was not approved. Please contact support for more information.');
-        }
-
-        if (!brokerData.active) {
-          await supabase.auth.signOut();
-          throw new Error('Your account is currently inactive. Please contact EasyTradelines Admin.');
-        }
-
-      } else if (userType === 'affiliate') {
-        const { data: affiliateData } = await supabase
-          .from('affiliates')
-          .select('*')
-          .eq('email', email)
-          .single();
-
-        if (!affiliateData) {
-          throw new Error('No cardholder account found with this email');
-        }
-
-        // Cambiar mensajes según el status
-        if (affiliateData.status === 'pending') {
-          await supabase.auth.signOut();
-          throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
-        }
-
-        if (affiliateData.status === 'rejected') {
-          await supabase.auth.signOut();
-          throw new Error('Your cardholder application was not approved. Please contact support for more information.');
-        }
-
-        if (!affiliateData.active) {
-          await supabase.auth.signOut();
-          throw new Error('Your account is currently inactive. Please contact EasyTradelines Admin.');
-        }
-      }
-      
-      // TODOS van al mismo panel
-      navigate('/panel');
-    }
-  } catch (error) {
-    setMessage(error.message);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      if (isResetMode) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
         
-        // TODOS van al mismo panel
+        if (error) throw error;
+        
+        setMessage("Password reset email sent! Check your inbox.");
+        setIsResetMode(false);
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (error) {
+          if (error.message.includes('Email not confirmed') || 
+              error.message.includes('not confirmed')) {
+            throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
+          }
+          throw error;
+        }
+
+        if (userType === 'broker') {
+          const { data: brokerData } = await supabase
+            .from('brokers')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+          if (!brokerData) {
+            throw new Error('No broker account found with this email');
+          }
+
+          if (brokerData.status === 'pending') {
+            await supabase.auth.signOut();
+            throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
+          }
+
+          if (brokerData.status === 'rejected') {
+            await supabase.auth.signOut();
+            throw new Error('Your broker application was not approved. Please contact support for more information.');
+          }
+
+          if (!brokerData.active) {
+            await supabase.auth.signOut();
+            throw new Error('Your account is currently inactive. Please contact EasyTradelines Admin.');
+          }
+
+        } else if (userType === 'affiliate') {
+          const { data: affiliateData } = await supabase
+            .from('affiliates')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+          if (!affiliateData) {
+            throw new Error('No cardholder account found with this email');
+          }
+
+          if (affiliateData.status === 'pending') {
+            await supabase.auth.signOut();
+            throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
+          }
+
+          if (affiliateData.status === 'rejected') {
+            await supabase.auth.signOut();
+            throw new Error('Your cardholder application was not approved. Please contact support for more information.');
+          }
+
+          if (!affiliateData.active) {
+            await supabase.auth.signOut();
+            throw new Error('Your account is currently inactive. Please contact EasyTradelines Admin.');
+          }
+        }
+        
         navigate('/panel');
       }
     } catch (error) {
@@ -159,7 +140,6 @@ const handleAuth = async (e) => {
     }
   };
 
-  // SVG del logo EasyTradelines
   const LogoSVG = () => (
     <svg width="120" height="60" viewBox="0 0 120 60" style={{ marginBottom: '16px' }}>
       <rect x="8" y="35" width="12" height="20" fill="#FF6B35" rx="2"/>
@@ -183,11 +163,6 @@ const handleAuth = async (e) => {
             fontFamily="Arial, sans-serif">TRADELINES</text>
     </svg>
   );
-
-  const getTitle = () => {
-    if (isResetMode) return "Reset your password";
-    return config.title;
-  };
 
   const getButtonText = () => {
     if (loading) return "Processing...";
@@ -214,7 +189,6 @@ const handleAuth = async (e) => {
         maxWidth: '420px',
         border: '1px solid rgba(255, 255, 255, 0.2)'
       }}>
-        {/* Header con Logo */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <LogoSVG />
           <h1 style={{
@@ -243,7 +217,6 @@ const handleAuth = async (e) => {
           </p>
         </div>
 
-        {/* Mensaje de alerta */}
         {message && (
           <div style={{
             padding: '14px',
@@ -259,7 +232,6 @@ const handleAuth = async (e) => {
           </div>
         )}
 
-        {/* Formulario */}
         <form onSubmit={handleAuth}>
           <div style={{ marginBottom: '20px' }}>
             <label style={{
@@ -287,21 +259,10 @@ const handleAuth = async (e) => {
                 boxSizing: 'border-box',
                 backgroundColor: '#fafafa'
               }}
-              onFocus={(e) => {
-                e.target.style.borderColor = config.primaryColor;
-                e.target.style.backgroundColor = 'white';
-                e.target.style.boxShadow = `0 0 0 3px ${config.primaryColor}20`;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#e5e7eb';
-                e.target.style.backgroundColor = '#fafafa';
-                e.target.style.boxShadow = 'none';
-              }}
               placeholder="Enter your email"
             />
           </div>
 
-          {/* Campo Password - solo mostrar si no está en modo reset */}
           {!isResetMode && (
             <div style={{ marginBottom: '24px' }}>
               <label style={{
@@ -329,23 +290,12 @@ const handleAuth = async (e) => {
                   boxSizing: 'border-box',
                   backgroundColor: '#fafafa'
                 }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = config.primaryColor;
-                  e.target.style.backgroundColor = 'white';
-                  e.target.style.boxShadow = `0 0 0 3px ${config.primaryColor}20`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#e5e7eb';
-                  e.target.style.backgroundColor = '#fafafa';
-                  e.target.style.boxShadow = 'none';
-                }}
                 placeholder="Enter your password"
                 minLength={7}
               />
             </div>
           )}
 
-          {/* Link Forgot Password - solo mostrar en modo login */}
           {!isResetMode && (
             <div style={{ textAlign: 'right', marginBottom: '20px' }}>
               <button
@@ -358,13 +308,9 @@ const handleAuth = async (e) => {
                   fontSize: '13px',
                   fontWeight: '500',
                   cursor: 'pointer',
-                  textDecoration: 'none',
                   padding: '4px 8px',
-                  borderRadius: '6px',
-                  transition: 'background-color 0.2s'
+                  borderRadius: '6px'
                 }}
-                onMouseOver={(e) => e.target.style.backgroundColor = config.lightBg}
-                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 Forgot password?
               </button>
@@ -384,43 +330,13 @@ const handleAuth = async (e) => {
               fontSize: '16px',
               fontWeight: '600',
               cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.3s',
-              marginBottom: '20px',
-              letterSpacing: '0.5px'
-            }}
-            onMouseOver={(e) => {
-              if (!loading) {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-              }
-            }}
-            onMouseOut={(e) => {
-              if (!loading) {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-              }
+              marginBottom: '20px'
             }}
           >
-            {loading ? (
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{
-                  width: '20px',
-                  height: '20px',
-                  border: '2px solid transparent',
-                  borderTop: '2px solid white',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite',
-                  marginRight: '8px'
-                }}></span>
-                Processing...
-              </span>
-            ) : (
-              getButtonText()
-            )}
+            {getButtonText()}
           </button>
         </form>
 
-        {/* Link de navegación */}
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           {isResetMode && (
             <button
@@ -436,13 +352,8 @@ const handleAuth = async (e) => {
                 fontSize: '14px',
                 fontWeight: '600',
                 cursor: 'pointer',
-                textDecoration: 'none',
-                padding: '8px',
-                borderRadius: '6px',
-                transition: 'background-color 0.2s'
+                padding: '8px'
               }}
-              onMouseOver={(e) => e.target.style.backgroundColor = config.lightBg}
-              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               ← Back to sign in
             </button>
@@ -468,7 +379,6 @@ const handleAuth = async (e) => {
           )}
         </div>
 
-        {/* Información de Admin - solo mostrar si no hay tipo específico */}
         {!userType && (
           <div style={{
             backgroundColor: config.lightBg,
@@ -483,7 +393,6 @@ const handleAuth = async (e) => {
           </div>
         )}
 
-        {/* Footer */}
         <div style={{ 
           textAlign: 'center', 
           marginTop: '20px',
@@ -493,13 +402,6 @@ const handleAuth = async (e) => {
           Secured by enterprise-grade encryption
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }
