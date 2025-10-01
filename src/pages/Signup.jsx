@@ -112,7 +112,7 @@ const handleSubmit = async (e) => {
       password: formData.password,
       options: {
         data: {
-          role: userType, // 'broker' o 'affiliate'
+          role: userType,
           status: 'pending'
         }
       }
@@ -122,6 +122,7 @@ const handleSubmit = async (e) => {
     if (!authData.user) throw new Error('Failed to create user account');
 
     const userId = authData.user.id;
+    console.log('✅ User created:', userId);
 
     // 2. Crear registro en la tabla correspondiente
     if (userType === 'broker') {
@@ -129,7 +130,8 @@ const handleSubmit = async (e) => {
         .from('brokers')
         .insert({
           user_id: userId,
-          name: `${formData.first_name.trim()} ${formData.last_name.trim()}`, // ⚠️ NOMBRE COMPLETO
+          first_name: formData.first_name.trim(),
+          last_name: formData.last_name.trim(),
           email: formData.email.toLowerCase().trim(),
           phone: formData.phone.trim(),
           company_name: formData.company_name.trim(),
@@ -139,16 +141,18 @@ const handleSubmit = async (e) => {
         });
 
       if (brokerError) {
-        console.error('Database error:', brokerError);
+        console.error('❌ Broker insert error:', brokerError);
         throw new Error(`Database error: ${brokerError.message}`);
       }
+      console.log('✅ Broker profile created');
 
     } else if (userType === 'affiliate') {
       const { error: affiliateError } = await supabase
         .from('affiliates')
         .insert({
           user_id: userId,
-          name: `${formData.first_name.trim()} ${formData.last_name.trim()}`, // ⚠️ NOMBRE COMPLETO
+          first_name: formData.first_name.trim(),
+          last_name: formData.last_name.trim(),
           email: formData.email.toLowerCase().trim(),
           phone: formData.phone.trim(),
           payment_method: formData.payment_method,
@@ -160,25 +164,28 @@ const handleSubmit = async (e) => {
         });
 
       if (affiliateError) {
-        console.error('Database error:', affiliateError);
+        console.error('❌ Affiliate insert error:', affiliateError);
         throw new Error(`Database error: ${affiliateError.message}`);
       }
+      console.log('✅ Affiliate profile created');
     }
 
-    // 3. Cerrar sesión inmediatamente (usuarios pending no deben estar logueados)
+    // 3. Cerrar sesión inmediatamente
     await supabase.auth.signOut();
+    console.log('✅ Session closed');
 
     // 4. Mostrar mensaje de éxito
     setSuccess(true);
 
   } catch (error) {
-    console.error('Error during signup:', error);
-    setErrors({ submit: error.message || 'An error occurred during registration. Please try again.' });
+    console.error('❌ Signup error:', error);
+    setErrors({ 
+      submit: error.message || 'An error occurred during registration. Please try again.' 
+    });
   } finally {
     setLoading(false);
   }
 };
-
   // SVG del logo
   const LogoSVG = () => (
     <svg width="120" height="60" viewBox="0 0 120 60" style={{ marginBottom: '16px' }}>
