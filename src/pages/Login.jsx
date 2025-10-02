@@ -53,7 +53,6 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setMessage("");
-
     try {
       if (isResetMode) {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -77,33 +76,27 @@ export default function Login() {
           }
           throw error;
         }
-
         if (userType === 'broker') {
           const { data: brokerData } = await supabase
             .from('brokers')
             .select('*')
             .eq('email', email)
             .single();
-
           if (!brokerData) {
             throw new Error('No broker account found with this email');
           }
-
           if (brokerData.status === 'pending') {
             await supabase.auth.signOut();
             throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
           }
-
           if (brokerData.status === 'rejected') {
             await supabase.auth.signOut();
             throw new Error('Your broker application was not approved. Please contact support for more information.');
           }
-
           if (!brokerData.active) {
             await supabase.auth.signOut();
             throw new Error('Your account is currently inactive. Please contact EasyTradelines Admin.');
           }
-
         } else if (userType === 'affiliate') {
           const { data: affiliateData } = await supabase
             .from('affiliates')
@@ -131,7 +124,14 @@ export default function Login() {
           }
         }
         
-        navigate('/panel');
+        // AGREGAR ESTE BLOQUE AQUÍ:
+        if (userType === 'broker') {
+          navigate('/broker/panel');
+        } else if (userType === 'affiliate') {
+          navigate('/affiliate/panel');
+        } else {
+          navigate('/panel');
+        }
       }
     } catch (error) {
       setMessage(error.message);
