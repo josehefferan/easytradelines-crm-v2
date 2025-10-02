@@ -18,24 +18,25 @@ const OnboardingModal = ({ isOpen, brokerData, onComplete }) => {
   };
 
   const handleFileChange = (e) => {
-  const file = e.target.files[0];
-  if (file) {
-    // Validar tipo de archivo
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
-    if (!allowedTypes.includes(file.type)) {
-      setError('Only PNG, JPG, JPEG, or PDF files are allowed');
-      return;
+    const file = e.target.files[0];
+    if (file) {
+      // Validar tipo de archivo
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('Only PNG, JPG, JPEG, or PDF files are allowed');
+        return;
+      }
+      
+      // Validar tamaño (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('File size must be less than 10MB');
+        return;
+      }
+      
+      setDriverLicenseFile(file);
+      setError('');
     }
-    
-    // Validar tamaño (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB');
-      return;
-    }
-    setDriverLicenseFile(file);
-    setError('');
-  }
-};
+  };
 
   const handleSubmit = async () => {
     if (!contractSigned) {
@@ -67,13 +68,15 @@ const OnboardingModal = ({ isOpen, brokerData, onComplete }) => {
         .from('broker-documents')
         .getPublicUrl(fileName);
 
-      // 3. Actualizar broker con documentos enviados
+      // 3. Actualizar broker con documentos enviados y firma
       const { error: updateError } = await supabase
         .from('brokers')
         .update({
           contract_signed: true,
           contract_signed_date: new Date().toISOString(),
-          contract_signature_url: signatureData?.signatureUrl || 'signed',
+          broker_signature_data: signatureData?.signatureImage,
+          broker_name_signed: signatureData?.contractData?.reseller_name,
+          broker_initials_signed: signatureData?.contractData?.reseller_initials,
           driver_license_uploaded: true,
           driver_license_url: publicUrl
         })
@@ -106,7 +109,7 @@ const OnboardingModal = ({ isOpen, brokerData, onComplete }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 2000,
+        zIndex: 9999,
         padding: '20px'
       }}>
         <div style={{
