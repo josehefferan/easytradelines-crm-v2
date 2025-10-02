@@ -132,7 +132,7 @@ export default function Signup() {
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
         options: {
-          emailRedirectTo: `https://easytradelinescrm-judf5.ondigitalocean.app/email-confirmed?type=${userType}`,
+          emailRedirectTo: `https://easytradelinescrm-judf5.ondigitalocean.app/login?type=${userType}`,
           data: userMetadata
         }
       });
@@ -204,8 +204,8 @@ export default function Signup() {
             Registration Submitted!
           </h2>
           <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>
-            Thank you for registering. Your account is pending approval from our admin team. 
-            You will receive an email notification once your account is approved.
+            We sent a confirmation link to your email. Please confirm to validate your email address. 
+            Once verified, your account will be pending approval from our admin team.
           </p>
           <button
             onClick={() => navigate(`/login?type=${userType}`)}
