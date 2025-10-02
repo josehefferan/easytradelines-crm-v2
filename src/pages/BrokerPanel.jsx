@@ -120,7 +120,8 @@ const BrokerPanel = () => {
 const handleLogout = async () => {
   try {
     await supabase.auth.signOut();
-    navigate('/login?type=broker');
+    // Redirigir a la URL completa del login de broker
+    window.location.href = 'https://easytradelinescrm-judf5.ondigitalocean.app/login?type=broker';
   } catch (error) {
     console.error('Error logging out:', error);
   }
