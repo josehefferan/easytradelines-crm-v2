@@ -7,9 +7,6 @@ import RequireAuth from "./lib/RequireAuth.jsx";
 import Signup from './pages/Signup';
 import EmailConfirmed from './pages/EmailConfirmed';
 
-// Dentro de tus rutas:
-<Route path="/email-confirmed" element={<EmailConfirmed />} />
-
 export default function App() {
   return (
     <BrowserRouter>
@@ -17,6 +14,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/email-confirmed" element={<EmailConfirmed />} />
         <Route 
           path="/panel" 
           element={
