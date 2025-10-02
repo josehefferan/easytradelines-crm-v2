@@ -117,14 +117,14 @@ const BrokerPanel = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate('/login');
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
-  };
+const handleLogout = async () => {
+  try {
+    await supabase.auth.signOut();
+    navigate('/login?type=broker');
+  } catch (error) {
+    console.error('Error logging out:', error);
+  }
+};
 
   const getStatusColor = (status) => {
     const colors = {
