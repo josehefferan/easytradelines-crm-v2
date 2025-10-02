@@ -379,20 +379,6 @@ export default function Login() {
           )}
         </div>
 
-        {!userType && (
-          <div style={{
-            backgroundColor: config.lightBg,
-            border: `2px solid ${config.borderColor}`,
-            borderRadius: '12px',
-            padding: '14px',
-            fontSize: '12px',
-            color: config.primaryColor
-          }}>
-            <div style={{ fontWeight: '600', marginBottom: '4px' }}>Admin Access</div>
-            <div>Use josehefferan@gmail.com to access the administrative panel</div>
-          </div>
-        )}
-
         <div style={{ 
           textAlign: 'center', 
           marginTop: '20px',
