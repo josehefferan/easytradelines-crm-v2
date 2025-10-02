@@ -214,6 +214,34 @@ const BrokerManagement = ({ currentUser }) => {
       alert('Error updating broker status');
     }
   };
+// Validar documentos del broker
+const validateBrokerDocuments = async (brokerId) => {
+  if (!confirm('Are you sure you want to validate this broker\'s documents? This will allow them to create clients.')) return;
+  
+  try {
+    const { error } = await supabase
+      .from('brokers')
+      .update({ 
+        documents_validated: true,
+        documents_validated_by: currentUser.email,
+        documents_validated_date: new Date().toISOString()
+      })
+      .eq('id', brokerId);
+
+    if (error) throw error;
+    
+    setBrokers(brokers.map(broker => 
+      broker.id === brokerId 
+        ? { ...broker, documents_validated: true, documents_validated_by: currentUser.email, documents_validated_date: new Date().toISOString() }
+        : broker
+    ));
+    
+    alert('Documents validated successfully! Broker can now create clients.');
+  } catch (error) {
+    console.error('Error validating documents:', error);
+    alert('Error validating documents');
+  }
+};
 
   // Filtrar brokers
   const filteredBrokers = brokers.filter(broker => {
@@ -524,8 +552,59 @@ const BrokerManagement = ({ currentUser }) => {
                 </div>
               </div>
 
-              {/* Actions */}
+             {/* Actions */}
               <div style={styles.actionsContainer}>
+                {/* Indicador de documentos pendientes */}
+                {broker.contract_signed && broker.driver_license_uploaded && !broker.documents_validated && (
+                  <div style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    backgroundColor: '#fef3c7',
+                    border: '1px solid #fbbf24',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    color: '#92400e',
+                    marginBottom: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <AlertCircle style={{ width: '14px', height: '14px' }} />
+                    Documents submitted - pending validation
+                  </div>
+                )}
+
+                {/* Indicador de documentos validados */}
+                {broker.documents_validated && (
+                  <div style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    backgroundColor: '#ecfdf5',
+                    border: '1px solid #10b981',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    color: '#059669',
+                    marginBottom: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <CheckCircle style={{ width: '14px', height: '14px' }} />
+                    Documents validated by {broker.documents_validated_by?.split('@')[0]}
+                  </div>
+                )}
+
+                {/* Botón Validate Documents - solo si hay docs sin validar */}
+                {broker.contract_signed && broker.driver_license_uploaded && !broker.documents_validated && (
+                  <button
+                    onClick={() => validateBrokerDocuments(broker.id)}
+                    style={{...styles.actionButton, ...styles.primaryButton}}
+                  >
+                    <CheckCircle style={{ width: '14px', height: '14px' }} />
+                    Validate Documents
+                  </button>
+                )}
+
                 {/* Botones para PENDING */}
                 {broker.status === 'pending' && (
                   <>
