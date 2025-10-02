@@ -5,6 +5,10 @@ import MiCuenta from "./pages/MiCuenta.jsx";
 import BrokerPanel from "./pages/BrokerPanel.jsx";
 import RequireAuth from "./lib/RequireAuth.jsx";
 import Signup from './pages/Signup';
+import EmailConfirmed from './pages/EmailConfirmed';
+
+// Dentro de tus rutas:
+<Route path="/email-confirmed" element={<EmailConfirmed />} />
 
 export default function App() {
   return (
