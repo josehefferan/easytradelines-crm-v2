@@ -106,72 +106,44 @@ export default function Signup() {
     setErrors({});
 
     try {
-      // 1. Crear usuario en Supabase Auth
+      // Preparar metadata según el tipo de usuario
+      let userMetadata = {
+        role: userType,
+        status: 'pending',
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        phone: formData.phone.trim()
+      };
+
+      // Agregar campos específicos de broker
+      if (userType === 'broker') {
+        userMetadata.company_name = formData.company_name.trim();
+        userMetadata.company_website = formData.company_website.trim() || null;
+      }
+
+      // Agregar campos específicos de affiliate
+      if (userType === 'affiliate') {
+        userMetadata.payment_method = formData.payment_method;
+        userMetadata.payment_account = formData.payment_info.account.trim();
+      }
+
+      // Crear usuario en Supabase Auth con TODOS los datos en metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
         options: {
           emailRedirectTo: `https://easytradelinescrm-judf5.ondigitalocean.app/login?type=${userType}`,
-          data: {
-            role: userType,
-            status: 'pending'
-          }
+          data: userMetadata
         }
       });
 
       if (authError) throw authError;
       if (!authData.user) throw new Error('Failed to create user account');
 
-      const userId = authData.user.id;
-      console.log('✅ User created:', userId);
+      console.log('✅ User created:', authData.user.id);
+      console.log('✅ Metadata saved, will be processed after email confirmation');
 
-      // 2. Crear registro en la tabla correspondiente
-      if (userType === 'broker') {
-        const { error: brokerError } = await supabase
-          .from('brokers')
-          .insert({
-            user_id: userId,
-            first_name: formData.first_name.trim(),
-            last_name: formData.last_name.trim(),
-            email: formData.email.toLowerCase().trim(),
-            phone: formData.phone.trim(),
-            company_name: formData.company_name.trim(),
-            company_website: formData.company_website.trim() || null,
-            status: 'pending',
-            active: false
-          });
-
-        if (brokerError) {
-          console.error('❌ Broker insert error:', brokerError);
-          throw new Error(`Database error: ${brokerError.message}`);
-        }
-        console.log('✅ Broker profile created');
-
-      } else if (userType === 'affiliate') {
-        const { error: affiliateError } = await supabase
-          .from('affiliates')
-          .insert({
-            user_id: userId,
-            first_name: formData.first_name.trim(),
-            last_name: formData.last_name.trim(),
-            email: formData.email.toLowerCase().trim(),
-            phone: formData.phone.trim(),
-            payment_method: formData.payment_method,
-            payment_info: {
-              account: formData.payment_info.account.trim()
-            },
-            status: 'pending',
-            active: false
-          });
-
-        if (affiliateError) {
-          console.error('❌ Affiliate insert error:', affiliateError);
-          throw new Error(`Database error: ${affiliateError.message}`);
-        }
-        console.log('✅ Affiliate profile created');
-      }
-
-      // 3. Mostrar mensaje de éxito
+      // Mostrar mensaje de éxito
       setSuccess(true);
 
     } catch (error) {
