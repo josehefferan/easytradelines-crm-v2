@@ -34,102 +34,88 @@ const BrokerPanel = () => {
     loadBrokerData();
   }, []);
 
-const checkAuth = async () => {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate('/login');
-      return;
-    }
-
-    // Establecer el usuario actual basado en el email de la sesión
-    setCurrentUser({
-      email: session.user.email,
-      role: 'broker', // Asumimos que es broker si llegó a esta página
-      name: session.user.email.split('@')[0] // Nombre temporal del email
-    });
-    
-    // No necesitamos verificar en la tabla users porque los brokers no están ahí
-    // Solo cargamos los datos del broker directamente
-  } catch (error) {
-    console.error('Auth check error:', error);
-    navigate('/login');
-  }
-};
-
- const loadBrokerData = async () => {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    const { data: broker, error: brokerError } = await supabase
-      .from('brokers')
-      .select('*')
-      .eq('email', session.user.email)
-      .single();
-
-    if (brokerError) {
-      console.error('Error loading broker data:', brokerError);
-      return;
-    }
-
-    setBrokerData(broker);
-    
-    // Verificar si necesita completar onboarding
-    const needsOnboarding = !broker.contract_signed || !broker.driver_license_uploaded;
-    setShowOnboardingModal(needsOnboarding);
-    setDocumentsValidated(broker.documents_validated || false);
-    
-    if (broker) {
-      setCurrentUser({
-        email: broker.email,
-        role: 'broker',
-        name: `${broker.first_name} ${broker.last_name}`
-      });
-
-      // Cargar SOLO los clientes asignados a este broker
-      const { data: clientsData, error: clientsError } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('assigned_broker_id', broker.id)
-        .order('created_at', { ascending: false });
-
-      if (clientsError) {
-        console.error('Error loading clients:', clientsError);
-        setClients([]);
-      } else {
-        console.log('Clients loaded:', clientsData);
-        setClients(clientsData || []);
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login');
+        return;
       }
 
-      // Calculate stats
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      
-      setStats({
-        totalClients: clientsData?.length || 0,
-        activeClients: clientsData?.filter(c => c.status === 'in_process' || c.status === 'reviewing_documents').length || 0,
-        pendingClients: clientsData?.filter(c => c.status === 'new_lead' || c.status === 'pending').length || 0,
-        completedThisMonth: clientsData?.filter(c => {
-          const completedDate = new Date(c.updated_at);
-          return c.status === 'completed' && completedDate >= startOfMonth;
-        }).length || 0
+      setCurrentUser({
+        email: session.user.email,
+        role: 'broker',
+        name: session.user.email.split('@')[0]
       });
+    } catch (error) {
+      console.error('Auth check error:', error);
+      navigate('/login');
     }
+  };
 
-  } catch (error) {
-    console.error('Error loading broker data:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+  const loadBrokerData = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-  } catch (error) {
-    console.error('Error loading broker data:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+      const { data: broker, error: brokerError } = await supabase
+        .from('brokers')
+        .select('*')
+        .eq('email', session.user.email)
+        .single();
+
+      if (brokerError) {
+        console.error('Error loading broker data:', brokerError);
+        return;
+      }
+
+      setBrokerData(broker);
+      
+      const needsOnboarding = !broker.contract_signed || !broker.driver_license_uploaded;
+      setShowOnboardingModal(needsOnboarding);
+      setDocumentsValidated(broker.documents_validated || false);
+      
+      if (broker) {
+        setCurrentUser({
+          email: broker.email,
+          role: 'broker',
+          name: `${broker.first_name} ${broker.last_name}`
+        });
+
+        const { data: clientsData, error: clientsError } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('assigned_broker_id', broker.id)
+          .order('created_at', { ascending: false });
+
+        if (clientsError) {
+          console.error('Error loading clients:', clientsError);
+          setClients([]);
+        } else {
+          console.log('Clients loaded:', clientsData);
+          setClients(clientsData || []);
+        }
+
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        setStats({
+          totalClients: clientsData?.length || 0,
+          activeClients: clientsData?.filter(c => c.status === 'in_process' || c.status === 'reviewing_documents').length || 0,
+          pendingClients: clientsData?.filter(c => c.status === 'new_lead' || c.status === 'pending').length || 0,
+          completedThisMonth: clientsData?.filter(c => {
+            const completedDate = new Date(c.updated_at);
+            return c.status === 'completed' && completedDate >= startOfMonth;
+          }).length || 0
+        });
+      }
+
+    } catch (error) {
+      console.error('Error loading broker data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -186,7 +172,6 @@ const checkAuth = async () => {
 
   const renderDashboard = () => (
     <div className="space-y-6">
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
@@ -237,7 +222,6 @@ const checkAuth = async () => {
         </div>
       </div>
 
-      {/* Recent Activity */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">Recent Client Activity</h3>
@@ -274,25 +258,20 @@ const checkAuth = async () => {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium text-gray-900">My Clients</h3>
           <button 
-            <button 
-  onClick={() => setIsNewClientModalOpen(true)}
-  disabled={!documentsValidated}
-  className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-    documentsValidated 
-      ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer' 
-      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-  }`}
-  title={!documentsValidated ? 'Documents pending admin validation' : 'Add new client'}
->
-  <Plus className="w-5 h-5" />
-  New Client
-</button>
+            onClick={() => setIsNewClientModalOpen(true)}
+            disabled={!documentsValidated}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+              documentsValidated 
+                ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer' 
+                : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+            }`}
+            title={!documentsValidated ? 'Documents pending admin validation' : 'Add new client'}
+          >
             <Plus className="w-5 h-5" />
             New Client
           </button>
         </div>
         
-        {/* Search Bar */}
         <div className="mt-4 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
@@ -372,7 +351,7 @@ const checkAuth = async () => {
             <p className="mt-1 text-sm text-gray-500">
               {searchTerm ? 'Try adjusting your search terms' : 'Get started by adding a new client'}
             </p>
-            {!searchTerm && (
+            {!searchTerm && documentsValidated && (
               <div className="mt-6">
                 <button 
                   onClick={() => setIsNewClientModalOpen(true)}
@@ -391,7 +370,6 @@ const checkAuth = async () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <div className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-white shadow-lg transition-all duration-300`}>
         <div className="p-6">
           <div className="flex items-center justify-between">
@@ -406,12 +384,11 @@ const checkAuth = async () => {
             </button>
           </div>
 
-          {/* Broker Info */}
           {isSidebarOpen && brokerData && (
             <div className="mt-6 p-4 bg-green-50 rounded-lg">
               <p className="text-sm font-medium text-gray-600">Welcome back,</p>
               <p className="font-semibold text-gray-900">{brokerData.first_name} {brokerData.last_name}</p>
-              <p className="text-xs text-green-600 mt-1">{brokerData.broker_number}</p>
+              <p className="text-xs text-green-600 mt-1">{brokerData.custom_id}</p>
             </div>
           )}
         </div>
@@ -479,7 +456,6 @@ const checkAuth = async () => {
         </nav>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="p-8">
           <div className="mb-8">
@@ -499,7 +475,6 @@ const checkAuth = async () => {
             </p>
           </div>
 
-          {/* Render content based on active section */}
           {activeSection === 'dashboard' && renderDashboard()}
           {activeSection === 'clients' && renderClients()}
           {activeSection === 'commissions' && (
@@ -531,7 +506,7 @@ const checkAuth = async () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Broker Number</label>
-                    <p className="mt-1 text-sm text-gray-900">{brokerData.broker_number}</p>
+                    <p className="mt-1 text-sm text-gray-900">{brokerData.custom_id}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
@@ -548,8 +523,7 @@ const checkAuth = async () => {
         </div>
       </div>
 
-      {/* Modal de Nuevo Cliente */}
-       <NewClientModal
+      <NewClientModal
         isOpen={isNewClientModalOpen}
         onClose={() => {
           setIsNewClientModalOpen(false);
@@ -558,7 +532,6 @@ const checkAuth = async () => {
         currentUser={currentUser}
       />
 
-      {/* Modal de Onboarding */}
       <OnboardingModal
         isOpen={showOnboardingModal}
         brokerData={brokerData}
