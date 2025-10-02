@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import NewClientModal from '../components/NewClientModal';
+import OnboardingModal from '../components/OnboardingModal';
 
 const BrokerPanel = () => {
   const navigate = useNavigate();
@@ -25,6 +26,8 @@ const BrokerPanel = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [documentsValidated, setDocumentsValidated] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -59,7 +62,6 @@ const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    // Load broker profile usando el email de la sesión
     const { data: broker, error: brokerError } = await supabase
       .from('brokers')
       .select('*')
@@ -72,6 +74,11 @@ const checkAuth = async () => {
     }
 
     setBrokerData(broker);
+    
+    // Verificar si necesita completar onboarding
+    const needsOnboarding = !broker.contract_signed || !broker.driver_license_uploaded;
+    setShowOnboardingModal(needsOnboarding);
+    setDocumentsValidated(broker.documents_validated || false);
     
     if (broker) {
       setCurrentUser({
@@ -109,6 +116,13 @@ const checkAuth = async () => {
         }).length || 0
       });
     }
+
+  } catch (error) {
+    console.error('Error loading broker data:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   } catch (error) {
     console.error('Error loading broker data:', error);
@@ -260,9 +274,19 @@ const checkAuth = async () => {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium text-gray-900">My Clients</h3>
           <button 
-            onClick={() => setIsNewClientModalOpen(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 transition-colors"
-          >
+            <button 
+  onClick={() => setIsNewClientModalOpen(true)}
+  disabled={!documentsValidated}
+  className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+    documentsValidated 
+      ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer' 
+      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+  }`}
+  title={!documentsValidated ? 'Documents pending admin validation' : 'Add new client'}
+>
+  <Plus className="w-5 h-5" />
+  New Client
+</button>
             <Plus className="w-5 h-5" />
             New Client
           </button>
@@ -525,13 +549,23 @@ const checkAuth = async () => {
       </div>
 
       {/* Modal de Nuevo Cliente */}
-      <NewClientModal
+       <NewClientModal
         isOpen={isNewClientModalOpen}
         onClose={() => {
           setIsNewClientModalOpen(false);
-          loadBrokerData(); // Recargar datos después de crear un cliente
+          loadBrokerData();
         }}
         currentUser={currentUser}
+      />
+
+      {/* Modal de Onboarding */}
+      <OnboardingModal
+        isOpen={showOnboardingModal}
+        brokerData={brokerData}
+        onComplete={() => {
+          setShowOnboardingModal(false);
+          loadBrokerData();
+        }}
       />
     </div>
   );
