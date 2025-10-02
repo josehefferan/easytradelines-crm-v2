@@ -97,96 +97,93 @@ export default function Signup() {
     return Object.keys(newErrors).length === 0;
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!validateForm()) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
 
-  setLoading(true);
-  setErrors({});
+    setLoading(true);
+    setErrors({});
 
-  try {
-    // 1. Crear usuario en Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-  email: formData.email.toLowerCase().trim(),
-  password: formData.password,
-  options: {
-    emailRedirectTo: `https://easytradelinescrm-judf5.ondigitalocean.app/login?type=${userType}`,
-    data: {
-      role: userType,
-      status: 'pending'
-    }
-  }
-});
+    try {
+      // 1. Crear usuario en Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password,
+        options: {
+          emailRedirectTo: `https://easytradelinescrm-judf5.ondigitalocean.app/login?type=${userType}`,
+          data: {
+            role: userType,
+            status: 'pending'
+          }
+        }
+      });
 
-    if (authError) throw authError;
-    if (!authData.user) throw new Error('Failed to create user account');
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Failed to create user account');
 
-    const userId = authData.user.id;
-    console.log('✅ User created:', userId);
+      const userId = authData.user.id;
+      console.log('✅ User created:', userId);
 
-    // 2. Crear registro en la tabla correspondiente
-    if (userType === 'broker') {
-      const { error: brokerError } = await supabase
-        .from('brokers')
-        .insert({
-          user_id: userId,
-          first_name: formData.first_name.trim(),
-          last_name: formData.last_name.trim(),
-          email: formData.email.toLowerCase().trim(),
-          phone: formData.phone.trim(),
-          company_name: formData.company_name.trim(),
-          company_website: formData.company_website.trim() || null,
-          status: 'pending',
-          active: false
-        });
+      // 2. Crear registro en la tabla correspondiente
+      if (userType === 'broker') {
+        const { error: brokerError } = await supabase
+          .from('brokers')
+          .insert({
+            user_id: userId,
+            first_name: formData.first_name.trim(),
+            last_name: formData.last_name.trim(),
+            email: formData.email.toLowerCase().trim(),
+            phone: formData.phone.trim(),
+            company_name: formData.company_name.trim(),
+            company_website: formData.company_website.trim() || null,
+            status: 'pending',
+            active: false
+          });
 
-      if (brokerError) {
-        console.error('❌ Broker insert error:', brokerError);
-        throw new Error(`Database error: ${brokerError.message}`);
+        if (brokerError) {
+          console.error('❌ Broker insert error:', brokerError);
+          throw new Error(`Database error: ${brokerError.message}`);
+        }
+        console.log('✅ Broker profile created');
+
+      } else if (userType === 'affiliate') {
+        const { error: affiliateError } = await supabase
+          .from('affiliates')
+          .insert({
+            user_id: userId,
+            first_name: formData.first_name.trim(),
+            last_name: formData.last_name.trim(),
+            email: formData.email.toLowerCase().trim(),
+            phone: formData.phone.trim(),
+            payment_method: formData.payment_method,
+            payment_info: {
+              account: formData.payment_info.account.trim()
+            },
+            status: 'pending',
+            active: false
+          });
+
+        if (affiliateError) {
+          console.error('❌ Affiliate insert error:', affiliateError);
+          throw new Error(`Database error: ${affiliateError.message}`);
+        }
+        console.log('✅ Affiliate profile created');
       }
-      console.log('✅ Broker profile created');
 
-    } else if (userType === 'affiliate') {
-      const { error: affiliateError } = await supabase
-        .from('affiliates')
-        .insert({
-          user_id: userId,
-          first_name: formData.first_name.trim(),
-          last_name: formData.last_name.trim(),
-          email: formData.email.toLowerCase().trim(),
-          phone: formData.phone.trim(),
-          payment_method: formData.payment_method,
-          payment_info: {
-            account: formData.payment_info.account.trim()
-          },
-          status: 'pending',
-          active: false
-        });
+      // 3. Mostrar mensaje de éxito
+      setSuccess(true);
 
-      if (affiliateError) {
-        console.error('❌ Affiliate insert error:', affiliateError);
-        throw new Error(`Database error: ${affiliateError.message}`);
-      }
-      console.log('✅ Affiliate profile created');
+    } catch (error) {
+      console.error('❌ Signup error:', error);
+      setErrors({ 
+        submit: error.message || 'An error occurred during registration. Please try again.' 
+      });
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // 3. Cerrar sesión inmediatamente
-    await supabase.auth.signOut();
-    console.log('✅ Session closed');
-
-    // 4. Mostrar mensaje de éxito
-    setSuccess(true);
-
-  } catch (error) {
-    console.error('❌ Signup error:', error);
-    setErrors({ 
-      submit: error.message || 'An error occurred during registration. Please try again.' 
-    });
-  } finally {
-    setLoading(false);
-  }
-};
   // SVG del logo
   const LogoSVG = () => (
     <svg width="120" height="60" viewBox="0 0 120 60" style={{ marginBottom: '16px' }}>
