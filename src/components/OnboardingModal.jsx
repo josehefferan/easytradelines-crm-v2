@@ -18,6 +18,26 @@ const OnboardingModal = ({ isOpen, brokerData, onComplete }) => {
   };
 
   const handleFileChange = (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    // Validar tipo de archivo
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Only PNG, JPG, JPEG, or PDF files are allowed');
+      return;
+    }
+    
+    // Validar tamaño (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB');
+      return;
+    }
+    setDriverLicenseFile(file);
+    setError('');
+  }
+};
+
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       // Validar tamaño (max 10MB)
@@ -47,7 +67,7 @@ const OnboardingModal = ({ isOpen, brokerData, onComplete }) => {
     try {
       // 1. Subir Driver License a Supabase Storage
       const fileExt = driverLicenseFile.name.split('.').pop();
-      const fileName = `${brokerData.id}_driver_license_${Date.now()}.${fileExt}`;
+      const fileName = `${brokerData.id}/driver_license_${Date.now()}.${fileExt}`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('broker-documents')
