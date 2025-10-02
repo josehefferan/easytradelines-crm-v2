@@ -108,15 +108,16 @@ const handleSubmit = async (e) => {
   try {
     // 1. Crear usuario en Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: formData.email.toLowerCase().trim(),
-      password: formData.password,
-      options: {
-        data: {
-          role: userType,
-          status: 'pending'
-        }
-      }
-    });
+  email: formData.email.toLowerCase().trim(),
+  password: formData.password,
+  options: {
+    emailRedirectTo: `https://easytradelinescrm-judf5.ondigitalocean.app/login?type=${userType}`,
+    data: {
+      role: userType,
+      status: 'pending'
+    }
+  }
+});
 
     if (authError) throw authError;
     if (!authData.user) throw new Error('Failed to create user account');
