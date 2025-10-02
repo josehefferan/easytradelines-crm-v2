@@ -132,7 +132,7 @@ export default function Signup() {
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
         options: {
-          emailRedirectTo: `https://easytradelinescrm-judf5.ondigitalocean.app/login?type=${userType}`,
+          emailRedirectTo: `https://easytradelinescrm-judf5.ondigitalocean.app/email-confirmed?type=${userType}`,
           data: userMetadata
         }
       });
