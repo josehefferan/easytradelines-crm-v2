@@ -127,7 +127,7 @@ export default function Signup() {
         userMetadata.payment_account = formData.payment_info.account.trim();
       }
 
-      // Crear usuario en Supabase Auth con TODOS los datos en metadata
+      // 1. Crear usuario en Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
@@ -141,7 +141,53 @@ export default function Signup() {
       if (!authData.user) throw new Error('Failed to create user account');
 
       console.log('✅ User created:', authData.user.id);
-      console.log('✅ Metadata saved, will be processed after email confirmation');
+
+      // 2. Crear broker en la tabla brokers
+      if (userType === 'broker') {
+        const { error: brokerError } = await supabase
+          .from('brokers')
+          .insert({
+            user_id: authData.user.id,
+            email: formData.email.toLowerCase().trim(),
+            first_name: formData.first_name.trim(),
+            last_name: formData.last_name.trim(),
+            phone: formData.phone.trim(),
+            company_name: formData.company_name.trim(),
+            company_website: formData.company_website.trim() || null,
+            status: 'pending_documents',
+            registration_type: 'self_registered'
+          });
+
+        if (brokerError) {
+          console.error('❌ Error creating broker:', brokerError);
+          throw new Error('Account created but broker profile failed. Please contact support.');
+        }
+
+        console.log('✅ Broker profile created');
+      }
+
+      // 3. Crear affiliate en la tabla affiliates
+      if (userType === 'affiliate') {
+        const { error: affiliateError } = await supabase
+          .from('affiliates')
+          .insert({
+            user_id: authData.user.id,
+            email: formData.email.toLowerCase().trim(),
+            first_name: formData.first_name.trim(),
+            last_name: formData.last_name.trim(),
+            phone: formData.phone.trim(),
+            payment_method: formData.payment_method,
+            payment_info: { account: formData.payment_info.account.trim() },
+            status: 'pending_approval'
+          });
+
+        if (affiliateError) {
+          console.error('❌ Error creating affiliate:', affiliateError);
+          throw new Error('Account created but affiliate profile failed. Please contact support.');
+        }
+
+        console.log('✅ Affiliate profile created');
+      }
 
       // Mostrar mensaje de éxito
       setSuccess(true);
@@ -205,7 +251,7 @@ export default function Signup() {
           </h2>
           <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>
             We sent a confirmation link to your email. Please confirm to validate your email address. 
-            Once verified, your account will be pending approval from our admin team.
+            Once verified, your account will be ready to use after document submission.
           </p>
           <button
             onClick={() => navigate(`/login?type=${userType}`)}
