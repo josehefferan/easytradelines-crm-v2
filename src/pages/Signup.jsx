@@ -142,6 +142,9 @@ export default function Signup() {
 
       console.log('✅ User created:', authData.user.id);
 
+      // Esperar un momento para que Supabase procese el usuario
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // 2. Crear broker en la tabla brokers
       if (userType === 'broker') {
         const { error: brokerError } = await supabase
