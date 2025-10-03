@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { X, Upload, User, Mail, Phone, MapPin, Calendar, Shield, Eye, EyeOff, Send } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Upload, User, Mail, Phone, MapPin, Calendar, Shield, Eye, EyeOff, Send, Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const NewClientModal = ({ isOpen, onClose, currentUser }) => {
   const [loading, setLoading] = useState(false);
+  const [brokers, setBrokers] = useState([]);
   const [showPasswords, setShowPasswords] = useState({
     experian_password: false,
     experian_pin: false
@@ -22,6 +23,7 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     experian_security_answer: '',
     experian_pin: '',
     notes: '',
+    assigned_broker_id: '', // Para admin: seleccionar broker
     files: {
       id_document: null,
       ssn_card: null,
@@ -32,6 +34,29 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
   });
 
   const [errors, setErrors] = useState({});
+
+  // Cargar lista de brokers si es admin
+  useEffect(() => {
+    if (currentUser?.role === 'admin' && isOpen) {
+      fetchBrokers();
+    }
+  }, [currentUser, isOpen]);
+
+  const fetchBrokers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('brokers')
+        .select('id, first_name, last_name, email, custom_id')
+        .eq('active', true)
+        .eq('documents_validated', true)
+        .order('first_name', { ascending: true });
+
+      if (error) throw error;
+      setBrokers(data || []);
+    } catch (error) {
+      console.error('Error fetching brokers:', error);
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -68,7 +93,7 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       newErrors.address = 'PO Box addresses are not allowed. Please use residential address only.';
     }
 
-    // Validación de PIN (4 dígitos)
+    // Validación de PIN (4 dígitos) - solo si se proporciona
     if (formData.experian_pin && !/^\d{4}$/.test(formData.experian_pin)) {
       newErrors.experian_pin = 'PIN must be exactly 4 digits';
     }
@@ -77,7 +102,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Función para generar el número único del cliente - FUERA de handleSubmit
   const generateClientNumber = async () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -86,16 +110,12 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     const dateStr = `${year}${month}${day}`;
     
     const prefix = `C-${dateStr}`;
-    console.log('Buscando clientes con prefijo:', prefix);
     
-    const { data: todaysClients, error } = await supabase
+    const { data: todaysClients } = await supabase
       .from('clients')
       .select('unique_id')
       .like('unique_id', `${prefix}%`)
       .order('unique_id', { ascending: false });
-
-    console.log('Clientes encontrados:', todaysClients);
-    console.log('Error si hay:', error);
     
     let nextNumber = 1;
     if (todaysClients && todaysClients.length > 0) {
@@ -104,19 +124,15 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
         if (client.unique_id) {
           const parts = client.unique_id.split('-');
           const num = parseInt(parts[parts.length - 1]) || 0;
-          console.log('Procesando:', client.unique_id, 'Número extraído:', num);
           if (num > maxNumber) maxNumber = num;
         }
       });
       nextNumber = maxNumber + 1;
     }
 
-    const newId = `${prefix}-${String(nextNumber).padStart(4, '0')}`;
-    console.log('ID final generado:', newId);
-    return newId;
+    return `${prefix}-${String(nextNumber).padStart(4, '0')}`;
   };
 
-  // Función handleSubmit - UNA SOLA VEZ
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -124,11 +140,9 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
 
     setLoading(true);
     try {
-      // Llamar a generateClientNumber
       const clientNumber = await generateClientNumber();
       console.log('Generated client number:', clientNumber);
       
-      // Formatear SSN
       const formattedSSN = formData.ssn.replace(/\D/g, '').replace(/(\d{3})(\d{2})(\d{4})/, '$1-$2-$3');
 
       const clientData = {
@@ -146,54 +160,51 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
         experian_pin: formData.experian_pin || null,
         status: 'new_lead',
         created_by: currentUser?.email || 'system',
-        created_by_type: currentUser?.role === 'admin' ? 'admin' : 'broker'
+        created_by_type: currentUser?.role || 'admin'
       };
 
-      console.log('Current user role:', currentUser?.role);
-      console.log('Current user email:', currentUser?.email);
-
-      // Si el usuario es un broker, asignar automáticamente el client a este broker
-      if (currentUser?.role === 'broker' && currentUser?.email) {
-        console.log('User is broker, searching for broker record...');
-        
-        // Primero obtener el broker_id desde la tabla brokers
-        const { data: brokerData, error: brokerError } = await supabase
+      // Asignar broker
+      if (currentUser?.role === 'admin') {
+        // Admin selecciona broker del dropdown
+        if (formData.assigned_broker_id) {
+          clientData.assigned_broker_id = formData.assigned_broker_id;
+        }
+      } else if (currentUser?.role === 'broker') {
+        // Broker auto-asigna a sí mismo
+        const { data: brokerData } = await supabase
           .from('brokers')
-          .select('id, unique_id, email')
-          .eq('email', currentUser.email)
+          .select('id')
+          .eq('user_id', currentUser.id)
           .single();
 
-        if (brokerError) {
-          console.error('Error finding broker:', brokerError);
-          console.log('Broker not found in brokers table. Creating client without assigned_broker_id');
-          // NO lanzar error, continuar sin assigned_broker_id
-        } else if (brokerData) {
-          console.log('Found broker:', brokerData);
+        if (brokerData) {
           clientData.assigned_broker_id = brokerData.id;
-          console.log('Assigned broker_id:', brokerData.id);
         }
       }
 
-      // Solo agregar notes si el usuario es admin
+      // Admin notes
       if (currentUser?.role === 'admin' && formData.notes?.trim()) {
-  clientData.admin_notes = formData.notes.trim();
-}
+        clientData.admin_notes = formData.notes.trim();
+      }
       
       console.log('Final client data to insert:', clientData);
 
-      const { data, error } = await supabase
+      // Insertar cliente
+      const { data: newClient, error } = await supabase
         .from('clients')
         .insert([clientData])
-        .select();
+        .select()
+        .single();
 
-      if (error) {
-        console.error('Supabase insert error:', error);
-        console.error('Error details:', error.details);
-        console.error('Error hint:', error.hint);
-        throw error;
+      if (error) throw error;
+
+      console.log('Client created successfully:', newClient);
+
+      // Subir documentos si existen (OPCIONAL)
+      if (newClient && newClient.id) {
+        await uploadClientDocuments(newClient.id);
       }
 
-      console.log('Client created successfully:', data);
       alert(`Client ${clientNumber} created successfully!`);
       handleClose();
       
@@ -202,6 +213,54 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       alert('Error creating client: ' + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const uploadClientDocuments = async (clientId) => {
+    const uploads = [];
+
+    // Función helper para subir archivo
+    const uploadFile = async (file, fileType) => {
+      if (!file) return null;
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${clientId}/${fileType}_${Date.now()}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from('client-documents')
+        .upload(fileName, file);
+
+      if (error) {
+        console.error(`Error uploading ${fileType}:`, error);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('client-documents')
+        .getPublicUrl(fileName);
+
+      return { field: `${fileType}_url`, url: publicUrl };
+    };
+
+    // Subir todos los archivos
+    for (const [fileType, file] of Object.entries(formData.files)) {
+      if (file) {
+        const result = await uploadFile(file, fileType);
+        if (result) uploads.push(result);
+      }
+    }
+
+    // Actualizar cliente con URLs de documentos
+    if (uploads.length > 0) {
+      const updateData = {};
+      uploads.forEach(({ field, url }) => {
+        updateData[field] = url;
+      });
+
+      await supabase
+        .from('clients')
+        .update(updateData)
+        .eq('id', clientId);
     }
   };
 
@@ -219,6 +278,7 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       experian_security_answer: '',
       experian_pin: '',
       notes: '',
+      assigned_broker_id: '',
       files: {
         id_document: null,
         ssn_card: null,
@@ -251,6 +311,7 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
   if (!isOpen) return null;
 
   const styles = {
+    // ... (todos los estilos anteriores se mantienen igual)
     overlay: {
       position: 'fixed',
       top: 0,
@@ -379,6 +440,16 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       transition: 'border-color 0.2s',
       outline: 'none'
     },
+    select: {
+      padding: '10px 12px',
+      border: '1px solid #d1d5db',
+      borderRadius: '6px',
+      fontSize: '14px',
+      transition: 'border-color 0.2s',
+      outline: 'none',
+      backgroundColor: 'white',
+      cursor: 'pointer'
+    },
     inputError: {
       borderColor: '#ef4444'
     },
@@ -489,6 +560,12 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       color: '#374151',
       textAlign: 'center',
       marginBottom: '8px'
+    },
+    optionalBadge: {
+      fontSize: '11px',
+      color: '#6b7280',
+      fontWeight: 'normal',
+      marginLeft: '4px'
     }
   };
 
@@ -500,7 +577,7 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
             <User style={{ width: '24px', height: '24px', color: '#16a34a' }} />
             <div>
               <h2 style={styles.title}>New Client Application</h2>
-              <p style={styles.subtitle}>Add a new client to the system</p>
+              <p style={styles.subtitle}>Documents can be added later</p>
             </div>
           </div>
           <div style={styles.headerActions}>
@@ -530,6 +607,33 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
 
         <div style={styles.content}>
           <form onSubmit={handleSubmit} style={styles.form}>
+            {/* Broker Assignment (Admin Only) */}
+            {currentUser?.role === 'admin' && brokers.length > 0 && (
+              <div>
+                <h3 style={styles.sectionTitle}>Broker Assignment</h3>
+                <div style={styles.fullRow}>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>
+                      <Users size={16} />
+                      Assign to Broker <span style={styles.optionalBadge}>(Optional)</span>
+                    </label>
+                    <select
+                      value={formData.assigned_broker_id}
+                      onChange={(e) => setFormData({...formData, assigned_broker_id: e.target.value})}
+                      style={styles.select}
+                    >
+                      <option value="">-- No Broker Assigned --</option>
+                      {brokers.map(broker => (
+                        <option key={broker.id} value={broker.id}>
+                          {broker.first_name} {broker.last_name} ({broker.custom_id || broker.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Personal Information */}
             <div>
               <h3 style={styles.sectionTitle}>Personal Information</h3>
@@ -671,7 +775,7 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
 
             {/* Experian Login Information */}
             <div>
-              <h3 style={styles.sectionTitle}>Experian Login Information</h3>
+              <h3 style={styles.sectionTitle}>Experian Login Information <span style={styles.optionalBadge}>(Optional)</span></h3>
               
               <div style={styles.row}>
                 <div style={styles.fieldGroup}>
@@ -764,15 +868,15 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
               </div>
             )}
 
-            {/* File Uploads */}
+            {/* File Uploads - TODOS OPCIONALES */}
             <div>
-              <h3 style={styles.sectionTitle}>Required Documents</h3>
+              <h3 style={styles.sectionTitle}>Documents <span style={styles.optionalBadge}>(Can be added later)</span></h3>
               
               <div style={styles.row}>
                 <div style={styles.fieldGroup}>
                   <label style={styles.label}>
                     <Upload size={16} />
-                    ID Document
+                    ID Document <span style={styles.optionalBadge}>(Optional)</span>
                   </label>
                   <div style={styles.fileUpload}>
                     <input
@@ -796,7 +900,7 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
                 <div style={styles.fieldGroup}>
                   <label style={styles.label}>
                     <Upload size={16} />
-                    Social Security Card
+                    Social Security Card <span style={styles.optionalBadge}>(Optional)</span>
                   </label>
                   <div style={styles.fileUpload}>
                     <input
@@ -818,9 +922,9 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
                 </div>
               </div>
 
-              {/* 3 Bureau Credit Reports - Separated */}
+              {/* 3 Bureau Credit Reports */}
               <div>
-                <h4 style={{...styles.sectionTitle, fontSize: '14px', marginBottom: '12px'}}>3 Bureau Credit Reports</h4>
+                <h4 style={{...styles.sectionTitle, fontSize: '14px', marginBottom: '12px'}}>3 Bureau Credit Reports <span style={styles.optionalBadge}>(Optional)</span></h4>
                 
                 <div style={styles.threeColumns}>
                   {/* Experian Report */}
@@ -830,14 +934,14 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
                       <input
                         type="file"
                         id="experian_report"
-                        accept=".pdf"
+                        accept=".pdf,image/*"
                         onChange={(e) => handleFileChange('experian_report', e.target.files[0])}
                         style={styles.fileInput}
                       />
                       <label htmlFor="experian_report" style={{cursor: 'pointer'}}>
                         <Upload style={{ width: '20px', height: '20px', color: '#6b7280', margin: '0 auto 6px' }} />
                         <p style={{fontSize: '12px', margin: '4px 0'}}>Upload Experian</p>
-                        <p style={{fontSize: '10px', color: '#6b7280'}}>PDF up to 10MB</p>
+                        <p style={{fontSize: '10px', color: '#6b7280'}}>PDF, JPG, PNG</p>
                       </label>
                       {formData.files.experian_report && (
                         <p style={styles.fileName}>{formData.files.experian_report.name}</p>
@@ -852,14 +956,14 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
                       <input
                         type="file"
                         id="equifax_report"
-                        accept=".pdf"
+                        accept=".pdf,image/*"
                         onChange={(e) => handleFileChange('equifax_report', e.target.files[0])}
                         style={styles.fileInput}
                       />
                       <label htmlFor="equifax_report" style={{cursor: 'pointer'}}>
                         <Upload style={{ width: '20px', height: '20px', color: '#6b7280', margin: '0 auto 6px' }} />
                         <p style={{fontSize: '12px', margin: '4px 0'}}>Upload Equifax</p>
-                        <p style={{fontSize: '10px', color: '#6b7280'}}>PDF up to 10MB</p>
+                        <p style={{fontSize: '10px', color: '#6b7280'}}>PDF, JPG, PNG</p>
                       </label>
                       {formData.files.equifax_report && (
                         <p style={styles.fileName}>{formData.files.equifax_report.name}</p>
@@ -874,14 +978,14 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
                       <input
                         type="file"
                         id="transunion_report"
-                        accept=".pdf"
+                        accept=".pdf,image/*"
                         onChange={(e) => handleFileChange('transunion_report', e.target.files[0])}
                         style={styles.fileInput}
                       />
                       <label htmlFor="transunion_report" style={{cursor: 'pointer'}}>
                         <Upload style={{ width: '20px', height: '20px', color: '#6b7280', margin: '0 auto 6px' }} />
                         <p style={{fontSize: '12px', margin: '4px 0'}}>Upload TransUnion</p>
-                        <p style={{fontSize: '10px', color: '#6b7280'}}>PDF up to 10MB</p>
+                        <p style={{fontSize: '10px', color: '#6b7280'}}>PDF, JPG, PNG</p>
                       </label>
                       {formData.files.transunion_report && (
                         <p style={styles.fileName}>{formData.files.transunion_report.name}</p>
