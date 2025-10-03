@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, PenTool, FileText, Check, Download, Edit2 } from 'lucide-react';
-import ContractSignaturePopup from './ContractSignaturePopup';
 
 const ContractSignaturePopup = ({ isOpen, onClose, brokerData, onSignComplete, currentUser }) => {
   const [isSigned, setIsSigned] = useState(false);
