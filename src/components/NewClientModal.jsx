@@ -170,17 +170,31 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
           clientData.assigned_broker_id = formData.assigned_broker_id;
         }
       } else if (currentUser?.role === 'broker') {
-        // Broker auto-asigna a sí mismo
-        const { data: brokerData } = await supabase
-          .from('brokers')
-          .select('id')
-          .eq('user_id', currentUser.id)
-          .single();
+  // Obtener el user_id correcto de la sesión de Auth
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+  
+  const { data: brokerData, error: brokerError } = await supabase
+    .from('brokers')
+    .select('id, user_id')
+    .eq('user_id', user.id)
+    .single();
 
-        if (brokerData) {
-          clientData.assigned_broker_id = brokerData.id;
-        }
-      }
+  console.log('Broker lookup:', { 
+    authUserId: user.id, 
+    brokerData, 
+    brokerError 
+  });
+
+  if (!brokerData) {
+    throw new Error('Broker profile not found');
+  }
+  
+  clientData.assigned_broker_id = brokerData.id;
+}
 
       // Admin notes
       if (currentUser?.role === 'admin' && formData.notes?.trim()) {
