@@ -21,6 +21,7 @@ const BrokerManagement = ({ currentUser }) => {
   const [loading, setLoading] = useState(true);
   const [selectedBroker, setSelectedBroker] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [showContractForBroker, setShowContractForBroker] = useState(null);
 
   // Estados del pipeline para brokers
   const brokerStatusConfig = {
