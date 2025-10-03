@@ -63,8 +63,20 @@ export default function Signup() {
     if (!formData.last_name.trim()) newErrors.last_name = 'Last name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
-    if (!formData.password) newErrors.password = 'Password is required';
-    if (formData.password.length < 7) newErrors.password = 'Password must be at least 7 characters';
+    
+    // Validación de contraseña robusta
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else {
+      if (formData.password.length < 7) {
+        newErrors.password = 'Password must be at least 7 characters';
+      } else if (!/[A-Z]/.test(formData.password)) {
+        newErrors.password = 'Password must contain at least 1 uppercase letter';
+      } else if (!/[0-9]/.test(formData.password)) {
+        newErrors.password = 'Password must contain at least 1 number';
+      }
+    }
+    
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
 
     // Validación email
@@ -546,10 +558,26 @@ export default function Signup() {
                   fontSize: '14px',
                   boxSizing: 'border-box'
                 }}
-                placeholder="Minimum 7 characters"
+                placeholder="Enter secure password"
                 minLength={7}
               />
-              {errors.password && <span style={{ fontSize: '12px', color: '#ef4444' }}>{errors.password}</span>}
+              {errors.password && <span style={{ fontSize: '12px', color: '#ef4444', display: 'block', marginTop: '4px' }}>{errors.password}</span>}
+              
+              {/* Password Requirements */}
+              <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
+                <div style={{ fontWeight: '500', marginBottom: '4px' }}>Password must contain:</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '8px' }}>
+                  <span style={{ color: formData.password.length >= 7 ? '#16a34a' : '#6b7280' }}>
+                    {formData.password.length >= 7 ? '✓' : '○'} At least 7 characters
+                  </span>
+                  <span style={{ color: /[A-Z]/.test(formData.password) ? '#16a34a' : '#6b7280' }}>
+                    {/[A-Z]/.test(formData.password) ? '✓' : '○'} At least 1 uppercase letter
+                  </span>
+                  <span style={{ color: /[0-9]/.test(formData.password) ? '#16a34a' : '#6b7280' }}>
+                    {/[0-9]/.test(formData.password) ? '✓' : '○'} At least 1 number
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div>
