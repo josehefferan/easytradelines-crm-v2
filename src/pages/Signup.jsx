@@ -144,7 +144,6 @@ export default function Signup() {
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
         options: {
-          emailRedirectTo: `https://easytradelinescrm-judf5.ondigitalocean.app/email-confirmed?type=${userType}`,
           data: userMetadata
         }
       });
@@ -154,10 +153,18 @@ export default function Signup() {
 
       console.log('✅ User created:', authData.user.id);
 
-      // Esperar más tiempo para que Supabase procese el usuario completamente
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // 2. Hacer login inmediatamente para establecer sesión
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password
+      });
 
-      // 2. Crear broker en la tabla brokers
+      if (signInError) {
+        console.warn('Could not sign in automatically:', signInError);
+        // Continuar de todos modos - el usuario puede hacer login manualmente
+      }
+
+      // 3. Crear broker en la tabla brokers (ahora con sesión activa)
       if (userType === 'broker') {
         const { error: brokerError } = await supabase
           .from('brokers')
