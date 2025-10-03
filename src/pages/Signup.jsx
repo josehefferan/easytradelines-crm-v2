@@ -5,7 +5,7 @@ import { User, Mail, Phone, Building, Globe, Lock, CheckCircle } from "lucide-re
 
 export default function Signup() {
   const [searchParams] = useSearchParams();
-  const userType = searchParams.get('type'); // 'broker' o 'affiliate'
+  const userType = searchParams.get('type');
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -15,10 +15,8 @@ export default function Signup() {
     password: '',
     confirmPassword: '',
     phone: '',
-    // Campos específicos de broker
     company_name: '',
     company_website: '',
-    // Campos específicos de affiliate
     payment_method: 'paypal',
     payment_info: { account: '' }
   });
@@ -27,14 +25,12 @@ export default function Signup() {
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
 
-  // Configuración de colores según el tipo
   const getConfig = () => {
     if (userType === 'broker') {
       return {
         gradient: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%)',
         primaryColor: '#2563eb',
         hoverColor: '#1d4ed8',
-        lightBg: '#eff6ff',
         title: 'Broker Registration',
         subtitle: 'Create your broker account'
       };
@@ -43,7 +39,6 @@ export default function Signup() {
         gradient: 'linear-gradient(135deg, #14532d 0%, #16a34a 50%, #22c55e 100%)',
         primaryColor: '#16a34a',
         hoverColor: '#15803d',
-        lightBg: '#f0fdf4',
         title: 'Cardholder Registration',
         subtitle: 'Create your cardholder account'
       };
@@ -58,40 +53,35 @@ export default function Signup() {
   const validateForm = () => {
     const newErrors = {};
 
-    // Validaciones comunes
     if (!formData.first_name.trim()) newErrors.first_name = 'First name is required';
     if (!formData.last_name.trim()) newErrors.last_name = 'Last name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
     
-    // Validación de contraseña robusta
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else {
-      if (formData.password.length < 7) {
-        newErrors.password = 'Password must be at least 7 characters';
-      } else if (!/[A-Z]/.test(formData.password)) {
-        newErrors.password = 'Password must contain at least 1 uppercase letter';
-      } else if (!/[0-9]/.test(formData.password)) {
-        newErrors.password = 'Password must contain at least 1 number';
-      }
+    } else if (formData.password.length < 7) {
+      newErrors.password = 'Password must be at least 7 characters';
+    } else if (!/[A-Z]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least 1 uppercase letter';
+    } else if (!/[0-9]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least 1 number';
     }
     
-    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
 
-    // Validación email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.email && !emailRegex.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    // Validación teléfono
     const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
     if (formData.phone && !phoneRegex.test(formData.phone)) {
       newErrors.phone = 'Please enter a valid phone number';
     }
 
-    // Validaciones específicas de broker
     if (userType === 'broker') {
       if (!formData.company_name.trim()) newErrors.company_name = 'Company name is required';
       if (formData.company_website && !/^https?:\/\/.+\..+/.test(formData.company_website)) {
@@ -99,7 +89,6 @@ export default function Signup() {
       }
     }
 
-    // Validaciones específicas de affiliate
     if (userType === 'affiliate') {
       if (!formData.payment_method) newErrors.payment_method = 'Payment method is required';
       if (!formData.payment_info.account.trim()) newErrors.payment_info = 'Payment account is required';
@@ -110,134 +99,98 @@ export default function Signup() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!validateForm()) return;
-
-  setLoading(true);
-  setErrors({});
-
-  try {
-    console.log('🚀 Starting registration process...');
-
-    // PASO 1: Crear usuario en Supabase Auth (sin metadata que cause problemas)
-    console.log('📝 Step 1: Creating user in Auth...');
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: formData.email.toLowerCase().trim(),
-      password: formData.password
-    });
-
-    if (authError) {
-      console.error('❌ Auth error:', authError);
-      throw authError;
-    }
+    e.preventDefault();
     
-    if (!authData.user) {
-      throw new Error('Failed to create user account');
-    }
+    if (!validateForm()) return;
 
-    console.log('✅ User created in Auth:', authData.user.id);
+    setLoading(true);
+    setErrors({});
 
-    // PASO 2: Esperar un momento
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // PASO 3: Crear usuario en la tabla users
-    console.log('👤 Step 2: Creating user in users table...');
-    const { error: userError } = await supabase
-      .from('users')
-      .insert({
-        id: authData.user.id,
+    try {
+      // 1. Crear usuario en Auth (SIN metadata complicada)
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email.toLowerCase().trim(),
-        role: userType,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        password: formData.password
       });
 
-    if (userError) {
-      console.error('❌ User table error:', userError);
-      // Si falla, intentar eliminar el usuario de Auth
-      await supabase.auth.admin.deleteUser(authData.user.id).catch(() => {});
-      throw new Error('Failed to create user profile');
-    }
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Failed to create user');
 
-    console.log('✅ User record created in users table');
+      console.log('✅ User created:', authData.user.id);
 
-    // PASO 4: Crear perfil específico (broker o affiliate)
-    if (userType === 'broker') {
-      console.log('🏢 Step 3: Creating broker profile...');
-      
-      const { error: brokerError } = await supabase
-        .from('brokers')
+      // 2. Login inmediato (esto establece la sesión)
+      await supabase.auth.signInWithPassword({
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password
+      });
+
+      console.log('✅ User signed in');
+
+      // 3. Crear registro en tabla users
+      const { error: userError } = await supabase
+        .from('users')
         .insert({
-          user_id: authData.user.id,
+          id: authData.user.id,
           email: formData.email.toLowerCase().trim(),
-          first_name: formData.first_name.trim(),
-          last_name: formData.last_name.trim(),
-          phone: formData.phone.trim(),
-          company_name: formData.company_name.trim(),
-          company_website: formData.company_website.trim() || null,
-          status: 'pending',
-          registration_type: 'self_registered'
+          role: userType,
+          status: 'pending'
         });
 
-      if (brokerError) {
-        console.error('❌ Broker creation error:', brokerError);
-        throw new Error(`Broker profile failed: ${brokerError.message}`);
+      if (userError && userError.code !== '23505') {
+        throw userError;
       }
 
-      console.log('✅ Broker profile created');
-    }
+      console.log('✅ User record created');
 
-    if (userType === 'affiliate') {
-      console.log('💳 Step 3: Creating affiliate profile...');
-      
-      const { error: affiliateError } = await supabase
-        .from('affiliates')
-        .insert({
-          user_id: authData.user.id,
-          email: formData.email.toLowerCase().trim(),
-          first_name: formData.first_name.trim(),
-          last_name: formData.last_name.trim(),
-          phone: formData.phone.trim(),
-          payment_method: formData.payment_method,
-          payment_info: { account: formData.payment_info.account.trim() },
-          status: 'pending_approval',
-          registration_type: 'self_registered'
-        });
+      // 4. Crear broker o affiliate
+      if (userType === 'broker') {
+        const { error: brokerError } = await supabase
+          .from('brokers')
+          .insert({
+            user_id: authData.user.id,
+            email: formData.email.toLowerCase().trim(),
+            first_name: formData.first_name.trim(),
+            last_name: formData.last_name.trim(),
+            phone: formData.phone.trim(),
+            company_name: formData.company_name.trim(),
+            company_website: formData.company_website.trim() || null,
+            status: 'pending',
+            registration_type: 'self_registered'
+          });
 
-      if (affiliateError) {
-        console.error('❌ Affiliate creation error:', affiliateError);
-        throw new Error(`Affiliate profile failed: ${affiliateError.message}`);
+        if (brokerError) throw brokerError;
+        console.log('✅ Broker created');
       }
 
-      console.log('✅ Affiliate profile created');
+      if (userType === 'affiliate') {
+        const { error: affiliateError } = await supabase
+          .from('affiliates')
+          .insert({
+            user_id: authData.user.id,
+            email: formData.email.toLowerCase().trim(),
+            first_name: formData.first_name.trim(),
+            last_name: formData.last_name.trim(),
+            phone: formData.phone.trim(),
+            payment_method: formData.payment_method,
+            payment_info: { account: formData.payment_info.account.trim() },
+            status: 'pending_approval',
+            registration_type: 'self_registered'
+          });
+
+        if (affiliateError) throw affiliateError;
+        console.log('✅ Affiliate created');
+      }
+
+      setSuccess(true);
+
+    } catch (error) {
+      console.error('❌ Error:', error);
+      setErrors({ submit: error.message || 'Registration failed. Please try again.' });
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // PASO 5: Login automático
-    console.log('🔐 Step 4: Signing in...');
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: formData.email.toLowerCase().trim(),
-      password: formData.password
-    });
-
-    if (signInError) {
-      console.warn('⚠️ Auto sign-in failed:', signInError);
-    }
-
-    console.log('🎉 Registration completed!');
-    setSuccess(true);
-
-  } catch (error) {
-    console.error('💥 Registration failed:', error);
-    setErrors({ 
-      submit: error.message || 'An error occurred during registration. Please try again.' 
-    });
-  } finally {
-    setLoading(false);
-  }
-};
-  // SVG del logo
   const LogoSVG = () => (
     <svg width="120" height="60" viewBox="0 0 120 60" style={{ marginBottom: '16px' }}>
       <rect x="8" y="35" width="12" height="20" fill="#FF6B35" rx="2"/>
@@ -282,11 +235,10 @@ export default function Signup() {
         }}>
           <CheckCircle style={{ width: '64px', height: '64px', color: '#16a34a', margin: '0 auto 24px' }} />
           <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px' }}>
-            Registration Completed Successfully!
+            Registration Completed!
           </h2>
           <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>
-            Your account has been created. Please check your email to verify your address. 
-            Once verified, you can log in and complete your profile.
+            Your account has been created successfully. You can now log in and start using the platform.
           </p>
           <button
             onClick={() => navigate(`/login?type=${userType}`)}
@@ -298,11 +250,8 @@ export default function Signup() {
               borderRadius: '8px',
               fontSize: '16px',
               fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s'
+              cursor: 'pointer'
             }}
-            onMouseOver={(e) => e.target.style.backgroundColor = config.hoverColor}
-            onMouseOut={(e) => e.target.style.backgroundColor = config.primaryColor}
           >
             Go to Login
           </button>
@@ -329,7 +278,6 @@ export default function Signup() {
         width: '100%',
         maxWidth: '600px'
       }}>
-        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <LogoSVG />
           <h1 style={{
@@ -345,7 +293,6 @@ export default function Signup() {
           </p>
         </div>
 
-        {/* Error general */}
         {errors.submit && (
           <div style={{
             padding: '14px',
@@ -360,9 +307,7 @@ export default function Signup() {
           </div>
         )}
 
-        {/* Formulario */}
         <form onSubmit={handleSubmit}>
-          {/* Personal Information */}
           <div style={{ marginBottom: '24px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>
               Personal Information
@@ -455,7 +400,6 @@ export default function Signup() {
             </div>
           </div>
 
-          {/* Company Info (solo brokers) */}
           {userType === 'broker' && (
             <div style={{ marginBottom: '24px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>
@@ -506,7 +450,6 @@ export default function Signup() {
             </div>
           )}
 
-          {/* Payment Info (solo affiliates) */}
           {userType === 'affiliate' && (
             <div style={{ marginBottom: '24px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>
@@ -559,7 +502,6 @@ export default function Signup() {
             </div>
           )}
 
-          {/* Password */}
           <div style={{ marginBottom: '24px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>
               Account Security
@@ -586,7 +528,6 @@ export default function Signup() {
               />
               {errors.password && <span style={{ fontSize: '12px', color: '#ef4444', display: 'block', marginTop: '4px' }}>{errors.password}</span>}
               
-              {/* Password Requirements */}
               <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
                 <div style={{ fontWeight: '500', marginBottom: '4px' }}>Password must contain:</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '8px' }}>
@@ -625,7 +566,6 @@ export default function Signup() {
             </div>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
@@ -639,14 +579,12 @@ export default function Signup() {
               fontSize: '16px',
               fontWeight: '600',
               cursor: loading ? 'not-allowed' : 'pointer',
-              marginBottom: '16px',
-              transition: 'background-color 0.2s'
+              marginBottom: '16px'
             }}
           >
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
 
-          {/* Link to Login */}
           <div style={{ textAlign: 'center' }}>
             <span style={{ fontSize: '14px', color: '#6b7280' }}>Already have an account? </span>
             <a 
