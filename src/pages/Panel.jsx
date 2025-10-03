@@ -27,6 +27,7 @@ import BrokerManagement from '../components/BrokerManagement';
 import AffiliatesInhouseView from '../components/AffiliatesInhouseView';
 import Pipeline from '../components/Pipeline';
 import AffiliatePanel from './AffiliatePanel';
+import ContractSignaturePopup from '../components/ContractSignaturePopup';
 
 const ModernCRMPanel = () => {
   const [currentUser, setCurrentUser] = useState(null);
