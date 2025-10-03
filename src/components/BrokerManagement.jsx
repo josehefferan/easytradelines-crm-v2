@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { supabase } from "../lib/supabase";
+import ContractSignaturePopup from './ContractSignaturePopup';
 
 const BrokerManagement = ({ currentUser }) => {
   const [brokers, setBrokers] = useState([]);
@@ -215,34 +216,35 @@ const BrokerManagement = ({ currentUser }) => {
       alert('Error updating broker status');
     }
   };
-// Validar documentos del broker
-const validateBrokerDocuments = async (brokerId) => {
-  if (!confirm('Are you sure you want to validate this broker\'s documents? This will allow them to create clients.')) return;
-  
-  try {
-    const { error } = await supabase
-      .from('brokers')
-      .update({ 
-        documents_validated: true,
-        documents_validated_by: currentUser.email,
-        documents_validated_date: new Date().toISOString()
-      })
-      .eq('id', brokerId);
 
-    if (error) throw error;
+  // Validar documentos del broker
+  const validateBrokerDocuments = async (brokerId) => {
+    if (!confirm('Are you sure you want to validate this broker\'s documents? This will allow them to create clients.')) return;
     
-    setBrokers(brokers.map(broker => 
-      broker.id === brokerId 
-        ? { ...broker, documents_validated: true, documents_validated_by: currentUser.email, documents_validated_date: new Date().toISOString() }
-        : broker
-    ));
-    
-    alert('Documents validated successfully! Broker can now create clients.');
-  } catch (error) {
-    console.error('Error validating documents:', error);
-    alert('Error validating documents');
-  }
-};
+    try {
+      const { error } = await supabase
+        .from('brokers')
+        .update({ 
+          documents_validated: true,
+          documents_validated_by: currentUser.email,
+          documents_validated_date: new Date().toISOString()
+        })
+        .eq('id', brokerId);
+
+      if (error) throw error;
+      
+      setBrokers(brokers.map(broker => 
+        broker.id === brokerId 
+          ? { ...broker, documents_validated: true, documents_validated_by: currentUser.email, documents_validated_date: new Date().toISOString() }
+          : broker
+      ));
+      
+      alert('Documents validated successfully! Broker can now create clients.');
+    } catch (error) {
+      console.error('Error validating documents:', error);
+      alert('Error validating documents');
+    }
+  };
 
   // Filtrar brokers
   const filteredBrokers = brokers.filter(broker => {
@@ -668,7 +670,7 @@ const validateBrokerDocuments = async (brokerId) => {
                 )}
 
                 <button
-                  onClick={() => setSelectedBroker(broker)}
+                  onClick={() => setShowContractForBroker(broker)}
                   style={{...styles.actionButton, ...styles.secondaryButton}}
                 >
                   <Eye style={{ width: '14px', height: '14px' }} />
@@ -688,6 +690,39 @@ const validateBrokerDocuments = async (brokerId) => {
             {filter === 'all' ? 'No brokers registered yet' : `No brokers with status "${filter}"`}
           </p>
         </div>
+      )}
+
+      {/* Contract Signature Popup */}
+      {showContractForBroker && (
+        <ContractSignaturePopup
+          isOpen={true}
+          onClose={() => setShowContractForBroker(null)}
+          brokerData={showContractForBroker}
+          currentUser={currentUser}
+          onSignComplete={async (adminSignatureData) => {
+            try {
+              const { error } = await supabase
+                .from('brokers')
+                .update({
+                  admin_signature_data: adminSignatureData.signatureImage,
+                  admin_name_signed: adminSignatureData.contractData.admin_name,
+                  admin_initials_signed: adminSignatureData.contractData.admin_initials,
+                  contract_fully_signed: true,
+                  contract_fully_signed_date: new Date().toISOString()
+                })
+                .eq('id', showContractForBroker.id);
+              
+              if (error) throw error;
+              
+              alert('Admin signature saved successfully! Contract is now fully signed.');
+              setShowContractForBroker(null);
+              fetchBrokers();
+            } catch (error) {
+              console.error('Error saving admin signature:', error);
+              alert('Error saving admin signature');
+            }
+          }}
+        />
       )}
     </div>
   );
