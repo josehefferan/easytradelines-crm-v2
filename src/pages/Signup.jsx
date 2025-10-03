@@ -110,86 +110,66 @@ export default function Signup() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  
+  if (!validateForm()) return;
+
+  setLoading(true);
+  setErrors({});
+
+  try {
+    console.log('🚀 Starting registration process...');
+
+    // PASO 1: Crear usuario en Supabase Auth (sin metadata que cause problemas)
+    console.log('📝 Step 1: Creating user in Auth...');
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: formData.email.toLowerCase().trim(),
+      password: formData.password
+    });
+
+    if (authError) {
+      console.error('❌ Auth error:', authError);
+      throw authError;
+    }
     
-    if (!validateForm()) return;
+    if (!authData.user) {
+      throw new Error('Failed to create user account');
+    }
 
-    setLoading(true);
-    setErrors({});
+    console.log('✅ User created in Auth:', authData.user.id);
 
-    try {
-      console.log('🚀 Starting registration process...');
+    // PASO 2: Esperar un momento
+    await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Preparar metadata según el tipo de usuario
-      let userMetadata = {
+    // PASO 3: Crear usuario en la tabla users
+    console.log('👤 Step 2: Creating user in users table...');
+    const { error: userError } = await supabase
+      .from('users')
+      .insert({
+        id: authData.user.id,
+        email: formData.email.toLowerCase().trim(),
         role: userType,
         status: 'pending',
-        first_name: formData.first_name.trim(),
-        last_name: formData.last_name.trim(),
-        phone: formData.phone.trim()
-      };
-
-      // Agregar campos específicos de broker
-      if (userType === 'broker') {
-        userMetadata.company_name = formData.company_name.trim();
-        userMetadata.company_website = formData.company_website.trim() || null;
-      }
-
-      // Agregar campos específicos de affiliate
-      if (userType === 'affiliate') {
-        userMetadata.payment_method = formData.payment_method;
-        userMetadata.payment_account = formData.payment_info.account.trim();
-      }
-
-      // PASO 1: Crear usuario en Supabase Auth
-      console.log('📝 Step 1: Creating user in Auth...');
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email.toLowerCase().trim(),
-        password: formData.password,
-        options: {
-          data: userMetadata
-        }
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       });
 
-      if (authError) {
-        console.error('❌ Auth error:', authError);
-        throw authError;
-      }
+    if (userError) {
+      console.error('❌ User table error:', userError);
+      // Si falla, intentar eliminar el usuario de Auth
+      await supabase.auth.admin.deleteUser(authData.user.id).catch(() => {});
+      throw new Error('Failed to create user profile');
+    }
+
+    console.log('✅ User record created in users table');
+
+    // PASO 4: Crear perfil específico (broker o affiliate)
+    if (userType === 'broker') {
+      console.log('🏢 Step 3: Creating broker profile...');
       
-      if (!authData.user) {
-        throw new Error('Failed to create user account');
-      }
-
-      console.log('✅ User created in Auth:', authData.user.id);
-
-      // PASO 2: Esperar para dar tiempo al trigger de la BD
-      console.log('⏳ Step 2: Waiting for database sync...');
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // PASO 3: Verificar que el usuario exista en la tabla users
-      console.log('🔍 Step 3: Verifying user in database...');
-      const { data: userData, error: userCheckError } = await supabase
-        .from('users')
-        .select('id, email, role')
-        .eq('id', authData.user.id)
-        .single();
-
-      if (userCheckError) {
-        console.error('❌ User verification error:', userCheckError);
-        throw new Error('User account created but profile initialization failed. Please contact support.');
-      }
-
-      if (!userData) {
-        throw new Error('User not found in database. Please try logging in or contact support.');
-      }
-
-      console.log('✅ User verified in database:', userData);
-
-      // PASO 4: Crear perfil de broker
-      if (userType === 'broker') {
-        console.log('🏢 Step 4: Creating broker profile...');
-        
-        const brokerData = {
+      const { error: brokerError } = await supabase
+        .from('brokers')
+        .insert({
           user_id: authData.user.id,
           email: formData.email.toLowerCase().trim(),
           first_name: formData.first_name.trim(),
@@ -199,40 +179,22 @@ export default function Signup() {
           company_website: formData.company_website.trim() || null,
           status: 'pending',
           registration_type: 'self_registered'
-        };
+        });
 
-        console.log('📤 Inserting broker data:', brokerData);
-
-        const { data: insertedBroker, error: brokerError } = await supabase
-          .from('brokers')
-          .insert(brokerData)
-          .select()
-          .single();
-
-        if (brokerError) {
-          console.error('❌ Broker creation error:', brokerError);
-          
-          // Verificar si es un error de foreign key
-          if (brokerError.message.includes('violates foreign key constraint')) {
-            throw new Error('Database synchronization error. Please wait a moment and try again, or contact support.');
-          }
-          
-          // Verificar si es un error de duplicate
-          if (brokerError.code === '23505') {
-            throw new Error('A broker profile already exists for this account.');
-          }
-          
-          throw new Error(`Broker profile creation failed: ${brokerError.message}`);
-        }
-
-        console.log('✅ Broker profile created successfully:', insertedBroker);
+      if (brokerError) {
+        console.error('❌ Broker creation error:', brokerError);
+        throw new Error(`Broker profile failed: ${brokerError.message}`);
       }
 
-      // PASO 4 (alternativo): Crear perfil de affiliate
-      if (userType === 'affiliate') {
-        console.log('💳 Step 4: Creating affiliate profile...');
-        
-        const affiliateData = {
+      console.log('✅ Broker profile created');
+    }
+
+    if (userType === 'affiliate') {
+      console.log('💳 Step 3: Creating affiliate profile...');
+      
+      const { error: affiliateError } = await supabase
+        .from('affiliates')
+        .insert({
           user_id: authData.user.id,
           email: formData.email.toLowerCase().trim(),
           first_name: formData.first_name.trim(),
@@ -242,60 +204,39 @@ export default function Signup() {
           payment_info: { account: formData.payment_info.account.trim() },
           status: 'pending_approval',
           registration_type: 'self_registered'
-        };
+        });
 
-        console.log('📤 Inserting affiliate data:', affiliateData);
-
-        const { data: insertedAffiliate, error: affiliateError } = await supabase
-          .from('affiliates')
-          .insert(affiliateData)
-          .select()
-          .single();
-
-        if (affiliateError) {
-          console.error('❌ Affiliate creation error:', affiliateError);
-          
-          if (affiliateError.message.includes('violates foreign key constraint')) {
-            throw new Error('Database synchronization error. Please wait a moment and try again, or contact support.');
-          }
-          
-          if (affiliateError.code === '23505') {
-            throw new Error('An affiliate profile already exists for this account.');
-          }
-          
-          throw new Error(`Affiliate profile creation failed: ${affiliateError.message}`);
-        }
-
-        console.log('✅ Affiliate profile created successfully:', insertedAffiliate);
+      if (affiliateError) {
+        console.error('❌ Affiliate creation error:', affiliateError);
+        throw new Error(`Affiliate profile failed: ${affiliateError.message}`);
       }
 
-      // PASO 5: Hacer login automático (opcional pero recomendado)
-      console.log('🔐 Step 5: Signing in automatically...');
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email.toLowerCase().trim(),
-        password: formData.password
-      });
-
-      if (signInError) {
-        console.warn('⚠️ Auto sign-in failed (not critical):', signInError);
-      } else {
-        console.log('✅ User signed in successfully');
-      }
-
-      // PASO 6: Mostrar mensaje de éxito
-      console.log('🎉 Registration completed successfully!');
-      setSuccess(true);
-
-    } catch (error) {
-      console.error('💥 Registration failed:', error);
-      setErrors({ 
-        submit: error.message || 'An error occurred during registration. Please try again.' 
-      });
-    } finally {
-      setLoading(false);
+      console.log('✅ Affiliate profile created');
     }
-  };
 
+    // PASO 5: Login automático
+    console.log('🔐 Step 4: Signing in...');
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: formData.email.toLowerCase().trim(),
+      password: formData.password
+    });
+
+    if (signInError) {
+      console.warn('⚠️ Auto sign-in failed:', signInError);
+    }
+
+    console.log('🎉 Registration completed!');
+    setSuccess(true);
+
+  } catch (error) {
+    console.error('💥 Registration failed:', error);
+    setErrors({ 
+      submit: error.message || 'An error occurred during registration. Please try again.' 
+    });
+  } finally {
+    setLoading(false);
+  }
+};
   // SVG del logo
   const LogoSVG = () => (
     <svg width="120" height="60" viewBox="0 0 120 60" style={{ marginBottom: '16px' }}>
