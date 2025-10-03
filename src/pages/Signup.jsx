@@ -118,6 +118,8 @@ export default function Signup() {
     setErrors({});
 
     try {
+      console.log('🚀 Starting registration process...');
+
       // Preparar metadata según el tipo de usuario
       let userMetadata = {
         role: userType,
@@ -139,7 +141,8 @@ export default function Signup() {
         userMetadata.payment_account = formData.payment_info.account.trim();
       }
 
-      // 1. Crear usuario en Supabase Auth
+      // PASO 1: Crear usuario en Supabase Auth
+      console.log('📝 Step 1: Creating user in Auth...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
@@ -148,74 +151,143 @@ export default function Signup() {
         }
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user account');
+      if (authError) {
+        console.error('❌ Auth error:', authError);
+        throw authError;
+      }
+      
+      if (!authData.user) {
+        throw new Error('Failed to create user account');
+      }
 
-      console.log('✅ User created:', authData.user.id);
+      console.log('✅ User created in Auth:', authData.user.id);
 
-      // 2. Hacer login inmediatamente para establecer sesión
+      // PASO 2: Esperar para dar tiempo al trigger de la BD
+      console.log('⏳ Step 2: Waiting for database sync...');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // PASO 3: Verificar que el usuario exista en la tabla users
+      console.log('🔍 Step 3: Verifying user in database...');
+      const { data: userData, error: userCheckError } = await supabase
+        .from('users')
+        .select('id, email, role')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (userCheckError) {
+        console.error('❌ User verification error:', userCheckError);
+        throw new Error('User account created but profile initialization failed. Please contact support.');
+      }
+
+      if (!userData) {
+        throw new Error('User not found in database. Please try logging in or contact support.');
+      }
+
+      console.log('✅ User verified in database:', userData);
+
+      // PASO 4: Crear perfil de broker
+      if (userType === 'broker') {
+        console.log('🏢 Step 4: Creating broker profile...');
+        
+        const brokerData = {
+          user_id: authData.user.id,
+          email: formData.email.toLowerCase().trim(),
+          first_name: formData.first_name.trim(),
+          last_name: formData.last_name.trim(),
+          phone: formData.phone.trim(),
+          company_name: formData.company_name.trim(),
+          company_website: formData.company_website.trim() || null,
+          status: 'pending',
+          registration_type: 'self_registered'
+        };
+
+        console.log('📤 Inserting broker data:', brokerData);
+
+        const { data: insertedBroker, error: brokerError } = await supabase
+          .from('brokers')
+          .insert(brokerData)
+          .select()
+          .single();
+
+        if (brokerError) {
+          console.error('❌ Broker creation error:', brokerError);
+          
+          // Verificar si es un error de foreign key
+          if (brokerError.message.includes('violates foreign key constraint')) {
+            throw new Error('Database synchronization error. Please wait a moment and try again, or contact support.');
+          }
+          
+          // Verificar si es un error de duplicate
+          if (brokerError.code === '23505') {
+            throw new Error('A broker profile already exists for this account.');
+          }
+          
+          throw new Error(`Broker profile creation failed: ${brokerError.message}`);
+        }
+
+        console.log('✅ Broker profile created successfully:', insertedBroker);
+      }
+
+      // PASO 4 (alternativo): Crear perfil de affiliate
+      if (userType === 'affiliate') {
+        console.log('💳 Step 4: Creating affiliate profile...');
+        
+        const affiliateData = {
+          user_id: authData.user.id,
+          email: formData.email.toLowerCase().trim(),
+          first_name: formData.first_name.trim(),
+          last_name: formData.last_name.trim(),
+          phone: formData.phone.trim(),
+          payment_method: formData.payment_method,
+          payment_info: { account: formData.payment_info.account.trim() },
+          status: 'pending_approval',
+          registration_type: 'self_registered'
+        };
+
+        console.log('📤 Inserting affiliate data:', affiliateData);
+
+        const { data: insertedAffiliate, error: affiliateError } = await supabase
+          .from('affiliates')
+          .insert(affiliateData)
+          .select()
+          .single();
+
+        if (affiliateError) {
+          console.error('❌ Affiliate creation error:', affiliateError);
+          
+          if (affiliateError.message.includes('violates foreign key constraint')) {
+            throw new Error('Database synchronization error. Please wait a moment and try again, or contact support.');
+          }
+          
+          if (affiliateError.code === '23505') {
+            throw new Error('An affiliate profile already exists for this account.');
+          }
+          
+          throw new Error(`Affiliate profile creation failed: ${affiliateError.message}`);
+        }
+
+        console.log('✅ Affiliate profile created successfully:', insertedAffiliate);
+      }
+
+      // PASO 5: Hacer login automático (opcional pero recomendado)
+      console.log('🔐 Step 5: Signing in automatically...');
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: formData.email.toLowerCase().trim(),
         password: formData.password
       });
 
       if (signInError) {
-        console.warn('Could not sign in automatically:', signInError);
-        // Continuar de todos modos - el usuario puede hacer login manualmente
+        console.warn('⚠️ Auto sign-in failed (not critical):', signInError);
+      } else {
+        console.log('✅ User signed in successfully');
       }
 
-      // 3. Crear broker en la tabla brokers (ahora con sesión activa)
-      if (userType === 'broker') {
-        const { error: brokerError } = await supabase
-          .from('brokers')
-          .insert({
-            user_id: authData.user.id,
-            email: formData.email.toLowerCase().trim(),
-            first_name: formData.first_name.trim(),
-            last_name: formData.last_name.trim(),
-            phone: formData.phone.trim(),
-            company_name: formData.company_name.trim(),
-            company_website: formData.company_website.trim() || null,
-            status: 'pending',
-            registration_type: 'self_registered'
-          });
-
-        if (brokerError) {
-          console.error('❌ Error creating broker:', brokerError);
-          throw new Error('Account created but broker profile failed. Please contact support.');
-        }
-
-        console.log('✅ Broker profile created');
-      }
-
-      // 3. Crear affiliate en la tabla affiliates
-      if (userType === 'affiliate') {
-        const { error: affiliateError } = await supabase
-          .from('affiliates')
-          .insert({
-            user_id: authData.user.id,
-            email: formData.email.toLowerCase().trim(),
-            first_name: formData.first_name.trim(),
-            last_name: formData.last_name.trim(),
-            phone: formData.phone.trim(),
-            payment_method: formData.payment_method,
-            payment_info: { account: formData.payment_info.account.trim() },
-            status: 'pending_approval'
-          });
-
-        if (affiliateError) {
-          console.error('❌ Error creating affiliate:', affiliateError);
-          throw new Error('Account created but affiliate profile failed. Please contact support.');
-        }
-
-        console.log('✅ Affiliate profile created');
-      }
-
-      // Mostrar mensaje de éxito
+      // PASO 6: Mostrar mensaje de éxito
+      console.log('🎉 Registration completed successfully!');
       setSuccess(true);
 
     } catch (error) {
-      console.error('❌ Signup error:', error);
+      console.error('💥 Registration failed:', error);
       setErrors({ 
         submit: error.message || 'An error occurred during registration. Please try again.' 
       });
@@ -269,11 +341,11 @@ export default function Signup() {
         }}>
           <CheckCircle style={{ width: '64px', height: '64px', color: '#16a34a', margin: '0 auto 24px' }} />
           <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px' }}>
-            Registration Submitted!
+            Registration Completed Successfully!
           </h2>
           <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>
-            We sent a confirmation link to your email. Please confirm to validate your email address. 
-            Once verified, your account will be ready to use after document submission.
+            Your account has been created. Please check your email to verify your address. 
+            Once verified, you can log in and complete your profile.
           </p>
           <button
             onClick={() => navigate(`/login?type=${userType}`)}
@@ -285,8 +357,11 @@ export default function Signup() {
               borderRadius: '8px',
               fontSize: '16px',
               fontWeight: '600',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
             }}
+            onMouseOver={(e) => e.target.style.backgroundColor = config.hoverColor}
+            onMouseOut={(e) => e.target.style.backgroundColor = config.primaryColor}
           >
             Go to Login
           </button>
@@ -623,7 +698,8 @@ export default function Signup() {
               fontSize: '16px',
               fontWeight: '600',
               cursor: loading ? 'not-allowed' : 'pointer',
-              marginBottom: '16px'
+              marginBottom: '16px',
+              transition: 'background-color 0.2s'
             }}
           >
             {loading ? 'Creating Account...' : 'Create Account'}
