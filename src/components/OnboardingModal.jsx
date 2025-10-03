@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Upload, FileText, Check, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import ContractSignaturePopup from './ContractSignaturePopup';
 
 const OnboardingModal = ({ isOpen, brokerData, onComplete }) => {
   const [showContractPopup, setShowContractPopup] = useState(false);
