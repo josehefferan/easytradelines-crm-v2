@@ -154,7 +154,7 @@ export default function Signup() {
             phone: formData.phone.trim(),
             company_name: formData.company_name.trim(),
             company_website: formData.company_website.trim() || null,
-            status: 'pending_documents',
+            status: 'pending',
             registration_type: 'self_registered'
           });
 
