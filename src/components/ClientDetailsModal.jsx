@@ -49,6 +49,40 @@ const ClientDetailsModal = ({ client, isOpen, onClose, onStatusUpdate, currentUs
     }
   }, [isOpen, client]);
 
+  const handleBrokerFileUpload = async (file, fileType) => {
+  if (!file) return;
+
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${client.id}/${fileType}_${Date.now()}.${fileExt}`;
+
+    const { data, error } = await supabase.storage
+      .from('client-documents')
+      .upload(fileName, file);
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('client-documents')
+      .getPublicUrl(fileName);
+
+    // Actualizar cliente
+    const { error: updateError } = await supabase
+      .from('clients')
+      .update({ [`${fileType}_url`]: publicUrl })
+      .eq('id', client.id);
+
+    if (updateError) throw updateError;
+
+    alert('Document uploaded successfully!');
+    fetchClientDocuments(); // Recargar documentos
+    
+  } catch (error) {
+    console.error('Error uploading:', error);
+    alert('Error uploading document: ' + error.message);
+  }
+};
+
   const fetchClientDocuments = async () => {
     try {
       // Obtener archivos del storage de Supabase
@@ -576,6 +610,96 @@ const ClientDetailsModal = ({ client, isOpen, onClose, onStatusUpdate, currentUs
                     <FileText style={{ width: '32px', height: '32px', margin: '0 auto 8px' }} />
                     <p>No documents uploaded yet</p>
                   </div>
+      {/* Upload Documents Section - Solo para brokers */}
+{currentUser.role === 'broker' && (
+  <div style={styles.section}>
+    <h3 style={styles.sectionTitle}>
+      <Upload style={{ width: '20px', height: '20px' }} />
+      Upload Missing Documents
+    </h3>
+    
+    {/* Indicador de documentos faltantes */}
+    <div style={{
+      padding: '12px',
+      backgroundColor: '#fef3c7',
+      border: '1px solid #fbbf24',
+      borderRadius: '8px',
+      fontSize: '13px',
+      color: '#92400e',
+      marginBottom: '16px'
+    }}>
+      <strong>Required:</strong> All 5 documents must be uploaded before client can advance in pipeline
+    </div>
+
+    {/* File inputs */}
+    <div style={{ display: 'grid', gap: '16px' }}>
+      {/* ID Document */}
+      <div>
+        <label style={{ fontSize: '13px', fontWeight: '500', display: 'block', marginBottom: '6px' }}>
+          ID Document {client.id_document_url && <span style={{ color: '#10b981' }}>✓ Uploaded</span>}
+        </label>
+        <input
+          type="file"
+          accept="image/*,.pdf"
+          onChange={(e) => handleBrokerFileUpload(e.target.files[0], 'id_document')}
+          style={{ fontSize: '13px', width: '100%' }}
+        />
+      </div>
+
+      {/* SSN Card */}
+      <div>
+        <label style={{ fontSize: '13px', fontWeight: '500', display: 'block', marginBottom: '6px' }}>
+          SSN Card {client.ssn_card_url && <span style={{ color: '#10b981' }}>✓ Uploaded</span>}
+        </label>
+        <input
+          type="file"
+          accept="image/*,.pdf"
+          onChange={(e) => handleBrokerFileUpload(e.target.files[0], 'ssn_card')}
+          style={{ fontSize: '13px', width: '100%' }}
+        />
+      </div>
+
+      {/* Experian Report */}
+      <div>
+        <label style={{ fontSize: '13px', fontWeight: '500', display: 'block', marginBottom: '6px' }}>
+          Experian Report {client.experian_report_url && <span style={{ color: '#10b981' }}>✓ Uploaded</span>}
+        </label>
+        <input
+          type="file"
+          accept=".pdf,image/*"
+          onChange={(e) => handleBrokerFileUpload(e.target.files[0], 'experian_report')}
+          style={{ fontSize: '13px', width: '100%' }}
+        />
+      </div>
+
+      {/* Equifax Report */}
+      <div>
+        <label style={{ fontSize: '13px', fontWeight: '500', display: 'block', marginBottom: '6px' }}>
+          Equifax Report {client.equifax_report_url && <span style={{ color: '#10b981' }}>✓ Uploaded</span>}
+        </label>
+        <input
+          type="file"
+          accept=".pdf,image/*"
+          onChange={(e) => handleBrokerFileUpload(e.target.files[0], 'equifax_report')}
+          style={{ fontSize: '13px', width: '100%' }}
+        />
+      </div>
+
+      {/* TransUnion Report */}
+      <div>
+        <label style={{ fontSize: '13px', fontWeight: '500', display: 'block', marginBottom: '6px' }}>
+          TransUnion Report {client.transunion_report_url && <span style={{ color: '#10b981' }}>✓ Uploaded</span>}
+        </label>
+        <input
+          type="file"
+          accept=".pdf,image/*"
+          onChange={(e) => handleBrokerFileUpload(e.target.files[0], 'transunion_report')}
+          style={{ fontSize: '13px', width: '100%' }}
+        />
+      </div>
+    </div>
+  </div>
+)}
                 )}
               </div>
             </div>
