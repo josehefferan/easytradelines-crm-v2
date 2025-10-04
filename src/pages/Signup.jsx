@@ -24,6 +24,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
+  const [message, setMessage] = useState('');
 
   const getConfig = () => {
     if (userType === 'broker') {
@@ -105,50 +106,90 @@ export default function Signup() {
 
     setLoading(true);
     setErrors({});
+    setMessage('');
 
     try {
-      // 1. Crear usuario en Auth (SIN metadata complicada)
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email.toLowerCase().trim(),
-        password: formData.password
-      });
+      const emailLower = formData.email.toLowerCase().trim();
+      
+      // 1. VERIFICAR SI EL EMAIL YA EXISTE
+      const { data: existingUsers } = await supabase.rpc(
+        'check_user_exists', 
+        { user_email: emailLower }
+      );
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user');
+      let userId;
+      let isExistingUser = false;
 
-      console.log('✅ User created:', authData.user.id);
-
-      // 2. Login inmediato (esto establece la sesión)
-      await supabase.auth.signInWithPassword({
-        email: formData.email.toLowerCase().trim(),
-        password: formData.password
-      });
-
-      console.log('✅ User signed in');
-
-      // 3. Crear registro en tabla users
-      const { error: userError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user.id,
-          email: formData.email.toLowerCase().trim(),
-          role: userType,
-          status: 'pending'
+      if (existingUsers && existingUsers.length > 0) {
+        // Usuario ya existe - verificar contraseña
+        isExistingUser = true;
+        userId = existingUsers[0].id;
+        console.log('Existing user found:', userId);
+        
+        // Intentar login para validar contraseña
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email: emailLower,
+          password: formData.password
+        });
+        
+        if (loginError) {
+          throw new Error('This email is already registered. Please use your existing password or reset it from the login page.');
+        }
+        
+      } else {
+        // Usuario nuevo - crear en Auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: emailLower,
+          password: formData.password
         });
 
-      if (userError && userError.code !== '23505') {
-        throw userError;
+        if (authError) throw authError;
+        if (!authData.user) throw new Error('Failed to create user');
+
+        userId = authData.user.id;
+        console.log('New user created:', userId);
+
+        // Login inmediato
+        await supabase.auth.signInWithPassword({
+          email: emailLower,
+          password: formData.password
+        });
+
+        // Crear registro en tabla users
+        const { error: userError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            email: emailLower,
+            role: userType,
+            status: 'pending'
+          });
+
+        if (userError && userError.code !== '23505') {
+          console.error('User table error:', userError);
+        }
+        
+        console.log('User record created');
       }
 
-      console.log('✅ User record created');
-
-      // 4. Crear broker o affiliate
+      // 2. VERIFICAR SI YA EXISTE EN LA TABLA ESPECÍFICA
       if (userType === 'broker') {
+        const { data: existingBroker } = await supabase
+          .from('brokers')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+        
+        if (existingBroker) {
+          throw new Error('This email is already registered as a broker.');
+        }
+
+        // Crear broker
         const { error: brokerError } = await supabase
           .from('brokers')
           .insert({
-            user_id: authData.user.id,
-            email: formData.email.toLowerCase().trim(),
+            user_id: userId,
+            email: emailLower,
             first_name: formData.first_name.trim(),
             last_name: formData.last_name.trim(),
             phone: formData.phone.trim(),
@@ -159,15 +200,26 @@ export default function Signup() {
           });
 
         if (brokerError) throw brokerError;
-        console.log('✅ Broker created');
+        console.log('Broker created');
       }
 
       if (userType === 'affiliate') {
+        const { data: existingAffiliate } = await supabase
+          .from('affiliates')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+        
+        if (existingAffiliate) {
+          throw new Error('This email is already registered as a cardholder.');
+        }
+
+        // Crear affiliate
         const { error: affiliateError } = await supabase
           .from('affiliates')
           .insert({
-            user_id: authData.user.id,
-            email: formData.email.toLowerCase().trim(),
+            user_id: userId,
+            email: emailLower,
             first_name: formData.first_name.trim(),
             last_name: formData.last_name.trim(),
             phone: formData.phone.trim(),
@@ -178,13 +230,17 @@ export default function Signup() {
           });
 
         if (affiliateError) throw affiliateError;
-        console.log('✅ Affiliate created');
+        console.log('Affiliate created');
+      }
+
+      if (isExistingUser) {
+        setMessage(`Account linked successfully! You can now access both your ${userType} panel and any other existing panels.`);
       }
 
       setSuccess(true);
 
     } catch (error) {
-      console.error('❌ Error:', error);
+      console.error('Registration error:', error);
       setErrors({ submit: error.message || 'Registration failed. Please try again.' });
     } finally {
       setLoading(false);
@@ -237,9 +293,14 @@ export default function Signup() {
           <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px' }}>
             Registration Completed!
           </h2>
-          <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>
+          <p style={{ color: '#6b7280', marginBottom: '8px', lineHeight: '1.6' }}>
             Your account has been created successfully. You can now log in and start using the platform.
           </p>
+          {message && (
+            <p style={{ color: config.primaryColor, marginBottom: '24px', fontSize: '14px', fontWeight: '500' }}>
+              {message}
+            </p>
+          )}
           <button
             onClick={() => navigate(`/login?type=${userType}`)}
             style={{
