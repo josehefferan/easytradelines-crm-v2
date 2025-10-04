@@ -20,6 +20,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Users
+  Upload
 } from 'lucide-react';
 import { supabase } from "../lib/supabase";
 
