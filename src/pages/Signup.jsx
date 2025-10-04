@@ -172,10 +172,8 @@ export default function Signup() {
         console.log('User record created');
       }
 
-      // 2. VERIFICAR SI YA EXISTE EN LA TABLA ESPECÍFICA
+      // 2. CREAR EN LA TABLA ESPECÍFICA (sin verificar si existe)
       if (userType === 'broker') {
- 
-        // Crear broker
         const { error: brokerError } = await supabase
           .from('brokers')
           .insert({
@@ -194,7 +192,7 @@ export default function Signup() {
         console.log('Broker created');
       }
 
-        // Crear affiliate
+      if (userType === 'affiliate') {
         const { error: affiliateError } = await supabase
           .from('affiliates')
           .insert({
