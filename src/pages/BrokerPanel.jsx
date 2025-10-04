@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, FileText, CreditCard, 
-  LogOut, Menu, X, Plus, Search, Filter,
+  LogOut, Menu, X, Plus, Search,
   Clock, CheckCircle, AlertCircle, TrendingUp,
-  Calendar, DollarSign, Target, Award
+  DollarSign, Award
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import NewClientModal from '../components/NewClientModal';
@@ -29,6 +29,10 @@ const BrokerPanel = () => {
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [documentsValidated, setDocumentsValidated] = useState(false);
+  
+  // Estados para ClientDetailsModal
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [isClientDetailsModalOpen, setIsClientDetailsModalOpen] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -93,7 +97,6 @@ const BrokerPanel = () => {
           console.error('Error loading clients:', clientsError);
           setClients([]);
         } else {
-          console.log('Clients loaded:', clientsData);
           setClients(clientsData || []);
         }
 
@@ -102,11 +105,11 @@ const BrokerPanel = () => {
         
         setStats({
           totalClients: clientsData?.length || 0,
-          activeClients: clientsData?.filter(c => c.status === 'in_process' || c.status === 'reviewing_documents').length || 0,
-          pendingClients: clientsData?.filter(c => c.status === 'new_lead' || c.status === 'pending').length || 0,
+          activeClients: clientsData?.filter(c => c.status === 'active' || c.status === 'approved').length || 0,
+          pendingClients: clientsData?.filter(c => c.status === 'new_lead' || c.status === 'contacted').length || 0,
           completedThisMonth: clientsData?.filter(c => {
             const completedDate = new Date(c.updated_at);
-            return c.status === 'completed' && completedDate >= startOfMonth;
+            return c.status === 'active' && completedDate >= startOfMonth;
           }).length || 0
         });
       }
@@ -118,25 +121,22 @@ const BrokerPanel = () => {
     }
   };
 
-const handleLogout = async () => {
-  try {
-    await supabase.auth.signOut();
-    // Redirigir a la URL completa del login de broker
-    window.location.href = 'https://easytradelinescrm-judf5.ondigitalocean.app/login?type=broker';
-  } catch (error) {
-    console.error('Error logging out:', error);
-  }
-};
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      window.location.href = 'https://easytradelinescrm-judf5.ondigitalocean.app/login?type=broker';
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
 
   const getStatusColor = (status) => {
     const colors = {
       'new_lead': 'bg-blue-100 text-blue-800',
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'in_process': 'bg-purple-100 text-purple-800',
-      'reviewing_documents': 'bg-orange-100 text-orange-800',
-      'submitted_to_processor': 'bg-indigo-100 text-indigo-800',
+      'contacted': 'bg-yellow-100 text-yellow-800',
+      'qualification': 'bg-purple-100 text-purple-800',
       'approved': 'bg-green-100 text-green-800',
-      'completed': 'bg-green-100 text-green-800',
+      'active': 'bg-green-100 text-green-800',
       'rejected': 'bg-red-100 text-red-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
@@ -144,7 +144,7 @@ const handleLogout = async () => {
 
   const getStatusIcon = (status) => {
     switch(status) {
-      case 'completed':
+      case 'active':
       case 'approved':
         return <CheckCircle className="w-4 h-4" />;
       case 'rejected':
@@ -158,7 +158,7 @@ const handleLogout = async () => {
     client.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.client_number?.toLowerCase().includes(searchTerm.toLowerCase())
+    client.unique_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -239,14 +239,12 @@ const handleLogout = async () => {
                   <p className="font-medium text-gray-900">
                     {client.first_name} {client.last_name}
                   </p>
-                  <p className="text-sm text-gray-500">{client.client_number}</p>
+                  <p className="text-sm text-gray-500">{client.unique_id}</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(client.status)}`}>
-                  {client.status?.replace(/_/g, ' ')}
-                </span>
-              </div>
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(client.status)}`}>
+                {client.status?.replace(/_/g, ' ')}
+              </span>
             </div>
           ))}
         </div>
@@ -322,7 +320,7 @@ const handleLogout = async () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm font-medium text-gray-900">{client.client_number}</span>
+                  <span className="text-sm font-medium text-gray-900">{client.unique_id}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(client.status)}`}>
@@ -337,7 +335,13 @@ const handleLogout = async () => {
                   {new Date(client.created_at).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-green-600 hover:text-green-900">
+                  <button 
+                    onClick={() => {
+                      setSelectedClient(client);
+                      setIsClientDetailsModalOpen(true);
+                    }}
+                    className="text-green-600 hover:text-green-900"
+                  >
                     View Details
                   </button>
                 </td>
@@ -525,6 +529,7 @@ const handleLogout = async () => {
         </div>
       </div>
 
+      {/* Modals */}
       <NewClientModal
         isOpen={isNewClientModalOpen}
         onClose={() => {
@@ -541,6 +546,21 @@ const handleLogout = async () => {
           setShowOnboardingModal(false);
           loadBrokerData();
         }}
+      />
+
+      <ClientDetailsModal
+        client={selectedClient}
+        isOpen={isClientDetailsModalOpen}
+        onClose={() => {
+          setIsClientDetailsModalOpen(false);
+          setSelectedClient(null);
+        }}
+        onStatusUpdate={(clientId, newStatus) => {
+          setClients(clients.map(c => 
+            c.id === clientId ? {...c, status: newStatus} : c
+          ));
+        }}
+        currentUser={currentUser}
       />
     </div>
   );
