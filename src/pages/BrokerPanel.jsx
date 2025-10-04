@@ -9,6 +9,7 @@ import {
 import { supabase } from '../lib/supabase';
 import NewClientModal from '../components/NewClientModal';
 import OnboardingModal from '../components/OnboardingModal';
+import ClientDetailsModal from '../components/ClientDetailsModal';
 
 const BrokerPanel = () => {
   const navigate = useNavigate();
