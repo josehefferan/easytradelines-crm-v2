@@ -5,6 +5,7 @@ import { supabase } from "./supabase";
 export default function RequireAuth({ children }) {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,6 +15,49 @@ export default function RequireAuth({ children }) {
         
         if (session) {
           setAuthenticated(true);
+          
+          // Obtener datos del usuario
+          const userEmail = session.user.email;
+          
+          // Intentar obtener datos de cada tabla
+          const { data: brokerData } = await supabase
+            .from('brokers')
+            .select('*')
+            .eq('email', userEmail)
+            .single();
+          
+          const { data: affiliateData } = await supabase
+            .from('affiliates')
+            .select('*')
+            .eq('email', userEmail)
+            .single();
+          
+          // Determinar rol y construir currentUser
+          if (brokerData) {
+            setCurrentUser({
+              id: brokerData.user_id,
+              email: brokerData.email,
+              role: 'broker',
+              name: `${brokerData.first_name} ${brokerData.last_name}`,
+              brokerData: brokerData
+            });
+          } else if (affiliateData) {
+            setCurrentUser({
+              id: affiliateData.user_id,
+              email: affiliateData.email,
+              role: 'affiliate',
+              name: `${affiliateData.first_name} ${affiliateData.last_name}`,
+              affiliateData: affiliateData
+            });
+          } else {
+            // Admin o usuario sin rol específico
+            setCurrentUser({
+              id: session.user.id,
+              email: userEmail,
+              role: 'admin',
+              name: userEmail.split('@')[0]
+            });
+          }
         } else {
           navigate("/login", { replace: true });
         }
@@ -27,13 +71,14 @@ export default function RequireAuth({ children }) {
 
     checkAuth();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         setAuthenticated(false);
+        setCurrentUser(null);
         navigate("/login", { replace: true });
       } else if (event === 'SIGNED_IN' && session) {
         setAuthenticated(true);
+        checkAuth(); // Re-cargar datos del usuario
       }
     });
 
@@ -51,9 +96,14 @@ export default function RequireAuth({ children }) {
     );
   }
 
-  if (!authenticated) {
+  if (!authenticated || !currentUser) {
     return null;
   }
 
-  return children;
+  // Clonar el elemento hijo y pasarle currentUser como prop
+  return typeof children === 'function' 
+    ? children(currentUser) 
+    : children.type 
+      ? { ...children, props: { ...children.props, currentUser } }
+      : children;
 }
