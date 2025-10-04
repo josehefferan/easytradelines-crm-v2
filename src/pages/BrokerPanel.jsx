@@ -11,6 +11,14 @@ import NewClientModal from '../components/NewClientModal';
 import OnboardingModal from '../components/OnboardingModal';
 import ClientDetailsModal from '../components/ClientDetailsModal';
 
+const hasAllDocuments = (client) => {
+  return client.id_document_url && 
+         client.ssn_card_url && 
+         client.experian_report_url && 
+         client.equifax_report_url && 
+         client.transunion_report_url;
+};
+
 const BrokerPanel = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
