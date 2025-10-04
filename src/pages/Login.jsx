@@ -72,30 +72,35 @@ export default function Login() {
         if (error) {
           if (error.message.includes('Email not confirmed') || 
               error.message.includes('not confirmed')) {
-            throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
+            throw new Error('Account is under validation of Admin Easy Tradelines. You will get an email when your account is fully activated.');
           }
           throw error;
         }
+
         if (userType === 'broker') {
           const { data: brokerData } = await supabase
             .from('brokers')
             .select('*')
             .eq('email', email)
             .single();
+
           if (!brokerData) {
             throw new Error('No broker account found with this email');
           }
+
           if (brokerData.status === 'pending') {
             await supabase.auth.signOut();
-            throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
+            throw new Error('Account is under validation of Admin Easy Tradelines. You will get an email when your account is fully activated.');
           }
+
           if (brokerData.status === 'rejected') {
             await supabase.auth.signOut();
             throw new Error('Your broker application was not approved. Please contact support for more information.');
           }
+
           if (!brokerData.active) {
             await supabase.auth.signOut();
-            throw new Error('Your account is currently inactive. Please contact EasyTradelines Admin.');
+            throw new Error('Account is under validation of Admin Easy Tradelines. You will get an email when your account is fully activated.');
           }
         } else if (userType === 'affiliate') {
           const { data: affiliateData } = await supabase
@@ -108,9 +113,9 @@ export default function Login() {
             throw new Error('No cardholder account found with this email');
           }
 
-          if (affiliateData.status === 'pending') {
+          if (affiliateData.status === 'pending_approval' || affiliateData.status === 'pending') {
             await supabase.auth.signOut();
-            throw new Error('Your account is pending approval by EasyTradelines Admin. You will receive an email once approved.');
+            throw new Error('Account is under validation of Admin Easy Tradelines. You will get an email when your account is fully activated.');
           }
 
           if (affiliateData.status === 'rejected') {
@@ -120,11 +125,10 @@ export default function Login() {
 
           if (!affiliateData.active) {
             await supabase.auth.signOut();
-            throw new Error('Your account is currently inactive. Please contact EasyTradelines Admin.');
+            throw new Error('Account is under validation of Admin Easy Tradelines. You will get an email when your account is fully activated.');
           }
         }
         
-        // AGREGAR ESTE BLOQUE AQUÍ:
         if (userType === 'broker') {
           navigate('/broker/panel');
         } else if (userType === 'affiliate') {
