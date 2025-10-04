@@ -3,6 +3,7 @@ import Login from "./pages/Login.jsx";
 import Panel from "./pages/Panel.jsx";
 import MiCuenta from "./pages/MiCuenta.jsx";
 import BrokerPanel from "./pages/BrokerPanel.jsx";
+import AffiliatePanel from "./pages/AffiliatePanel.jsx";
 import RequireAuth from "./lib/RequireAuth.jsx";
 import Signup from './pages/Signup';
 import EmailConfirmed from './pages/EmailConfirmed';
@@ -39,6 +40,15 @@ export default function App() {
             </RequireAuth>
           } 
         />
+        <Route 
+          path="/affiliate/panel" 
+          element={
+            <RequireAuth>
+              <AffiliatePanel />
+            </RequireAuth>
+          } 
+        />
+        
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
