@@ -331,11 +331,19 @@ const BrokerPanel = () => {
                   <span className="text-sm font-medium text-gray-900">{client.unique_id}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(client.status)}`}>
-                    {getStatusIcon(client.status)}
-                    {client.status?.replace(/_/g, ' ')}
-                  </span>
-                </td>
+  <div className="flex items-center gap-2">
+    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(client.status)}`}>
+      {getStatusIcon(client.status)}
+      {client.status?.replace(/_/g, ' ')}
+    </span>
+    {!hasAllDocuments(client) && (
+      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+        <AlertCircle className="w-3 h-3" />
+        Docs Pending
+      </span>
+    )}
+  </div>
+</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {client.phone}
                 </td>
