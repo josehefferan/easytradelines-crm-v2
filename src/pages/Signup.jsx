@@ -174,16 +174,7 @@ export default function Signup() {
 
       // 2. VERIFICAR SI YA EXISTE EN LA TABLA ESPECÍFICA
       if (userType === 'broker') {
-        const { data: existingBroker } = await supabase
-          .from('brokers')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-        
-        if (existingBroker) {
-          throw new Error('This email is already registered as a broker.');
-        }
-
+ 
         // Crear broker
         const { error: brokerError } = await supabase
           .from('brokers')
@@ -202,17 +193,6 @@ export default function Signup() {
         if (brokerError) throw brokerError;
         console.log('Broker created');
       }
-
-      if (userType === 'affiliate') {
-        const { data: existingAffiliate } = await supabase
-          .from('affiliates')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-        
-        if (existingAffiliate) {
-          throw new Error('This email is already registered as a cardholder.');
-        }
 
         // Crear affiliate
         const { error: affiliateError } = await supabase
