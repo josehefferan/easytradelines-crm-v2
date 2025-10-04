@@ -704,7 +704,7 @@ const ClientDetailsModal = ({ client, isOpen, onClose, onStatusUpdate, currentUs
     </div>
   </div>
 )}
-
+</div>
           {/* Right Panel - Actions & Notes */}
           <div style={styles.rightPanel}>
             {/* Admin Notes */}
