@@ -254,13 +254,16 @@ const AffiliatesInhouseView = ({ currentUser }) => {
     const statusStyles = {
       active: { backgroundColor: '#d4edda', color: '#155724' },
       pending: { backgroundColor: '#fef3c7', color: '#d97706' },
+      pending_approval: { backgroundColor: '#fef3c7', color: '#d97706' },
       rejected: { backgroundColor: '#fee2e2', color: '#991b1b' },
       inactive: { backgroundColor: '#f8d7da', color: '#721c24' }
     };
     
+    const displayStatus = status === 'pending_approval' ? 'pending' : status;
+    
     return (
       <span style={{ ...styles.badge, ...statusStyles[status] || statusStyles.inactive }}>
-        {status || 'pending'}
+        {displayStatus || 'pending'}
       </span>
     );
   };
@@ -270,7 +273,7 @@ const AffiliatesInhouseView = ({ currentUser }) => {
       return {
         total: affiliates.length,
         active: affiliates.filter(a => a.status === 'active').length,
-        pending: affiliates.filter(a => a.status === 'pending').length
+        pending: affiliates.filter(a => a.status === 'pending_approval' || a.status === 'pending').length
       };
     } else {
       const totalLimit = cards.reduce((sum, card) => sum + (parseFloat(card.account_limit) || 0), 0);
@@ -391,7 +394,7 @@ const AffiliatesInhouseView = ({ currentUser }) => {
                   </thead>
                   <tbody>
                     {affiliates.map(affiliate => {
-                      const isPending = affiliate.status === 'pending';
+                      const isPending = affiliate.status === 'pending_approval' || affiliate.status === 'pending';
                       return (
                         <tr key={affiliate.id} style={isPending ? styles.pendingRow : {}}>
                           <td style={styles.td}>
