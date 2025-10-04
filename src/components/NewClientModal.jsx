@@ -14,6 +14,9 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     first_name: '',
     last_name: '',
     address: '',
+    city: '',
+    state: '',
+    zip_code: '',
     phone: '',
     email: '',
     ssn: '',
@@ -23,7 +26,7 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     experian_security_answer: '',
     experian_pin: '',
     notes: '',
-    assigned_broker_id: '', // Para admin: seleccionar broker
+    assigned_broker_id: '',
     files: {
       id_document: null,
       ssn_card: null,
@@ -35,7 +38,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
 
   const [errors, setErrors] = useState({});
 
-  // Cargar lista de brokers si es admin
   useEffect(() => {
     if (currentUser?.role === 'admin' && isOpen) {
       fetchBrokers();
@@ -61,39 +63,41 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Campos requeridos
     if (!formData.first_name.trim()) newErrors.first_name = 'First name is required';
     if (!formData.last_name.trim()) newErrors.last_name = 'Last name is required';
     if (!formData.address.trim()) newErrors.address = 'Address is required';
+    if (!formData.city.trim()) newErrors.city = 'City is required';
+    if (!formData.state.trim()) newErrors.state = 'State is required';
+    if (!formData.zip_code.trim()) newErrors.zip_code = 'ZIP code is required';
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     if (!formData.ssn.trim()) newErrors.ssn = 'Social Security Number is required';
     if (!formData.date_of_birth) newErrors.date_of_birth = 'Date of birth is required';
 
-    // Validación de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.email && !emailRegex.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    // Validación de teléfono
     const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
     if (formData.phone && !phoneRegex.test(formData.phone)) {
       newErrors.phone = 'Please enter a valid phone number';
     }
 
-    // Validación de SSN (formato XXX-XX-XXXX)
     const ssnRegex = /^\d{3}-?\d{2}-?\d{4}$/;
     if (formData.ssn && !ssnRegex.test(formData.ssn.replace(/\s/g, ''))) {
       newErrors.ssn = 'Please enter a valid SSN (XXX-XX-XXXX)';
     }
 
-    // Validación de dirección (no PO Box)
     if (formData.address && /p\.?o\.?\s*box/i.test(formData.address)) {
       newErrors.address = 'PO Box addresses are not allowed. Please use residential address only.';
     }
 
-    // Validación de PIN (4 dígitos) - solo si se proporciona
+    const zipRegex = /^\d{5}$/;
+    if (formData.zip_code && !zipRegex.test(formData.zip_code)) {
+      newErrors.zip_code = 'Please enter a valid 5-digit ZIP code';
+    }
+
     if (formData.experian_pin && !/^\d{4}$/.test(formData.experian_pin)) {
       newErrors.experian_pin = 'PIN must be exactly 4 digits';
     }
@@ -141,8 +145,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
     setLoading(true);
     try {
       const clientNumber = await generateClientNumber();
-      console.log('Generated client number:', clientNumber);
-      
       const formattedSSN = formData.ssn.replace(/\D/g, '').replace(/(\d{3})(\d{2})(\d{4})/, '$1-$2-$3');
 
       const clientData = {
@@ -150,6 +152,9 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
         first_name: formData.first_name.trim(),
         last_name: formData.last_name.trim(),
         address: formData.address.trim(),
+        city: formData.city.trim(),
+        state: formData.state.toUpperCase().trim(),
+        zip_code: formData.zip_code.trim(),
         phone: formData.phone.trim(),
         email: formData.email.toLowerCase().trim(),
         ssn: formattedSSN,
@@ -163,47 +168,34 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
         created_by_type: currentUser?.role || 'admin'
       };
 
-      // Asignar broker
       if (currentUser?.role === 'admin') {
-        // Admin selecciona broker del dropdown
         if (formData.assigned_broker_id) {
           clientData.assigned_broker_id = formData.assigned_broker_id;
         }
       } else if (currentUser?.role === 'broker') {
-  // Obtener el user_id correcto de la sesión de Auth
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    throw new Error('Not authenticated');
-  }
-  
-  const { data: brokerData, error: brokerError } = await supabase
-    .from('brokers')
-    .select('id, user_id')
-    .eq('user_id', user.id)
-    .single();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          throw new Error('Not authenticated');
+        }
+        
+        const { data: brokerData, error: brokerError } = await supabase
+          .from('brokers')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
 
-  console.log('Broker lookup:', { 
-    authUserId: user.id, 
-    brokerData, 
-    brokerError 
-  });
+        if (!brokerData) {
+          throw new Error('Broker profile not found');
+        }
+        
+        clientData.assigned_broker_id = brokerData.id;
+      }
 
-  if (!brokerData) {
-    throw new Error('Broker profile not found');
-  }
-  
-  clientData.assigned_broker_id = brokerData.id;
-}
-
-      // Admin notes
       if (currentUser?.role === 'admin' && formData.notes?.trim()) {
         clientData.admin_notes = formData.notes.trim();
       }
-      
-      console.log('Final client data to insert:', clientData);
 
-      // Insertar cliente
       const { data: newClient, error } = await supabase
         .from('clients')
         .insert([clientData])
@@ -212,9 +204,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
 
       if (error) throw error;
 
-      console.log('Client created successfully:', newClient);
-
-      // Subir documentos si existen (OPCIONAL)
       if (newClient && newClient.id) {
         await uploadClientDocuments(newClient.id);
       }
@@ -233,7 +222,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
   const uploadClientDocuments = async (clientId) => {
     const uploads = [];
 
-    // Función helper para subir archivo
     const uploadFile = async (file, fileType) => {
       if (!file) return null;
 
@@ -256,7 +244,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       return { field: `${fileType}_url`, url: publicUrl };
     };
 
-    // Subir todos los archivos
     for (const [fileType, file] of Object.entries(formData.files)) {
       if (file) {
         const result = await uploadFile(file, fileType);
@@ -264,7 +251,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       }
     }
 
-    // Actualizar cliente con URLs de documentos
     if (uploads.length > 0) {
       const updateData = {};
       uploads.forEach(({ field, url }) => {
@@ -283,6 +269,9 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
       first_name: '',
       last_name: '',
       address: '',
+      city: '',
+      state: '',
+      zip_code: '',
       phone: '',
       email: '',
       ssn: '',
@@ -325,7 +314,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
   if (!isOpen) return null;
 
   const styles = {
-    // ... (todos los estilos anteriores se mantienen igual)
     overlay: {
       position: 'fixed',
       top: 0,
@@ -621,7 +609,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
 
         <div style={styles.content}>
           <form onSubmit={handleSubmit} style={styles.form}>
-            {/* Broker Assignment (Admin Only) */}
             {currentUser?.role === 'admin' && brokers.length > 0 && (
               <div>
                 <h3 style={styles.sectionTitle}>Broker Assignment</h3>
@@ -648,7 +635,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
               </div>
             )}
 
-            {/* Personal Information */}
             <div>
               <h3 style={styles.sectionTitle}>Personal Information</h3>
               
@@ -707,6 +693,66 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
                     placeholder="Enter residential address"
                   />
                   {errors.address && <span style={styles.errorText}>{errors.address}</span>}
+                </div>
+              </div>
+
+              <div style={styles.row}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <MapPin size={16} />
+                    City <span style={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => setFormData({...formData, city: e.target.value})}
+                    style={{
+                      ...styles.input,
+                      ...(errors.city ? styles.inputError : {})
+                    }}
+                    placeholder="Enter city"
+                  />
+                  {errors.city && <span style={styles.errorText}>{errors.city}</span>}
+                </div>
+
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <MapPin size={16} />
+                    State <span style={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.state}
+                    onChange={(e) => setFormData({...formData, state: e.target.value.toUpperCase()})}
+                    style={{
+                      ...styles.input,
+                      ...(errors.state ? styles.inputError : {})
+                    }}
+                    placeholder="CA"
+                    maxLength="2"
+                  />
+                  {errors.state && <span style={styles.errorText}>{errors.state}</span>}
+                </div>
+              </div>
+
+              <div style={styles.fullRow}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.label}>
+                    <MapPin size={16} />
+                    ZIP Code <span style={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.zip_code}
+                    onChange={(e) => setFormData({...formData, zip_code: e.target.value.replace(/\D/g, '')})}
+                    style={{
+                      ...styles.input,
+                      ...(errors.zip_code ? styles.inputError : {})
+                    }}
+                    placeholder="12345"
+                    maxLength="5"
+                  />
+                  {errors.zip_code && <span style={styles.errorText}>{errors.zip_code}</span>}
                 </div>
               </div>
 
@@ -787,7 +833,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
               </div>
             </div>
 
-            {/* Experian Login Information */}
             <div>
               <h3 style={styles.sectionTitle}>Experian Login Information <span style={styles.optionalBadge}>(Optional)</span></h3>
               
@@ -863,7 +908,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
               </div>
             </div>
 
-            {/* Admin Only Notes */}
             {currentUser?.role === 'admin' && (
               <div>
                 <h3 style={styles.sectionTitle}>Admin Notes</h3>
@@ -882,7 +926,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
               </div>
             )}
 
-            {/* File Uploads - TODOS OPCIONALES */}
             <div>
               <h3 style={styles.sectionTitle}>Documents <span style={styles.optionalBadge}>(Can be added later)</span></h3>
               
@@ -936,12 +979,10 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
                 </div>
               </div>
 
-              {/* 3 Bureau Credit Reports */}
               <div>
                 <h4 style={{...styles.sectionTitle, fontSize: '14px', marginBottom: '12px'}}>3 Bureau Credit Reports <span style={styles.optionalBadge}>(Optional)</span></h4>
                 
                 <div style={styles.threeColumns}>
-                  {/* Experian Report */}
                   <div style={styles.fieldGroup}>
                     <div style={styles.creditBureauLabel}>1. Experian</div>
                     <div style={styles.fileUploadSmall}>
@@ -963,7 +1004,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
                     </div>
                   </div>
 
-                  {/* Equifax Report */}
                   <div style={styles.fieldGroup}>
                     <div style={styles.creditBureauLabel}>2. Equifax</div>
                     <div style={styles.fileUploadSmall}>
@@ -985,7 +1025,6 @@ const NewClientModal = ({ isOpen, onClose, currentUser }) => {
                     </div>
                   </div>
 
-                  {/* TransUnion Report */}
                   <div style={styles.fieldGroup}>
                     <div style={styles.creditBureauLabel}>3. TransUnion</div>
                     <div style={styles.fileUploadSmall}>
