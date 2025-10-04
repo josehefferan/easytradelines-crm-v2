@@ -564,53 +564,57 @@ const ClientDetailsModal = ({ client, isOpen, onClose, onStatusUpdate, currentUs
               </div>
             </div>
 
-            {/* Documents */}
-            <div style={styles.section}>
-              <h3 style={styles.sectionTitle}>
-                <FileText style={{ width: '20px', height: '20px' }} />
-                Documents ({documents.length})
-              </h3>
-              <div style={styles.documentsGrid}>
-                {documents.length > 0 ? (
-                  documents.map((doc, index) => (
-                    <div key={index} style={styles.documentItem}>
-                      <div style={styles.documentInfo}>
-                        <div style={styles.documentName}>{doc.name}</div>
-                        <div style={styles.documentMeta}>
-                          {Math.round(doc.metadata?.size / 1024) || 0} KB • 
-                          {new Date(doc.created_at).toLocaleDateString()}
-                        </div>
-                      </div>
-                      <div style={styles.documentActions}>
-                        <button
-                          style={styles.iconButton}
-                          onClick={() => viewDocument(doc.name)}
-                          title="View document"
-                        >
-                          <Eye style={{ width: '16px', height: '16px' }} />
-                        </button>
-                        <button
-                          style={styles.iconButton}
-                          onClick={() => downloadDocument(doc.name)}
-                          title="Download document"
-                        >
-                          <Download style={{ width: '16px', height: '16px' }} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ 
-                    textAlign: 'center', 
-                    padding: '32px', 
-                    color: '#6b7280',
-                    backgroundColor: '#f9fafb',
-                    borderRadius: '8px'
-                  }}>
-                    <FileText style={{ width: '32px', height: '32px', margin: '0 auto 8px' }} />
-                    <p>No documents uploaded yet</p>
-                  </div>
-      {/* Upload Documents Section - Solo para brokers */}
+           {/* Documents */}
+<div style={styles.section}>
+  <h3 style={styles.sectionTitle}>
+    <FileText style={{ width: '20px', height: '20px' }} />
+    Documents ({documents.length})
+  </h3>
+  <div style={styles.documentsGrid}>
+    {documents.length > 0 ? (
+      documents.map((doc, index) => (
+        <div key={index} style={styles.documentItem}>
+          <div style={styles.documentInfo}>
+            <div style={styles.documentName}>{doc.name}</div>
+            <div style={styles.documentMeta}>
+              {Math.round(doc.metadata?.size / 1024) || 0} KB • 
+              {new Date(doc.created_at).toLocaleDateString()}
+            </div>
+          </div>
+          <div style={styles.documentActions}>
+            <button
+              style={styles.iconButton}
+              onClick={() => viewDocument(doc.name)}
+              title="View document"
+            >
+              <Eye style={{ width: '16px', height: '16px' }} />
+            </button>
+            <button
+              style={styles.iconButton}
+              onClick={() => downloadDocument(doc.name)}
+              title="Download document"
+            >
+              <Download style={{ width: '16px', height: '16px' }} />
+            </button>
+          </div>
+        </div>
+      ))
+    ) : (
+      <div style={{ 
+        textAlign: 'center', 
+        padding: '32px', 
+        color: '#6b7280',
+        backgroundColor: '#f9fafb',
+        borderRadius: '8px'
+      }}>
+        <FileText style={{ width: '32px', height: '32px', margin: '0 auto 8px' }} />
+        <p>No documents uploaded yet</p>
+      </div>
+    )}
+  </div>
+</div>
+
+{/* Upload Documents Section - Solo para brokers */}
 {currentUser.role === 'broker' && (
   <div style={styles.section}>
     <h3 style={styles.sectionTitle}>
@@ -700,10 +704,6 @@ const ClientDetailsModal = ({ client, isOpen, onClose, onStatusUpdate, currentUs
     </div>
   </div>
 )}
-                )}
-              </div>
-            </div>
-          </div>
 
           {/* Right Panel - Actions & Notes */}
           <div style={styles.rightPanel}>
